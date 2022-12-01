@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "23626517775",
+    "project_id": "lerniflash",
+    "storage_bucket": "lerniflash.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:23626517775:android:13406f57e490ef914d827a",
+        "android_client_info": {
+          "package_name": "com.lerniflash"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "23626517775-fptonjfce2nvra22gka7vujauph30jv9.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.lerniflash",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "23626517775-51niv3599uacsu91poedu59kqhuevj24.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDqzzFjWhbg2S1xXsnoC0hztykiapNwdw0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "23626517775-51niv3599uacsu91poedu59kqhuevj24.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
