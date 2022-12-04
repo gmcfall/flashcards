@@ -128,5 +128,22 @@ C:\github\flashcards\flashcards\android\app\debug.keystore
 ```
 whenever a developer clones the repo.
 
+# Add Web App
+Use `create-react-app` to add the boilerplate for the web app.
 
+```
+cd github/flashcards
+npx create-react-app web --template typescript
+```
+
+# Add Firestore
+I selected `us-east4` (Northern Virginia) as the Firestore location
+
+# Install material-ui
+```
+npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
+```
+
+# Choosing Rich Text Editor
+[Remirror](https://remirror.io/) looks appealing
 
