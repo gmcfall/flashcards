@@ -3,6 +3,7 @@ import { Box, Button, FormControl, InputAdornment, Paper, TextField, Typography 
 import { styled } from '@mui/material/styles';
 import { useAppDispatch } from '../hooks/hooks';
 import authRegisterCancel from '../store/actions/authRegisterCancel';
+import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
 import ZRegisterDialog from './ZRegisterDialog';
 import ZSigninDialog from './ZSigninDialog';
@@ -25,7 +26,8 @@ const buttonBox = {
 function ZHomeHeader() {
     return (
         <Paper>
-            <Box sx={{display: 'flex'}}>
+            <Box sx={{display: 'flex', minHeight: "3em"}}>
+                <ZAlert/>
                 <ZAuthTools/>
             </Box>
         </Paper>

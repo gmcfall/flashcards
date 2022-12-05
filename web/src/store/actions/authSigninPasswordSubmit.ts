@@ -1,6 +1,7 @@
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createSession } from "../../model/auth";
+import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
 import { PasswordCredentials } from "../../model/types";
 
@@ -20,10 +21,11 @@ const authSigninPasswordSubmit = createAppAsyncThunk(
             const session = createSession(user.uid, providers, displayName);
             return session;
         } catch (error) {
-            return thunkApi.rejectWithValue({
-                message: "An error occurred during the sign in process",
+            
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred during sign in",
                 error
-            })
+            ))
         }
     }
 )

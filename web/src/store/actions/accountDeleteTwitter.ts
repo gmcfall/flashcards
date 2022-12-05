@@ -1,5 +1,6 @@
 import { TwitterAuthProvider } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { createErrorInfo } from "../../model/errorHandler";
 import { reauthenticateWithProvider } from "./accountDeleteGoogle";
 
 const accountDeleteTwitter = createAppAsyncThunk(
@@ -11,11 +12,11 @@ const accountDeleteTwitter = createAppAsyncThunk(
 
         } catch (error) {
             callBack(false);
-            console.log(error);
-            return thunkApi.rejectWithValue({
-                message: "Failed to delete account",
+            
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred while deleting your account",
                 error
-            })
+            ))
         }
     }
 )

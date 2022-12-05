@@ -1,5 +1,6 @@
 import { getAuth, updateProfile } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
 
 const accountDisplayNameUpdate = createAppAsyncThunk(
@@ -15,10 +16,10 @@ const accountDisplayNameUpdate = createAppAsyncThunk(
             return displayName;
 
         } catch (error) {
-            return thunkApi.rejectWithValue({
-                message: "Failed to save your display name",
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred while saving your profile",
                 error
-            })
+            ))
         }
     }
 )

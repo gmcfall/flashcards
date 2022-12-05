@@ -1,5 +1,6 @@
 import { getAuth, signOut } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
 
 const authSignout = createAppAsyncThunk(
@@ -10,10 +11,11 @@ const authSignout = createAppAsyncThunk(
             await signOut(auth);
             return true;
         } catch (error) {
-            return thunkApi.rejectWithValue({
-                message: "Failed to sign in with Google",
+            
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred during sign in",
                 error
-            })
+            ))
         }
     }
 )

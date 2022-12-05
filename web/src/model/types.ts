@@ -31,10 +31,9 @@ export interface Deck {
 export interface PersonalLibrary {
 
 }
-
 export interface ErrorInfo {
     message: string,
-    error?: Error | unknown
+    cause?: string
 }
 
 export type RegisterState =  'REGISTER_BEGIN' | 'REGISTER_EMAIL';
@@ -74,6 +73,17 @@ export interface PasswordCredentials {
     password: string
 }
 
+export type AlertSeverity = 'error' | 'warning' | 'info' | 'success';
+export const ERROR = 'error';
+export const WARNING = 'warning';
+export const INFO = 'info';
+export const SUCCESS = 'success';
+
+export interface AlertData {
+    severity: AlertSeverity,
+    message: string
+}
+
 export interface DeckApp {
 
     /** Details about the current session */
@@ -95,6 +105,9 @@ export interface DeckApp {
     signInState?: SigninState,
 
     passwordSigninForm?: PasswordCredentials,
+
+    /** Data used to display a transient Alert */
+    alertData?: AlertData;
 
     /** The current deck being edited */
     deck?: Deck

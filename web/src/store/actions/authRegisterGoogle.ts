@@ -1,6 +1,7 @@
 import { AuthProvider, getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createSession } from "../../model/auth";
+import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
 
 
@@ -12,10 +13,10 @@ const authRegisterGoogle = createAppAsyncThunk(
             // TODO: Add workflow to collect display name if not provided
             return session;
         } catch (error) {
-            return thunkApi.rejectWithValue({
-                message: "Failed to sign in with Google",
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred while creating your account",
                 error
-            })
+            ))
         }
     }
 )

@@ -33,6 +33,8 @@ import authSigninPasswordBegin from "../actions/authSigninPasswordBegin";
 import authSigninPasswordChangeEmail from "../actions/authinSigninPasswordChangeEmail";
 import authSigninPasswordChangePassword from "../actions/authSigninPasswordChangePassword";
 import authSigninPasswordSubmit from "../actions/authSigninPasswordSubmit";
+import alertRemove from "../actions/alertRemove";
+import { doAlertRemove } from "../../model/alert";
 
 const initialState: DeckApp = {}
 
@@ -46,6 +48,7 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(accountDeletePasswordBegin, doAccountDeletePasswordBegin)
         .addCase(accountDeleteEmailChange, doAccountDeleteEmailChange)
         .addCase(accountDeletePasswordChange, doAccountDeletePasswordChange)
+        .addCase(alertRemove, doAlertRemove)
         .addCase(authRegisterBegin, doAuthRegisterBegin)
         .addCase(authRegisterCancel, doAuthRegisterCancel)
         .addCase(authSessionBegin, doAuthSessionBegin)

@@ -1,5 +1,6 @@
 import { deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
 import { PasswordCredentials } from "../../model/types";
 
@@ -24,11 +25,11 @@ const accountDeletePasswordSubmit = createAppAsyncThunk(
            return true;
 
         } catch (error) {
-            console.log(error);
-            return thunkApi.rejectWithValue({
-                message: "Failed to delete account",
+            
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred while deleting your account",
                 error
-            })
+            ))
         }
     }
 )

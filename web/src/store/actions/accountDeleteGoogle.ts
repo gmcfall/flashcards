@@ -1,5 +1,6 @@
 import { AuthProvider, deleteUser, getAuth, GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
 
 
@@ -13,10 +14,10 @@ const accountDeleteGoogle = createAppAsyncThunk(
         } catch (error) {
             callBack(false);
             console.log(error);
-            return thunkApi.rejectWithValue({
-                message: "Failed to delete account",
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred while deleting your account",
                 error
-            })
+            ))
         }
     }
 )

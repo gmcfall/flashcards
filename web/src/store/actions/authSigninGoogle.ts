@@ -1,5 +1,6 @@
 import { GoogleAuthProvider } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { createErrorInfo } from "../../model/errorHandler";
 import { providerSignIn } from "./authRegisterGoogle";
 
 
@@ -10,10 +11,11 @@ const authSigninGoogle = createAppAsyncThunk(
             const session = await providerSignIn(new GoogleAuthProvider());
             return session;
         } catch (error) {
-            return thunkApi.rejectWithValue({
-                message: "Failed to sign in with Google",
+            
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred during sign in",
                 error
-            })
+            ))
         }
     }
 )
