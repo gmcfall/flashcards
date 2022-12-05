@@ -28,7 +28,6 @@ export async function providerSignIn(provider: AuthProvider) {
     const uid = user.uid;
     const displayName = user.displayName || undefined;
     const providers = user.providerData.map(data => data.providerId);
-    console.log({user})
 
     return createSession(uid, providers, displayName);
 }

@@ -45,8 +45,6 @@ type SigninState = 'SIGNIN_BEGIN' | 'SIGNIN_EMAIL';
 export const SIGNIN_BEGIN = 'SIGNIN_BEGIN';
 export const SIGNIN_EMAIL = 'SIGNIN_EMAIL';
 
-export const GOOGLE_PROVIDER_ID = "google.com";
-
 export interface MinimalUser {
     uid: string,
     displayName: string,

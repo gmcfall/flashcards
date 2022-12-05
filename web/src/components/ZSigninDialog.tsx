@@ -10,6 +10,8 @@ import ZTwitterIcon from "./ZTwitterIcon";
 import EmailIcon from '@mui/icons-material/Email';
 import { SIGNIN_BEGIN } from "../model/types";
 import { dialogContentStyle } from "./ZRegisterDialog";
+import authSigninFacebook from "../store/actions/authSigninFacebook";
+import authSigninTwitter from "../store/actions/authSigninTwitter";
 
 
 
@@ -19,6 +21,14 @@ function ZSigninStart() {
 
     function handleGoogleClick() {
         dispatch(authSigninGoogle());
+    }
+
+    function handleFacebookClick() {
+        dispatch(authSigninFacebook());
+    }
+
+    function handleTwitterClick() {
+        dispatch(authSigninTwitter());
     }
 
     return (
@@ -31,10 +41,16 @@ function ZSigninStart() {
                 >
                     Continue with Google
                 </Button>
-                <Button startIcon={<ZFacebookIcon/>}>
+                <Button 
+                    startIcon={<ZFacebookIcon/>}
+                    onClick={handleFacebookClick}
+                >
                     Continue with Facebook
                 </Button>
-                <Button startIcon={<ZTwitterIcon/>}>
+                <Button 
+                    startIcon={<ZTwitterIcon/>}
+                    onClick={handleTwitterClick}
+                >
                     Continue with Twitter
                 </Button>
                 <Button startIcon={<EmailIcon/>}>

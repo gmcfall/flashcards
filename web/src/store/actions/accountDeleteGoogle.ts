@@ -1,4 +1,4 @@
-import { deleteUser, getAuth, GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
+import { AuthProvider, deleteUser, getAuth, GoogleAuthProvider, reauthenticateWithPopup } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import firebaseApp from "../../model/firebaseApp";
 
@@ -7,19 +7,8 @@ const accountDeleteGoogle = createAppAsyncThunk(
     "account/delete/google",
     async (callBack: (ok: boolean) => void, thunkApi) => {
         try {
-            const auth = getAuth(firebaseApp);
-            const user = auth.currentUser;
-            if (!user) {
-                throw  new Error("user is not signed in");
-            }
-            const provider = new GoogleAuthProvider();
-            const result = await reauthenticateWithPopup(user, provider);
-            const freshUser = result.user;
-            await deleteUser(freshUser);
-
-            callBack(true);
-            
-            return true;
+           await reauthenticateWithProvider(callBack, new GoogleAuthProvider());
+           return true;
 
         } catch (error) {
             callBack(false);
@@ -33,3 +22,16 @@ const accountDeleteGoogle = createAppAsyncThunk(
 )
 
 export default accountDeleteGoogle;
+
+export async function reauthenticateWithProvider(callBack: (ok: boolean) => void, provider: AuthProvider) {
+    const auth = getAuth(firebaseApp);
+    const user = auth.currentUser;
+    if (!user) {
+        throw  new Error("user is not signed in");
+    }
+    const result = await reauthenticateWithPopup(user, provider);
+    const freshUser = result.user;
+    await deleteUser(freshUser);
+
+    callBack(true);
+}

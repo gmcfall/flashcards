@@ -40,7 +40,6 @@ export function selectSigninState(state: RootState) {
 }
 
 export function createSession(uid: string, providers: string[], displayName: string = "Anonymous") : Session {
-
     return {
         user: {
             uid,

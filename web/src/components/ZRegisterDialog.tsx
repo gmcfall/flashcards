@@ -5,6 +5,7 @@ import { selectRegistrationState } from "../model/auth";
 import { REGISTER_BEGIN } from "../model/types";
 import authRegisterFacebook from '../store/actions/authRegisterFacebook';
 import authRegisterGoogle from "../store/actions/authRegisterGoogle";
+import authRegisterTwitter from '../store/actions/authRegisterTwitter';
 import ZDialogWithTitle from './ZDialogWithTitle';
 import ZFacebookIcon from "./ZFacebookIcon";
 import ZGoogleIcon from "./ZGoogleIcon";
@@ -31,6 +32,10 @@ function ZRegisterStart() {
         dispatch(authRegisterFacebook());
     }
 
+    function handleTwitterClick() {
+        dispatch(authRegisterTwitter());
+    }
+
     return (
         <Box sx={{display: "flex", flexDirection: 'column'}}>
 
@@ -47,7 +52,10 @@ function ZRegisterStart() {
                 >
                     Continue with Facebook
                 </Button>
-                <Button startIcon={<ZTwitterIcon/>}>
+                <Button 
+                    startIcon={<ZTwitterIcon/>}
+                    onClick={handleTwitterClick}
+                >
                     Continue with Twitter
                 </Button>
                 <Button startIcon={<EmailIcon/>}>
