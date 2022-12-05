@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { Action } from "redux";
 import { RootState } from "../store/store";
-import { REGISTER_BEGIN, DeckApp, Session, SIGNIN_BEGIN } from "./types";
+import { DeckApp, RegisterEmailForm, RegisterState, REGISTER_BEGIN, REGISTER_EMAIL, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "./types";
 
 export function doAuthRegisterBegin(editor: DeckApp, action: Action<string>) {
     editor.authRegisterState = REGISTER_BEGIN;
@@ -9,6 +9,7 @@ export function doAuthRegisterBegin(editor: DeckApp, action: Action<string>) {
 
 export function doAuthRegisterCancel(editor: DeckApp, action: Action<string>) {
     delete editor.authRegisterState;
+    delete editor.registerEmailForm;
 }
 
 export function doAuthSigninBegin(editor: DeckApp, action: Action) {
@@ -17,6 +18,7 @@ export function doAuthSigninBegin(editor: DeckApp, action: Action) {
 
 export function doAuthSigninCancel(editor: DeckApp, action: Action) {
     delete editor.signInState;
+    delete editor.passwordSigninForm;
 }
 
 export function doAuthSignout(editor: DeckApp, action: PayloadAction) {
@@ -25,6 +27,70 @@ export function doAuthSignout(editor: DeckApp, action: PayloadAction) {
 
 export function doAuthSessionEnd(editor: DeckApp, action: Action) {
     delete editor.session;
+}
+
+export function doAuthRegisterEmailFormChange(editor: DeckApp, action: PayloadAction<RegisterEmailForm>) {
+    editor.registerEmailForm = action.payload;
+}
+
+export function doAuthRegisterStateUpdate(editor: DeckApp, action: PayloadAction<RegisterState>) {
+    editor.authRegisterState = action.payload;
+
+    if (action.payload === REGISTER_EMAIL) {
+        editor.registerEmailForm = {
+            email: '',
+            password: '',
+            displayName: '',
+            invalidEmail: false,
+            invalidPassword: false,
+            invalidDisplayName: false
+        }
+    }
+}
+
+export function doAuthSigninPasswordBegin(editor: DeckApp, action: PayloadAction) {
+    editor.signInState = SIGNIN_PASSWORD;
+    editor.passwordSigninForm = {
+        email: '',
+        password: ''
+    }
+}
+
+export function doAuthSigninPasswordChangeEmail(editor: DeckApp, action: PayloadAction<string>) {
+    const form = editor.passwordSigninForm;
+    if (form) {
+        form.email = action.payload;
+    }
+}
+
+export function doAuthSigninPasswordChangePassword(editor: DeckApp, action: PayloadAction<string>) {
+    const form = editor.passwordSigninForm;
+    if (form) {
+        form.password = action.payload;
+    }
+}
+
+export function doAuthRegisterNameChange(editor: DeckApp, action: PayloadAction<string>) {
+    const form = editor.registerEmailForm!;
+    form.displayName = action.payload;
+}
+
+export function doAuthRegisterEmailChange(editor: DeckApp, action: PayloadAction<string>) {
+    const form = editor.registerEmailForm!;
+    form.email = action.payload;
+}
+
+export function doAuthRegisterPasswordChange(editor: DeckApp, action: PayloadAction<string>) {
+    const form = editor.registerEmailForm!;
+    form.password = action.payload;
+}
+
+export function selectPasswordSigninForm(state: RootState) {
+    return state.editor.passwordSigninForm;
+}
+
+export function selectRegisterEmailForm(state: RootState) {
+    return state.editor.registerEmailForm;
 }
 
 export function selectSession(state: RootState) {
