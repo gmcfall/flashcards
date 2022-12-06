@@ -1,6 +1,13 @@
-import { FirestoreLibrary, LIBRARIES } from "./types";
+import { PayloadAction } from "@reduxjs/toolkit";
+import { doc, getFirestore, onSnapshot, setDoc, Unsubscribe } from "firebase/firestore";
+import libraryReceive from "../store/actions/libraryReceive";
+import { AppDispatch, RootState } from "../store/store";
 import firebaseApp from "./firebaseApp";
-import { doc, getFirestore, setDoc } from "firebase/firestore";
+import { ClientLibrary, DeckApp, FirestoreLibrary, LIBRARIES, ResourceRef } from "./types";
+
+export function doLibraryReceive(editor: DeckApp, action: PayloadAction<ClientLibrary>) {
+    editor.library = action.payload;
+}
 
 /**
  * Create an empty FirestoreLibrary object. 
@@ -25,3 +32,45 @@ export async function saveLibrary(userUid: string, lib: FirestoreLibrary) {
 
     return setDoc(docRef, lib);
 }
+
+export function selectLibrary(state: RootState) {
+    return state.editor.library;
+}
+
+function toClientLibrary(lib: FirestoreLibrary) : ClientLibrary {
+    const firestoreResources = Object.values(lib.resources) as ResourceRef[];
+
+    const resources = firestoreResources.sort((a, b) => a.name.localeCompare(b.name))
+
+    return {resources}
+}
+
+let unsubscribe: Unsubscribe | null = null;
+let libraryUser: string | null = null;
+export function librarySubscribe(dispatch: AppDispatch, userUid: string) {
+
+    if (libraryUser === userUid) {
+        // Already subscribed
+        return;
+    }
+    if (unsubscribe) {
+        unsubscribe();
+    }
+
+    const db = getFirestore(firebaseApp);
+    const docRef = doc(db, LIBRARIES, userUid);
+
+    unsubscribe = onSnapshot(docRef, (document) => {
+        const data = document.data();
+        const lib = toClientLibrary(data as FirestoreLibrary);
+        dispatch(libraryReceive(lib));
+    })
+}
+
+export function libraryUnsubscribe() {
+    if (unsubscribe) {
+        unsubscribe();
+        libraryUser = null;
+    }
+}
+

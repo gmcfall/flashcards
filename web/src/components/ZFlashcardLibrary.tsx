@@ -1,7 +1,12 @@
-import { Box, Typography } from "@mui/material";
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
+import { Box, CircularProgress, Typography, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks";
+import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
+import { librarySubscribe, libraryUnsubscribe, selectLibrary } from '../model/library';
 import ZAlert from "./ZAlert";
 import ZAuthToolsWithSessionCheck from "./ZAuthToolsWithSessionCheck";
-import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
+import { useEffect } from "react";
+import { ClientLibrary } from '../model/types';
 
 
 function ZFlashcardLibraryHeader() {
@@ -24,12 +29,69 @@ function ZFlashcardLibraryHeader() {
     )
 }
 
+interface LibraryContentProps {
+    lib: ClientLibrary
+}
+function ZLibraryResourceList(props: LibraryContentProps) {
+    const {lib} = props;
+
+    return (
+        <List>
+            {
+                lib.resources.map(resource => (
+                    <ListItem key={resource.id}>
+                        <ListItemButton >
+                            <ListItemText primary={resource.name}/>
+                        </ListItemButton>
+                    </ListItem>
+                ))
+            }
+        </List>
+    )
+
+}
+
+function ZLibraryContent() {
+    const dispatch = useAppDispatch();
+    const session = useAppSelector(selectSession);
+    const registrationState = useAppSelector(selectRegistrationState);
+    const signInState = useAppSelector(selectSigninState);
+
+    const lib = useAppSelector(selectLibrary);
+
+    const userUid = session?.user.uid;
+
+    useEffect(() => {
+        if (userUid) {
+            librarySubscribe(dispatch, userUid);
+        }
+
+        return () => {
+            libraryUnsubscribe();
+        }
+
+    }, [dispatch, userUid])
+
+    if (!session && !registrationState && !signInState && !lib) {
+       return <CircularProgress/>
+    }
+
+    if (!lib) {
+        return null;
+    }
+
+    return <ZLibraryResourceList lib={lib}/>;
+}
+
 
 export default function ZFlashcardLibrary() {
 
     return (
         <Box sx={{display: "flex", flexDirection: "column"}}>
             <ZFlashcardLibraryHeader/>
+            <Box sx={{display: "flex", flexDirection: "column", alignContent: "center"}}>
+                <ZLibraryContent/>
+            </Box>
         </Box>
     )
 }

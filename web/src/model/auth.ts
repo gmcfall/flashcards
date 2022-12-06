@@ -162,6 +162,14 @@ export function createSession(uid: string, providers: string[], displayName: str
 
 export function doAuthSessionBegin(editor: DeckApp, action: PayloadAction<Session>) {
     editor.session = action.payload;
+    cancelRegisterAndSigninDialogs(editor);
+}
+
+function cancelRegisterAndSigninDialogs(editor: DeckApp) {
+    delete editor.signInState;
+    delete editor.registerEmailForm;
+    delete editor.authRegisterState;
+    delete editor.passwordSigninForm;
 }
 
 export function doAuthRegisterEmailFormSubmitFulfilled(editor: DeckApp, action: PayloadAction<Session>) {

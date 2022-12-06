@@ -214,6 +214,9 @@ export interface DeckApp {
     /** Data used to display a transient Alert */
     alertData?: AlertData;
 
+    /** The user's Library of resources */
+    library?: ClientLibrary;
+
     /** The current deck being edited */
     deck?: Deck
 }
