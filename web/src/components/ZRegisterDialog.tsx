@@ -300,7 +300,14 @@ function ZRegisterEmailVerifyAnnounce() {
 }
 
 interface RegisterDialogProps {
-    setOpen: (value: boolean) => void;
+    setOpen: (value: boolean) => void,
+
+    /**
+     * When true, the dialog will not render a cancel button in the header
+     * and it will not be possible to close the dialog by clicking the background
+     * or pressing [Esc].
+     */
+    disableCancel?: boolean
 }
 
 
@@ -321,7 +328,7 @@ function dialogContent(state: RegisterState) {
 }
 
 export default function ZRegisterDialog(props: RegisterDialogProps) {
-    const {setOpen} = props;
+    const {setOpen, disableCancel} = props;
 
     const registerState = useAppSelector(selectRegistrationState);
     if (!registerState) {
@@ -335,11 +342,12 @@ export default function ZRegisterDialog(props: RegisterDialogProps) {
         />
     )
 
+
     return (
         <ZDialogWithTitle 
             open={true}
             title="Create an Account"
-            setOpen={setOpen}
+            setOpen={disableCancel ? undefined : setOpen}
             actions={actions}
         >
            {dialogContent(registerState)}

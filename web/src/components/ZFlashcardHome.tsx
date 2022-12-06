@@ -1,16 +1,13 @@
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import SearchIcon from '@mui/icons-material/Search';
 import { Box, Button, FormControl, InputAdornment, Paper, TextField, Typography } from "@mui/material";
 import { styled } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
-import { useAppDispatch, useAppSelector } from '../hooks/hooks';
+import { useAppSelector } from '../hooks/hooks';
 import { selectSession } from '../model/auth';
-import authRegisterCancel from '../store/actions/authRegisterCancel';
+import { LIBRARY } from '../model/routes';
 import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
-import ZRegisterDialog from './ZRegisterDialog';
-import ZSigninDialog from './ZSigninDialog';
-import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import { LIBRARY } from '../model/routes';
 
 const CenteredPaper = styled(Paper)(({theme}) => ({
     ...theme.typography.body1,
@@ -35,15 +32,6 @@ function ZHomeHeader() {
 }
 
 export default function ZFlashcardHome() {
-
-    const dispatch = useAppDispatch();
-
-
-    function handleSetRegisterDialogOpen(isOpen: boolean) {
-        if (!isOpen) {
-            dispatch(authRegisterCancel())
-        }
-    }
    
     return (
         <CenteredPaper elevation={0}>
@@ -78,8 +66,6 @@ export default function ZFlashcardHome() {
                     
                 </Box>
             </FormControl>
-            <ZRegisterDialog setOpen={handleSetRegisterDialogOpen}/>
-            <ZSigninDialog/>
         </CenteredPaper>
     )
 }

@@ -176,8 +176,15 @@ function ZSigninActions(props: SigninActionsProps) {
     }
 }
 
-export default function ZSigninDialog() {
+interface SigninDialogProps {
+    /**
+     * An optional callback that fires when the dialog closes
+     */
+    onClose?: () => void
+}
 
+export default function ZSigninDialog(props: SigninDialogProps) {
+    const {onClose} = props;
     const dispatch = useAppDispatch();
     const signinState = useAppSelector(selectSigninState);
 
@@ -188,6 +195,9 @@ export default function ZSigninDialog() {
     function setOpen(value: boolean) {
         if (!value) {
             dispatch(authSigninCancel());
+            if (onClose) {
+                onClose();
+            }
         }
     }
 

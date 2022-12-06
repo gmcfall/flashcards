@@ -18,9 +18,13 @@ const BootstrapDialog = styled(Dialog)(({ theme }) => ({
 
 
 export interface DialogHeaderProps {
-    children: React.ReactNode;
-    closeLabel?: string;
-    onClose: () => void;
+    children: React.ReactNode,
+    closeLabel?: string,
+    /** 
+     * Callback to close the dialog by clicking a close button in the header.
+     * If undefined, the button is omitted
+     */
+    onClose?: () => void
 }
 
 export function ZDialogHeader(props: DialogHeaderProps) {
@@ -31,18 +35,21 @@ export function ZDialogHeader(props: DialogHeaderProps) {
     return (
         <DialogTitle sx={{margin: 0, padding: 2}}>
             {children}
-            <IconButton
-                aria-label={closeLabelValue}
-                onClick={onClose}
-                sx={{
-                    position: 'absolute',
-                    right: 8,
-                    top: 8,
-                    color: (theme) => theme.palette.grey[500],
-                }}
-            >
-                <CloseIcon/>
-            </IconButton>
+            {onClose && (
+                <IconButton
+                    aria-label={closeLabelValue}
+                    onClick={onClose}
+                    sx={{
+                        position: 'absolute',
+                        right: 8,
+                        top: 8,
+                        color: (theme) => theme.palette.grey[500],
+                    }}
+                >
+                    <CloseIcon/>
+                </IconButton>
+            )}
+            
         </DialogTitle>
     )
 }
@@ -52,23 +59,23 @@ export interface DialogWithTitleProps {
     children?: React.ReactNode | React.ReactNode[];
     actions?: React.ReactNode;
     open: boolean;
-    setOpen: (value: boolean) => void;
+    setOpen?: (value: boolean) => void;
 }
 
 export default function ZDialogWithTitle(props: DialogWithTitleProps) {
-    const {title, children, actions, open, setOpen} = props;
+    const {
+        title, children, actions, open, setOpen
+    } = props;
 
-    function handleClose() {
-        setOpen(false);
-    }
+    const dialogClose = setOpen ? () => setOpen(false) : undefined;
 
     return (
         <BootstrapDialog
             open={open}
-            onClose={handleClose}
+            onClose={dialogClose}
         >
             <ZDialogHeader
-                onClose={handleClose}
+                onClose={dialogClose}
             >
                 {title}
             </ZDialogHeader>
