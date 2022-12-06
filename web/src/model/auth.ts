@@ -18,6 +18,14 @@ export function doAuthSigninBegin(editor: DeckApp, action: Action) {
     delete editor.registerEmailForm;
 }
 
+export function doAccountDeleteEnd(editor: DeckApp, action: PayloadAction<boolean>) {
+    delete editor.session;
+    editor.alertData = {
+        message: "Your account has been deleted",
+        severity: INFO
+    }
+}
+
 export function doAuthRegisterEnd(editor: DeckApp, action: PayloadAction<Session>) {
     editor.session = action.payload;
     alertRegisterEnd(editor);

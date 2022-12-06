@@ -1,6 +1,6 @@
 import { createReducer } from "@reduxjs/toolkit";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
-import { doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
+import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
 import { doErrorDisplay } from "../../model/errorHandler";
 import { DeckApp } from "../../model/types";
 import accountDeletePasswordBegin from "../actions/accountDeletePasswordBegin";
@@ -42,13 +42,13 @@ const initialState: DeckApp = {}
 const deckEditorReducer = createReducer(initialState, builder => {
     builder
         .addCase(accountDeleteEmailChange, doAccountDeleteEmailChange)
-        .addCase(accountDeleteFacebook.fulfilled, doAuthSessionEnd)
-        .addCase(accountDeleteGoogle.fulfilled, doAuthSessionEnd)
+        .addCase(accountDeleteFacebook.fulfilled, doAccountDeleteEnd)
+        .addCase(accountDeleteGoogle.fulfilled, doAccountDeleteEnd)
         .addCase(accountDeletePasswordBegin, doAccountDeletePasswordBegin)
         .addCase(accountDeletePasswordChange, doAccountDeletePasswordChange)
-        .addCase(accountDeletePasswordSubmit.fulfilled, doAuthSessionEnd)
+        .addCase(accountDeletePasswordSubmit.fulfilled, doAccountDeleteEnd)
         .addCase(accountDeletePasswordSubmit.rejected, doErrorDisplay)
-        .addCase(accountDeleteTwitter.fulfilled, doAuthSessionEnd)
+        .addCase(accountDeleteTwitter.fulfilled, doAccountDeleteEnd)
         .addCase(accountDisplayNameUpdate.fulfilled, doAccountDisplayNameUpdate)
         .addCase(accountDisplayNameUpdate.rejected, doErrorDisplay)
         .addCase(alertRemove, doAlertRemove)
