@@ -14,7 +14,6 @@ export default function authListen() {
             const auth = getAuth(firebaseApp);
             unsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    console.log({user});
                     const uid = user.uid;
                     const displayName = user.displayName || ANONYMOUS;
                     const providers = user.providerData.map(data => data.providerId);
