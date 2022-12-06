@@ -1,8 +1,9 @@
 import { AuthProvider, getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
-import { createSession } from "../../model/auth";
+import { createSession, getRequiresVerification } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
+import { ANONYMOUS } from "../../model/types";
 
 
 const authRegisterGoogle = createAppAsyncThunk(
@@ -27,10 +28,11 @@ export async function providerSignIn(provider: AuthProvider) {
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
     const uid = user.uid;
-    const displayName = user.displayName || undefined;
+    const displayName = user.displayName || ANONYMOUS;
     const providers = user.providerData.map(data => data.providerId);
+    const requiresVerification = getRequiresVerification(user);
 
-    return createSession(uid, providers, displayName);
+    return createSession(uid, providers, displayName, requiresVerification);
 }
 
 

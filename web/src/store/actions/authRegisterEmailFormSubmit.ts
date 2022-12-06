@@ -1,6 +1,6 @@
 import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, updateProfile } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
-import { createSession } from "../../model/auth";
+import { createSession, getRequiresVerification } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
 import { RegisterEmailData } from "../../model/types";
@@ -20,7 +20,8 @@ const authRegisterEmailFormSubmit = createAppAsyncThunk(
             await updateProfile(user, {displayName});
             await sendEmailVerification(user);
 
-            const session = createSession(user.uid, [], displayName);
+            const requiresVerification = getRequiresVerification(user);
+            const session = createSession(user.uid, [], displayName, requiresVerification);
 
             return session;
             

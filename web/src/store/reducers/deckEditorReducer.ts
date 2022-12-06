@@ -1,6 +1,6 @@
 import { createReducer } from "@reduxjs/toolkit";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
-import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
+import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEmailVerified, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
 import { doErrorDisplay } from "../../model/errorHandler";
 import { DeckApp } from "../../model/types";
 import accountDeletePasswordBegin from "../actions/accountDeletePasswordBegin";
@@ -34,8 +34,10 @@ import authSigninPasswordChangeEmail from "../actions/authinSigninPasswordChange
 import authSigninPasswordChangePassword from "../actions/authSigninPasswordChangePassword";
 import authSigninPasswordSubmit from "../actions/authSigninPasswordSubmit";
 import alertRemove from "../actions/alertRemove";
-import { doAlertRemove } from "../../model/alert";
+import { doAlertPost, doAlertRemove } from "../../model/alert";
 import accountDeletePasswordSubmit from "../actions/accountDeletePasswordSubmit";
+import alertPost from "../actions/alertPost";
+import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
 
 const initialState: DeckApp = {}
 
@@ -52,12 +54,14 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(accountDisplayNameUpdate.fulfilled, doAccountDisplayNameUpdate)
         .addCase(accountDisplayNameUpdate.rejected, doErrorDisplay)
         .addCase(alertRemove, doAlertRemove)
+        .addCase(alertPost, doAlertPost)
         .addCase(authRegisterBegin, doAuthRegisterBegin)
         .addCase(authRegisterCancel, doAuthRegisterCancel)
         .addCase(authRegisterEmailChange, doAuthRegisterEmailChange)
         .addCase(authRegisterEmailFormChange, doAuthRegisterEmailFormChange)
         .addCase(authRegisterEmailFormSubmit.fulfilled, doAuthRegisterEmailFormSubmitFulfilled)
         .addCase(authRegisterEmailFormSubmit.rejected, doErrorDisplay)
+        .addCase(authRegisterEmailVerified, doAuthRegisterEmailVerified)
         .addCase(authRegisterFacebook.fulfilled, doAuthRegisterEnd)
         .addCase(authRegisterFacebook.pending, doAuthRegisterCancel)
         .addCase(authRegisterFacebook.rejected, doErrorDisplay)

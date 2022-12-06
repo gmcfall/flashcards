@@ -62,13 +62,36 @@ export const SIGNIN_BEGIN = 'SIGNIN_BEGIN';
 export const SIGNIN_PASSWORD = 'SIGNIN_PASSWORD';
 
 export interface MinimalUser {
+    /** The firebase unique identifier for the user */
     uid: string,
+
+    /** The user's real name or an alias suitable for display to other users */
     displayName: string,
-    providers: string[]
+
+    /**
+     * The list of identity providers for the user.
+     * Possible values include:
+     * - google.com    (GoogleAuthProvider.PROVIDER_ID)
+     * - facebook.com  (FacebookAuthProvider.PROVIDER_ID)
+     * - twitter.com   (TwitterAuthProvider.PROVIDER_ID)
+     * - password      (EmailAuthProvider.PROVIDER_ID)
+     */
+    providers: string[],
+
+    /** 
+     * A flag, which if true indicates that the user registered
+     * with (email, password) credentials but has not yet verified
+     * his or her email. 
+     */
+    requiresVerification?: boolean
 }
 export interface Session {
     user: MinimalUser
 }
+/**
+ * The default `displayName` for users
+ */
+export const ANONYMOUS = "Anonymous";
 
 export interface RegisterEmailForm {
     email: string,

@@ -6,6 +6,9 @@ export function doAlertRemove(editor: DeckApp, action: PayloadAction) {
     delete editor.alertData;
 }
 
+export function doAlertPost(editor: DeckApp, action: PayloadAction<AlertData>) {
+    editor.alertData = action.payload;
+}
 export function setAlert(editor: DeckApp, data: AlertData) {
     editor.alertData = data;
 }
