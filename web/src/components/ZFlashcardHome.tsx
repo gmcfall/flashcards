@@ -91,9 +91,9 @@ function ZLibraryLink() {
     }
     return (
             <Link to={LIBRARY}>
-            <Box sx={{display: "flex", alignItems: "center"}}>
-                <LocalLibraryIcon sx={{marginRight: '0.5em'}}/> <span>My Library</span>
-            </Box>
+                <Box sx={{display: "flex", alignItems: "center"}}>
+                    <LocalLibraryIcon sx={{marginRight: '0.5em'}}/> <span>My Library</span>
+                </Box>
             </Link>
     )
 
