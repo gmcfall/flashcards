@@ -18,6 +18,8 @@ const authSigninPasswordSubmit = createAppAsyncThunk(
             const providers = user.providerData.map(data => data.providerId);
             const displayName = user.displayName || "Anonymous";
 
+            console.log('emailVerified', user.emailVerified);
+
             const session = createSession(user.uid, providers, displayName);
             return session;
         } catch (error) {

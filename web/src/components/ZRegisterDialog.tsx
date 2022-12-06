@@ -1,8 +1,8 @@
 import EmailIcon from '@mui/icons-material/Email';
-import { Alert, Box, Button, TextField } from "@mui/material";
+import { Alert, Box, Button, TextField, Typography } from "@mui/material";
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { selectRegisterEmailForm, selectRegistrationState } from "../model/auth";
-import { RegisterEmailData, RegisterEmailForm, RegisterState, REGISTER_BEGIN, REGISTER_EMAIL } from "../model/types";
+import { RegisterEmailData, RegisterEmailForm, RegisterState, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_VERIFY } from "../model/types";
 import authRegisterEmailChange from '../store/actions/authRegisterEmailChange';
 import authRegisterEmailFormChange from '../store/actions/authRegisterEmailFormChange';
 import authRegisterEmailFormSubmit from '../store/actions/authRegisterEmailFormSubmit';
@@ -172,11 +172,12 @@ function ZRegisterEmailForm() {
     )
 }
 
-interface EmailFormActionsProps {
+
+interface SetOpenAsProps {
     setOpen: (value: boolean) => void
 }
 
-function ZEmailFormActions(props: EmailFormActionsProps) {
+function ZEmailFormActions(props: SetOpenAsProps) {
 
     const {setOpen} = props;
 
@@ -224,6 +225,17 @@ function ZEmailFormActions(props: EmailFormActionsProps) {
     )
 }
 
+function ZOkButton(props: SetOpenAsProps) {
+    const {setOpen} = props;
+    function handleClick() {
+        setOpen(false);
+    }
+
+    return (
+        <Button onClick={handleClick}>Ok</Button>
+    )
+}
+
 interface DialogActionsProps {
     state: RegisterState,
     setOpen: (value: boolean) => void
@@ -236,9 +248,34 @@ function ZDialogActions(props: DialogActionsProps) {
         case REGISTER_EMAIL: 
             return <ZEmailFormActions setOpen={setOpen}/>
 
+        case REGISTER_EMAIL_VERIFY:
+            return <ZOkButton setOpen={setOpen}/>
+
         default:
             return null;
     }
+}
+
+function ZRegisterEmailVerifyAnnounce() {
+    return (
+        <Box>
+            <Alert severity='info'>
+                <Box sx={{display: 'flex', flexDirection: 'column', gap: '1em'}}>
+                    <Typography>
+                        Almost done! You need to verify your email address.
+                    </Typography>
+                    <Typography>
+                        We sent you an email containing a link to complete 
+                        the verification process. Simply follow the link.
+                    </Typography>
+                    <Typography>
+                        If you don't find the email in your inbox, check your
+                        spam folder.
+                    </Typography>
+                </Box>
+            </Alert>
+        </Box>
+    )
 }
 
 interface RegisterDialogProps {
@@ -253,6 +290,9 @@ function dialogContent(state: RegisterState) {
 
         case REGISTER_EMAIL:
             return <ZRegisterEmailForm/>
+
+        case REGISTER_EMAIL_VERIFY:
+            return <ZRegisterEmailVerifyAnnounce/>
 
         default:
             return null;

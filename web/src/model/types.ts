@@ -36,9 +36,26 @@ export interface ErrorInfo {
     cause?: string
 }
 
-export type RegisterState =  'REGISTER_BEGIN' | 'REGISTER_EMAIL';
+export type RegisterState =  'REGISTER_BEGIN' | 'REGISTER_EMAIL' | 'REGISTER_EMAIL_VERIFY';
+/**
+ * The state at the beginning of the registration workflow.
+ * This is where the user must choose an identity provider.
+ */
 export const REGISTER_BEGIN = 'REGISTER_BEGIN';
+
+/**
+ * The state immediately after the user chooses to use the "password" identity
+ * provider. At this point the form for entering the `email`, `password` and
+ * `displayName` is rendered.
+ */
 export const REGISTER_EMAIL = 'REGISTER_EMAIL';
+
+/**
+ * The state immediately after the user submits the `email`, `password` and
+ * `displayName`. At this point, the user is presented with a notice that
+ * the verification email was sent.
+ */
+export const REGISTER_EMAIL_VERIFY = 'REGISTER_EMAIL_VERIFY';
 
 export type SigninState = 'SIGNIN_BEGIN' | 'SIGNIN_PASSWORD';
 export const SIGNIN_BEGIN = 'SIGNIN_BEGIN';

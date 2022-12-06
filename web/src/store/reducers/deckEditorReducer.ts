@@ -1,6 +1,6 @@
 import { createReducer } from "@reduxjs/toolkit";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
-import { doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
+import { doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
 import { doErrorDisplay } from "../../model/errorHandler";
 import { DeckApp } from "../../model/types";
 import accountDeletePasswordBegin from "../actions/accountDeletePasswordBegin";
@@ -35,6 +35,7 @@ import authSigninPasswordChangePassword from "../actions/authSigninPasswordChang
 import authSigninPasswordSubmit from "../actions/authSigninPasswordSubmit";
 import alertRemove from "../actions/alertRemove";
 import { doAlertRemove } from "../../model/alert";
+import accountDeletePasswordSubmit from "../actions/accountDeletePasswordSubmit";
 
 const initialState: DeckApp = {}
 
@@ -48,6 +49,8 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(accountDeletePasswordBegin, doAccountDeletePasswordBegin)
         .addCase(accountDeleteEmailChange, doAccountDeleteEmailChange)
         .addCase(accountDeletePasswordChange, doAccountDeletePasswordChange)
+        .addCase(accountDeletePasswordSubmit.fulfilled, doAuthSessionEnd)
+        .addCase(accountDeletePasswordSubmit.rejected, doErrorDisplay)
         .addCase(alertRemove, doAlertRemove)
         .addCase(authRegisterBegin, doAuthRegisterBegin)
         .addCase(authRegisterCancel, doAuthRegisterCancel)
@@ -63,8 +66,7 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(authRegisterTwitter.pending, doAuthRegisterCancel)
         .addCase(authRegisterTwitter.fulfilled, doAuthSessionBegin)
         .addCase(authRegisterTwitter.rejected, doErrorDisplay)
-        .addCase(authRegisterEmailFormSubmit.pending, doAuthRegisterCancel)
-        .addCase(authRegisterEmailFormSubmit.fulfilled, doAuthSessionBegin)
+        .addCase(authRegisterEmailFormSubmit.fulfilled, doAuthRegisterEmailFormSubmitFulfilled)
         .addCase(authRegisterEmailFormSubmit.rejected, doErrorDisplay)
         .addCase(authRegisterEmailChange, doAuthRegisterEmailChange)
         .addCase(authRegisterPasswordChange, doAuthRegisterPasswordChange)

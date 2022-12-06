@@ -1,5 +1,5 @@
 
-import { Button, Typography, Box, TextField } from "@mui/material";
+import { Button, Typography, Box, TextField, Alert } from "@mui/material";
 import { EmailAuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { useState, useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
@@ -201,6 +201,12 @@ export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) 
     }
     const actions = <ZAccountDeleteActions session={session} setOpen={setOpen}/>
 
+    if (!open) {
+        return null;
+    }
+    
+    console.trace('ZAccountDeleteConfirm')
+
     return (
         <ZDialogWithTitle
             title="Delete Account"
@@ -216,9 +222,9 @@ export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) 
                 <ZSignInOptions session={session} setIsError={setIsError}/>
                 </>
             ) : (
-                <Typography gutterBottom>
+                <Alert severity='error'>
                     Oops! Something went wrong.  Try signing out and signing back in again.
-                </Typography>
+                </Alert>
             )}
         </ZDialogWithTitle>
     )

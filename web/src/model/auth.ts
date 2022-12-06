@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { Action } from "redux";
 import { RootState } from "../store/store";
-import { DeckApp, RegisterEmailForm, RegisterState, REGISTER_BEGIN, REGISTER_EMAIL, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "./types";
+import { DeckApp, RegisterEmailForm, RegisterState, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_VERIFY, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "./types";
 
 export function doAuthRegisterBegin(editor: DeckApp, action: Action<string>) {
     editor.authRegisterState = REGISTER_BEGIN;
@@ -14,6 +14,13 @@ export function doAuthRegisterCancel(editor: DeckApp, action: Action<string>) {
 
 export function doAuthSigninBegin(editor: DeckApp, action: Action) {
     editor.signInState = SIGNIN_BEGIN;
+    delete editor.authRegisterState;
+    delete editor.registerEmailForm;
+}
+
+export function doAuthRegisterEnd(editor: DeckApp, action: PayloadAction<Session>) {
+    editor.session = action.payload;
+
 }
 
 export function doAuthSigninCancel(editor: DeckApp, action: Action) {
@@ -117,4 +124,9 @@ export function createSession(uid: string, providers: string[], displayName: str
 
 export function doAuthSessionBegin(editor: DeckApp, action: PayloadAction<Session>) {
     editor.session = action.payload;
+}
+
+export function doAuthRegisterEmailFormSubmitFulfilled(editor: DeckApp, action: PayloadAction<Session>) {
+    editor.session = action.payload;
+    editor.authRegisterState = REGISTER_EMAIL_VERIFY;
 }

@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, getAuth, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, sendEmailVerification, updateProfile } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createSession } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
@@ -18,6 +18,7 @@ const authRegisterEmailFormSubmit = createAppAsyncThunk(
             const user = userCredential.user;
 
             await updateProfile(user, {displayName});
+            await sendEmailVerification(user);
 
             const session = createSession(user.uid, [], displayName);
 
