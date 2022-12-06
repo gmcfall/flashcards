@@ -204,8 +204,6 @@ export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) 
     if (!open) {
         return null;
     }
-    
-    console.trace('ZAccountDeleteConfirm')
 
     return (
         <ZDialogWithTitle

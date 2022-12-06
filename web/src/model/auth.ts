@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { Action } from "redux";
 import { RootState } from "../store/store";
-import { DeckApp, RegisterEmailForm, RegisterState, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_VERIFY, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "./types";
+import { DeckApp, INFO, RegisterEmailForm, RegisterState, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_VERIFY, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "./types";
 
 export function doAuthRegisterBegin(editor: DeckApp, action: Action<string>) {
     editor.authRegisterState = REGISTER_BEGIN;
@@ -20,7 +20,14 @@ export function doAuthSigninBegin(editor: DeckApp, action: Action) {
 
 export function doAuthRegisterEnd(editor: DeckApp, action: PayloadAction<Session>) {
     editor.session = action.payload;
+    alertRegisterEnd(editor);
+}
 
+function alertRegisterEnd(editor: DeckApp) {
+    editor.alertData = {
+        message: "Your account has been created",
+        severity: INFO
+    }
 }
 
 export function doAuthSigninCancel(editor: DeckApp, action: Action) {
