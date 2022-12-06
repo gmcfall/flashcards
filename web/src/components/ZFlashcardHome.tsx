@@ -25,12 +25,16 @@ const buttonBox = {
 
 function ZHomeHeader() {
     return (
-        <Paper>
-            <Box sx={{display: 'flex', minHeight: "3em"}}>
-                <ZAlert/>
-                <ZAuthTools/>
-            </Box>
-        </Paper>
+        <Box sx={{
+            display: 'flex', 
+            minHeight: "3em", 
+            borderBottomWidth: "1px",
+            borderBottomStyle: "solid",
+            borderBottomColor: "grey.400",
+        }}>
+            <ZAlert/>
+            <ZAuthTools/>
+        </Box>
     )
 }
 
