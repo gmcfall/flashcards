@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import ZAuth from './components/ZAuth';
 import ZDeckEditor from './components/ZDeckEditor';
 import ZFlashcardHome from './components/ZFlashcardHome';
+import ZFlashcardLibrary from './components/ZFlashcardLibrary';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import store from './store/store';
@@ -35,6 +36,7 @@ root.render(
                 <Route path=":id/edit" element={<ZDeckEditor/>}/>
               </Route>
             </Route>
+            <Route path="/library" element={<ZFlashcardLibrary/>}/>
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
