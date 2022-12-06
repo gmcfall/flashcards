@@ -6,13 +6,12 @@ import { reauthenticateWithProvider } from "./accountDeleteGoogle";
 
 const accountDeleteFacebook = createAppAsyncThunk(
     "account/delete/facebook",
-    async (callBack: (ok: boolean) => void, thunkApi) => {
+    async (_, thunkApi) => {
         try {
-           await reauthenticateWithProvider(callBack, new FacebookAuthProvider());
+           await reauthenticateWithProvider(new FacebookAuthProvider());
            return true;
 
         } catch (error) {
-            callBack(false);
             console.log(error);
             
             return thunkApi.rejectWithValue(createErrorInfo(

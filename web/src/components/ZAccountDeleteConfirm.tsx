@@ -1,43 +1,45 @@
 
-import { Button, Typography, Box, TextField, Alert } from "@mui/material";
+import { Box, Button, TextField, Typography } from "@mui/material";
 import { EmailAuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectDeleteAccountForm } from "../model/account";
 import { selectSession } from "../model/auth";
 import { Session } from "../model/types";
-import accountDeletePasswordBegin from "../store/actions/accountDeletePasswordBegin";
 import accountDeleteEmailChange from "../store/actions/accountDeleteEmailChange";
 import accountDeleteFacebook from "../store/actions/accountDeleteFacebook";
 import accountDeleteGoogle from "../store/actions/accountDeleteGoogle";
+import accountDeletePasswordBegin from "../store/actions/accountDeletePasswordBegin";
 import accountDeletePasswordChange from "../store/actions/accountDeletePasswordChange";
+import accountDeletePasswordSubmit from "../store/actions/accountDeletePasswordSubmit";
 import accountDeleteTwitter from "../store/actions/accountDeleteTwitter";
 import ZDialogWithTitle from "./ZDialogWithTitle";
 import ZFacebookIcon from "./ZFacebookIcon";
 import ZGoogleIcon from "./ZGoogleIcon";
 import ZTwitterIcon from "./ZTwitterIcon";
-import accountDeletePasswordSubmit from "../store/actions/accountDeletePasswordSubmit";
 
 interface AccountDeleteConfirmProps {
     open: boolean;
     setOpen: (value: boolean) => void;
 }
 
+interface SetOpenProps {
+    setOpen: (value: boolean) => void;
+}
+
 interface SignInOptionsProps {
     session: Session,
-    setIsError: (value: boolean) => void
+    setOpen: (value: boolean) => void;
 }
 
-interface ReauthenticateProps {
-    setIsError: (value: boolean) => void
-}
 
-function ZGoogleSignIn(props: ReauthenticateProps) {
-    const {setIsError} = props;
+function ZGoogleSignIn(props: SetOpenProps) {
+    const {setOpen} = props;
     const dispatch = useAppDispatch();
 
     function handleProceed() {
-        dispatch(accountDeleteGoogle(setIsError))
+        dispatch(accountDeleteGoogle())
+        setOpen(false);
     }
     return (
         <Button
@@ -49,12 +51,13 @@ function ZGoogleSignIn(props: ReauthenticateProps) {
    )
 }
 
-function ZFacebookSignIn(props: ReauthenticateProps) {
-    const {setIsError} = props;
+function ZFacebookSignIn(props: SetOpenProps) {
+    const {setOpen} = props;
     const dispatch = useAppDispatch();
 
     function handleProceed() {
-        dispatch(accountDeleteFacebook(setIsError))
+        dispatch(accountDeleteFacebook())
+        setOpen(false);
     }
     return (
         <Button
@@ -66,12 +69,13 @@ function ZFacebookSignIn(props: ReauthenticateProps) {
    )
 }
 
-function ZTwitterSignIn(props: ReauthenticateProps) {
-    const {setIsError} = props;
+function ZTwitterSignIn(props: SetOpenProps) {
+    const {setOpen} = props;
     const dispatch = useAppDispatch();
 
     function handleProceed() {
-        dispatch(accountDeleteTwitter(setIsError))
+        dispatch(accountDeleteTwitter())
+        setOpen(false);
     }
     return (
         <Button
@@ -131,19 +135,19 @@ function chooseProvider(session: Session) {
 }
 
 function ZSignInOptions(props: SignInOptionsProps) {
-    const {session, setIsError} = props;
+    const {session, setOpen} = props;
 
     const providerId = chooseProvider(session);
 
     switch (providerId) {
         case GoogleAuthProvider.PROVIDER_ID:
-             return <ZGoogleSignIn setIsError={setIsError}/>
+             return <ZGoogleSignIn setOpen={setOpen}/>
 
         case FacebookAuthProvider.PROVIDER_ID:
-            return <ZFacebookSignIn setIsError={setIsError}/>
+            return <ZFacebookSignIn setOpen={setOpen}/>
 
         case TwitterAuthProvider.PROVIDER_ID:
-            return <ZTwitterSignIn setIsError={setIsError}/>
+            return <ZTwitterSignIn setOpen={setOpen}/>
 
         case EmailAuthProvider.PROVIDER_ID:
             return <ZReauthenticateEmail/>
@@ -180,6 +184,7 @@ function ZAccountDeleteActions(props: AccountDeleteActionsProps) {
         if (form) {
             dispatch(accountDeletePasswordSubmit(form))
         }
+        setOpen(false);
     }
 
     return (
@@ -193,7 +198,6 @@ function ZAccountDeleteActions(props: AccountDeleteActionsProps) {
 
 export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) {
     const {open, setOpen} = props;
-    const [isError, setIsError] = useState<boolean>(false);
 
     const session = useAppSelector(selectSession);
     if (!session) {
@@ -212,18 +216,10 @@ export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) 
             setOpen={setOpen}
             actions={actions}
         >
-            {!isError && session ? (
-                <>
-                <Typography gutterBottom>
-                    For security reasons, please sign in again before we delete your account.
-                </Typography>
-                <ZSignInOptions session={session} setIsError={setIsError}/>
-                </>
-            ) : (
-                <Alert severity='error'>
-                    Oops! Something went wrong.  Try signing out and signing back in again.
-                </Alert>
-            )}
+            <Typography gutterBottom>
+                For security reasons, please sign in again before we delete your account.
+            </Typography>
+            <ZSignInOptions session={session} setOpen={setOpen}/>
         </ZDialogWithTitle>
     )
      

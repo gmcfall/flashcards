@@ -5,13 +5,12 @@ import { reauthenticateWithProvider } from "./accountDeleteGoogle";
 
 const accountDeleteTwitter = createAppAsyncThunk(
     "account/delete/twitter",
-    async (callBack: (ok: boolean) => void, thunkApi) => {
+    async (_, thunkApi) => {
         try {
-           await reauthenticateWithProvider(callBack, new TwitterAuthProvider());
+           await reauthenticateWithProvider(new TwitterAuthProvider());
            return true;
 
         } catch (error) {
-            callBack(false);
             
             return thunkApi.rejectWithValue(createErrorInfo(
                 "An error occurred while deleting your account",

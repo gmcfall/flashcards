@@ -6,13 +6,12 @@ import firebaseApp from "../../model/firebaseApp";
 
 const accountDeleteGoogle = createAppAsyncThunk(
     "account/delete/google",
-    async (callBack: (ok: boolean) => void, thunkApi) => {
+    async (_, thunkApi) => {
         try {
-           await reauthenticateWithProvider(callBack, new GoogleAuthProvider());
+           await reauthenticateWithProvider(new GoogleAuthProvider());
            return true;
 
         } catch (error) {
-            callBack(false);
             console.log(error);
             return thunkApi.rejectWithValue(createErrorInfo(
                 "An error occurred while deleting your account",
@@ -24,7 +23,7 @@ const accountDeleteGoogle = createAppAsyncThunk(
 
 export default accountDeleteGoogle;
 
-export async function reauthenticateWithProvider(callBack: (ok: boolean) => void, provider: AuthProvider) {
+export async function reauthenticateWithProvider(provider: AuthProvider) {
     const auth = getAuth(firebaseApp);
     const user = auth.currentUser;
     if (!user) {
@@ -33,6 +32,4 @@ export async function reauthenticateWithProvider(callBack: (ok: boolean) => void
     const result = await reauthenticateWithPopup(user, provider);
     const freshUser = result.user;
     await deleteUser(freshUser);
-
-    callBack(true);
 }
