@@ -12,6 +12,7 @@ import authRegisterNameChange from '../store/actions/authRegisterNameChange';
 import authRegisterPasswordChange from '../store/actions/authRegisterPasswordChange';
 import authRegisterStateUpdate from '../store/actions/authRegisterStateUpdate';
 import authRegisterTwitter from '../store/actions/authRegisterTwitter';
+import authSigninBegin from '../store/actions/authSigninBegin';
 import ZDialogWithTitle from './ZDialogWithTitle';
 import ZFacebookIcon from "./ZFacebookIcon";
 import ZGoogleIcon from "./ZGoogleIcon";
@@ -241,10 +242,30 @@ interface DialogActionsProps {
     setOpen: (value: boolean) => void
 }
 
+function ZRegisterBeginActions(props: SetOpenAsProps) {
+    const {setOpen} = props;
+    const dispatch = useAppDispatch();
+
+    function handleSignIn() {
+        setOpen(false);
+        dispatch(authSigninBegin());
+    }
+    return (
+        <Box sx={{display: "flex", alignItems: "baseline"}}>
+            <Typography>Already have an account?</Typography>
+            <Typography sx={{marginLeft: '1em'}}>You can</Typography>
+            <Button onClick={handleSignIn}>Sign in</Button>
+        </Box>
+    )
+}
+
 function ZDialogActions(props: DialogActionsProps) {
     const {state, setOpen} = props;
 
     switch (state) {
+        case REGISTER_BEGIN: 
+            return <ZRegisterBeginActions setOpen={setOpen}/>
+
         case REGISTER_EMAIL: 
             return <ZEmailFormActions setOpen={setOpen}/>
 

@@ -58,7 +58,17 @@ export const REGISTER_EMAIL = 'REGISTER_EMAIL';
 export const REGISTER_EMAIL_VERIFY = 'REGISTER_EMAIL_VERIFY';
 
 export type SigninState = 'SIGNIN_BEGIN' | 'SIGNIN_PASSWORD';
+
+/**
+ * State indicating that the sign-in wizard should be displayed 
+ * at the page which allows the user to choose an identity provider.
+ */
 export const SIGNIN_BEGIN = 'SIGNIN_BEGIN';
+
+/**
+ * State indicating the that the sign-in wizard should display
+ * the form for collecting `email`, `password` and `displayName`.
+ */
 export const SIGNIN_PASSWORD = 'SIGNIN_PASSWORD';
 
 export interface MinimalUser {
