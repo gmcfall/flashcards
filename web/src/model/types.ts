@@ -28,13 +28,61 @@ export interface Deck {
     sequence: [string]
 }
 
-export interface PersonalLibrary {
+/** 
+ * A union of the various types of resources supported by the app.
+ * For now, there is just one possible type of resource, namely a Deck.
+ */
+export type ResourceType = 'deck';
 
+/**
+ * The string used as the Deck `type`.
+ */
+export const DECK = 'deck';
+
+export interface ResourceRef {
+    
+    /** The type of resource */
+    type: ResourceType,
+
+    /** An identifier for the resource */
+    id: string,
+
+    /** A name for the resource suitable for display */
+    name: string
 }
+
+/**
+ * A Library document in Firestore.
+ * 
+ * Firestore path: /libraries/{user.uid}
+ */
+export interface FirestoreLibrary {
+    /** 
+     * A map where the key is the `id` for a Resource and the value is reference to tha resource. 
+     * This structure makes it easy to update individual entries via the Firestore SDK.
+     * See {@link ClientLibrary} for the client-side representation of the library.
+     */
+    resources: Record<string, ResourceRef>
+}
+
+/**
+ * A client-side representation of a user's library of resources.
+ * In this representation, the map from the {@link FirestoreLibrary} is
+ * converted to an array sorted alphabetically.
+ */
+export interface ClientLibrary {
+    resources: ResourceRef[]
+}
+
 export interface ErrorInfo {
     message: string,
     cause?: string
 }
+
+export type FirestoreCollection = 'libraries';
+
+/** The name of the firestore "libraries" collection */
+export const LIBRARIES = 'libraries';
 
 export type RegisterState =  'REGISTER_BEGIN' | 'REGISTER_EMAIL' | 'REGISTER_EMAIL_VERIFY';
 /**
@@ -132,6 +180,13 @@ export const SUCCESS = 'success';
 export interface AlertData {
     severity: AlertSeverity,
     message: string
+}
+
+
+export interface DeckLibrary {
+    /** A unique identifier for the library */
+    id: string,
+
 }
 
 export interface DeckApp {

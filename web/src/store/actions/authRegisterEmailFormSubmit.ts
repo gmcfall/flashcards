@@ -3,6 +3,7 @@ import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createSession, getRequiresVerification } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
+import { createFirestoreLibrary, saveLibrary } from "../../model/library";
 import { RegisterEmailData } from "../../model/types";
 
 
@@ -23,9 +24,11 @@ const authRegisterEmailFormSubmit = createAppAsyncThunk(
             const requiresVerification = getRequiresVerification(user);
             const session = createSession(user.uid, [], displayName, requiresVerification);
 
+            const lib = createFirestoreLibrary();
+            await saveLibrary(user.uid, lib);
+
             return session;
             
-           
         } catch (error) {
             return thunkApi.rejectWithValue(createErrorInfo(
                 "An error occurred while creating your account",

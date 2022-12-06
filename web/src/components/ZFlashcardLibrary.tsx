@@ -1,6 +1,7 @@
-import { Box } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 import ZAlert from "./ZAlert";
 import ZAuthToolsWithSessionCheck from "./ZAuthToolsWithSessionCheck";
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 
 
 function ZFlashcardLibraryHeader() {
@@ -12,12 +13,15 @@ function ZFlashcardLibraryHeader() {
             borderBottomWidth: "1px",
             borderBottomStyle: "solid",
             borderBottomColor: "grey.400",
+            alignItems: 'center',
+            paddingLeft: "2em"
         }}>
+            <LocalLibraryIcon/>
+            <Typography variant="h1" sx={{marginLeft: "1rem"}}>Library</Typography>
             <ZAlert/>
             <ZAuthToolsWithSessionCheck/>
         </Box>
     )
-
 }
 
 
@@ -26,7 +30,6 @@ export default function ZFlashcardLibrary() {
     return (
         <Box sx={{display: "flex", flexDirection: "column"}}>
             <ZFlashcardLibraryHeader/>
-            <h1>Library</h1>
         </Box>
     )
 }

@@ -3,6 +3,7 @@ import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createSession, getRequiresVerification } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
+import { createFirestoreLibrary, saveLibrary } from "../../model/library";
 import { ANONYMOUS } from "../../model/types";
 
 
@@ -10,7 +11,7 @@ const authRegisterGoogle = createAppAsyncThunk(
     "auth/register/google",
     async (_, thunkApi) => {
         try {
-            const session = await providerSignIn(new GoogleAuthProvider());
+            const session = await providerRegister(new GoogleAuthProvider());
             // TODO: Add workflow to collect display name if not provided
             return session;
         } catch (error) {
@@ -21,6 +22,15 @@ const authRegisterGoogle = createAppAsyncThunk(
         }
     }
 )
+
+export async function providerRegister(provider: AuthProvider) {
+    const session = await providerSignIn(provider);
+    
+    const lib = createFirestoreLibrary();
+    await saveLibrary(session.user.uid, lib);
+
+    return session;
+}
 
 export async function providerSignIn(provider: AuthProvider) {
     

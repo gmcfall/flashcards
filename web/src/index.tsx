@@ -18,7 +18,7 @@ const root = ReactDOM.createRoot(
 const theme = createTheme({
   typography: {
     h1: {
-      fontSize: "3rem"
+      fontSize: "2rem"
     }
   }
 })
