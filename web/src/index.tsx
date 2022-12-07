@@ -5,8 +5,8 @@ import { Provider } from 'react-redux';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import ZAuth from './components/ZAuth';
 import ZDeckEditor from './components/ZDeckEditor';
-import ZFlashcardHome from './components/ZFlashcardHome';
-import ZFlashcardLibrary from './components/ZFlashcardLibrary';
+import ZHome from './components/ZHome';
+import ZLibrary from './components/ZLibrary';
 import './index.css';
 import reportWebVitals from './reportWebVitals';
 import store from './store/store';
@@ -34,8 +34,8 @@ root.render(
         <ZAuth/>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<ZFlashcardHome/>}/>
-            <Route path="/library" element={<ZFlashcardLibrary/>}/>
+            <Route path="/" element={<ZHome/>}/>
+            <Route path="/library" element={<ZLibrary/>}/>
             <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
           </Routes>
         </BrowserRouter>

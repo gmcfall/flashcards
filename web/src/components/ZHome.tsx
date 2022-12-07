@@ -26,7 +26,7 @@ function ZHomeHeader() {
     )
 }
 
-export default function ZFlashcardHome() {
+export default function ZHome() {
    
     return (
         <CenteredPaper elevation={0}>

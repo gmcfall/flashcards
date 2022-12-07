@@ -20,7 +20,7 @@ import ZAlert from "./ZAlert";
 import ZAuthTools from './ZAuthTools';
 
 
-function ZFlashcardLibraryHeader() {
+function ZLibraryHeader() {
 
     const dispatch = useAppDispatch();
     const session = useAppSelector(selectSession);
@@ -143,11 +143,11 @@ function ZLibraryContent() {
 }
 
 
-export default function ZFlashcardLibrary() {
+export default function ZLibrary() {
 
     return (
         <Box sx={{display: "flex", flexDirection: "column"}}>
-            <ZFlashcardLibraryHeader/>
+            <ZLibraryHeader/>
             <Box id="contentRoot" sx={{display: "flex", justifyContent: "center", width: "100%"}}>
                 <Box id="contentContainer" sx={{maxWidth: "50rem", minWidth: "20rem"}}>
                     <ZLibraryContent/>
