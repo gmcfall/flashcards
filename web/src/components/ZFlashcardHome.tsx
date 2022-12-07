@@ -6,6 +6,7 @@ import { Link } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
 import { selectSession } from '../model/auth';
 import { libraryRoute } from '../model/routes';
+import { HEADER_STYLE } from './header';
 import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
 
@@ -18,13 +19,7 @@ const CenteredPaper = styled(Paper)(({theme}) => ({
 
 function ZHomeHeader() {
     return (
-        <Box sx={{
-            display: 'flex', 
-            minHeight: "3em", 
-            borderBottomWidth: "1px",
-            borderBottomStyle: "solid",
-            borderBottomColor: "grey.400",
-        }}>
+        <Box sx={HEADER_STYLE}>
             <ZAlert/>
             <ZAuthTools/>
         </Box>

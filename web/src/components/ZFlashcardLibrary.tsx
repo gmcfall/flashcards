@@ -14,6 +14,7 @@ import deckNew from '../store/actions/deckNew';
 import alertPost from '../store/actions/alertPost';
 import { useNavigate } from 'react-router-dom';
 import { deckEditRoute } from '../model/routes';
+import { HEADER_STYLE } from './header';
 
 
 function ZFlashcardLibraryHeader() {
@@ -34,15 +35,7 @@ function ZFlashcardLibraryHeader() {
     }
 
     return (
-        <Box sx={{
-            display: 'flex', 
-            minHeight: "3em", 
-            borderBottomWidth: "1px",
-            borderBottomStyle: "solid",
-            borderBottomColor: "grey.400",
-            alignItems: 'center',
-            paddingLeft: "2em"
-        }}>
+        <Box sx={HEADER_STYLE}>
             <LocalLibraryIcon/>
             <Typography variant="h1" sx={{marginLeft: "1rem", marginRight: '1.5rem'}}>Library</Typography>
             <Tooltip title="Create a new deck of flashcards and add it to your library">
