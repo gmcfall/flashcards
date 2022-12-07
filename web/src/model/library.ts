@@ -72,6 +72,7 @@ export function libraryUnsubscribe() {
     if (unsubscribe) {
         unsubscribe();
         libraryUser = null;
+        unsubscribe = null;
     }
 }
 

@@ -124,7 +124,7 @@ function ZLibraryContent() {
        return (
         <Box sx={{marginTop: "2rem"}}>
             <ZAccessDeniedAlert>
-                <ZAccessDeniedMessage resourceName='the Library'/>
+                <ZAccessDeniedMessage title='You must be signed in to access your Library'/>
             </ZAccessDeniedAlert>
         </Box>
        )

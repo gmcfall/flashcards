@@ -4,10 +4,10 @@ import { useAppDispatch } from "../hooks/hooks";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
 import authSigninBegin from "../store/actions/authSigninBegin";
 interface AccessDeniedMessage {
-    resourceName: string
+    title: string
 }
 export function ZAccessDeniedMessage(props: AccessDeniedMessage) {
-    const {resourceName} = props;
+    const {title} = props;
 
     const dispatch = useAppDispatch();
 
@@ -21,7 +21,7 @@ export function ZAccessDeniedMessage(props: AccessDeniedMessage) {
 
     return (
        <Box>
-            <Typography variant="subtitle1">You must be signed in to access {resourceName}</Typography>
+            <Typography variant="subtitle1">{title}</Typography>
             <Divider/>
             <Box sx={{marginTop: "1em"}}>
                 <Typography display="inline">If you have an account, please</Typography>

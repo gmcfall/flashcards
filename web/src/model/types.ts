@@ -201,6 +201,15 @@ export interface DeckLibrary {
 
 }
 
+/** The status of a loading process */
+export type LoadStatus = 'pending' | 'failed';
+
+/** The 'pending' value of the LoadStatus type*/
+export const PENDING='pending';
+
+/** The 'failed' value of the LoadStatus type */
+export const FAILED='failed';
+
 export interface DeckApp {
 
     /** Details about the current session */
@@ -224,10 +233,13 @@ export interface DeckApp {
     passwordSigninForm?: PasswordCredentials,
 
     /** Data used to display a transient Alert */
-    alertData?: AlertData;
+    alertData?: AlertData,
 
     /** The user's Library of resources */
-    library?: ClientLibrary;
+    library?: ClientLibrary,
+
+    /** The status of the process to load the current deck */
+    deckLoadStatus?: LoadStatus,
 
     /** The current deck being edited */
     deck?: Deck
