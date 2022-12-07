@@ -93,8 +93,6 @@ export interface ErrorInfo {
     cause?: string
 }
 
-export type FirestoreCollection = 'libraries';
-
 
 export type RegisterState =  'REGISTER_BEGIN' | 'REGISTER_EMAIL' | 'REGISTER_EMAIL_VERIFY';
 /**
@@ -192,6 +190,14 @@ export const SUCCESS = 'success';
 export interface AlertData {
     severity: AlertSeverity,
     message: string
+}
+
+/**
+ * Defines the access control rules for a given Deck
+ */
+export interface DeckAccess {
+    /** The uid of the user who owns the Deck */
+    owner: string;
 }
 
 

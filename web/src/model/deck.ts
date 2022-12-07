@@ -6,7 +6,7 @@ import deckReceive from "../store/actions/deckReceive";
 import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
-import { DECKS, LIBRARIES, RESOURCES } from "./firestoreConstants";
+import { DECKS, LIBRARIES, LibraryField } from "./firestoreConstants";
 import { DECK, Deck, DeckApp, ResourceRef, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
@@ -26,7 +26,7 @@ export async function saveDeck(userUid: string, deck: Deck) {
     const deckPromise = setDoc(deckRef, deck);
 
     const libRef = doc(db, LIBRARIES, userUid);
-    const path = new FieldPath(RESOURCES, deck.id);
+    const path = new FieldPath(LibraryField.resources, deck.id);
     const deckResourceRef: ResourceRef = {
         id: deck.id,
         type: DECK,

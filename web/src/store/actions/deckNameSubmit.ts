@@ -2,7 +2,7 @@ import { doc, FieldPath, getFirestore, updateDoc } from "firebase/firestore";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
-import { DECKS, LIBRARIES, RESOURCES } from "../../model/firestoreConstants";
+import { DeckField, DECKS, LIBRARIES } from "../../model/firestoreConstants";
 
 
 interface DeckNameSubmitProps {
@@ -23,7 +23,7 @@ const deckNameSubmit = createAppAsyncThunk(
             const deckPromise = updateDoc(deckRef, {name});
 
             const libRef = doc(db, LIBRARIES, userUid);
-            const path = new FieldPath(RESOURCES, deckId, 'name');
+            const path = new FieldPath(DeckField.resources, deckId, DeckField.name);
             const libPromise = updateDoc(libRef, path, name);
           
             await Promise.all([deckPromise, libPromise]);
