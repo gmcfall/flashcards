@@ -1,12 +1,14 @@
+import { NavigateFunction } from "react-router-dom";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { selectSession } from "../../model/auth";
 import { createDeck, saveDeck } from "../../model/deck";
 import { createErrorInfo } from "../../model/errorHandler";
+import { deckEditRoute } from "../../model/routes";
 
 
 const deckNew = createAppAsyncThunk(
     "deck/new",
-    async (_, thunkApi) => {
+    async (navigate: NavigateFunction, thunkApi) => {
         try {
             const state = thunkApi.getState();
             const session = selectSession(state);
@@ -17,6 +19,8 @@ const deckNew = createAppAsyncThunk(
             }
             const deck = createDeck();
             await saveDeck(session.user.uid, deck);
+
+            navigate(deckEditRoute(deck.id));
 
         } catch (error) {
             

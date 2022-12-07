@@ -27,10 +27,11 @@ function ZLibraryHeader() {
 
     const dispatch = useAppDispatch();
     const session = useAppSelector(selectSession);
+    const navigate = useNavigate();
 
     function handleNewDeckButtonClick() {
         if (session) {
-            dispatch(deckNew());
+            dispatch(deckNew(navigate));
             // TODO: dispatch navigation to the DeckEditor
         } else {
             dispatch(alertPost({
