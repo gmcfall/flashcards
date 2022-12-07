@@ -1,10 +1,12 @@
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import {
-    Box, Button, CircularProgress, List, ListItem, ListItemButton,
-    ListItemText, Tooltip, Typography
+    Box, Button, ListItemButton, CircularProgress, IconButton, List, ListItem, Tooltip, Typography,
+    ListItemText
 } from "@mui/material";
 import { useEffect } from "react";
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
@@ -12,6 +14,7 @@ import { librarySubscribe, libraryUnsubscribe, selectLibrary } from '../model/li
 import { deckEditRoute } from '../model/routes';
 import { ClientLibrary, ERROR, ResourceRef } from '../model/types';
 import alertPost from '../store/actions/alertPost';
+import deckDelete from '../store/actions/deckDelete';
 import deckNew from '../store/actions/deckNew';
 import { HEADER_STYLE } from './header';
 import ZAccessDeniedAlert from './ZAccessDeniedAlert';
@@ -62,16 +65,43 @@ interface LibResourceProps {
 
 function ZLibResource(props: LibResourceProps) {
     const {resource} = props;
+    const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const session = useSelector(selectSession);
 
-    function handleClick() {
+    if (!session) {
+        return null;
+    }
+    const deckId = resource.id;
+    const userUid = session.user.uid;
+
+    function handleNavigate() {
         navigate(deckEditRoute(resource.id));
     }
 
+    function handleDelete() {
+        dispatch(deckDelete({deckId, userUid}))
+    }
+
     return (
-        <ListItemButton onClick={handleClick}>
-            <ListItemText primary={resource.name}/>
-        </ListItemButton>
+        
+
+        <ListItem
+            sx={{
+                "&:hover :last-child": {
+                    opacity: 1
+                }
+            }}
+            secondaryAction={
+                <IconButton onClick={handleDelete} sx={{opacity: 0}}>
+                    <DeleteIcon/>
+                </IconButton>
+            }
+        >
+           <ListItemButton onClick={handleNavigate}>
+                <ListItemText primary={resource.name}/>
+           </ListItemButton>
+        </ListItem>
     )
 }
 
@@ -85,9 +115,7 @@ function ZLibraryResourceList(props: LibraryContentProps) {
         <List>
             {
                 lib.resources.map(resource => (
-                    <ListItem key={resource.id}>
-                        <ZLibResource resource={resource}/>
-                    </ListItem>
+                    <ZLibResource key={resource.id} resource={resource}/>
                 ))
             }
         </List>

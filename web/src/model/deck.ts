@@ -1,7 +1,7 @@
 // This file provides features that span multiple parts of the app
 
 import { PayloadAction } from "@reduxjs/toolkit";
-import { doc, FieldPath, getFirestore, onSnapshot, setDoc, Unsubscribe, updateDoc } from "firebase/firestore";
+import { deleteField, doc, FieldPath, getFirestore, onSnapshot, setDoc, Unsubscribe, updateDoc, writeBatch } from "firebase/firestore";
 import deckReceive from "../store/actions/deckReceive";
 import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
@@ -94,4 +94,21 @@ export function doDeckNameUpdate(editor: DeckApp, action: PayloadAction<string>)
 /** Select the current deck being edited or viewed */
 export function selectDeck(state: RootState) {
     return state.editor.deck;
+}
+
+export async function deleteDeck(deckId: string, userUid: string) {
+    const db = getFirestore(firebaseApp);
+
+    const deckRef = doc(db, DECKS, deckId);
+    const deckAccessRef = doc(db, DECK_ACCESS, deckId);
+    const libRef = doc(db, LIBRARIES, userUid);
+    const path = new FieldPath(LibraryField.resources, deckId);
+
+    const batch = writeBatch(db);
+
+    batch.delete(deckRef);
+    batch.delete(deckAccessRef);
+    batch.update(libRef, path, deleteField());
+
+    await batch.commit();
 }

@@ -45,6 +45,7 @@ import deckReceive from "../actions/deckReceive";
 import { doDeckNameUpdate, doDeckReceive } from "../../model/deck";
 import deckNameUpdate from "../actions/deckNameUpdate";
 import deckNameSubmit from "../actions/deckNameSubmit";
+import deckDelete from "../actions/deckDelete";
 
 const initialState: DeckApp = {}
 
@@ -104,6 +105,7 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(authSigninTwitter.pending, doAuthSigninCancel)
         .addCase(authSigninTwitter.rejected, doErrorDisplay)
         .addCase(authSignout.pending, doAuthSignout)
+        .addCase(deckDelete.rejected, doErrorDisplay)
         .addCase(deckNew.rejected, doErrorDisplay)
         .addCase(deckNameUpdate, doDeckNameUpdate)
         .addCase(deckReceive, doDeckReceive)
