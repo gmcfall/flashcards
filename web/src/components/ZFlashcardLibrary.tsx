@@ -1,20 +1,23 @@
-import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import { Box, CircularProgress, Typography, List, ListItem, ListItemButton, 
-    ListItemText, Button, Tooltip
-} from "@mui/material";
 import AddIcon from '@mui/icons-material/Add';
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
+import {
+    Box, Button, CircularProgress, List, ListItem, ListItemButton,
+    ListItemText, Tooltip, Typography
+} from "@mui/material";
+import { useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { librarySubscribe, libraryUnsubscribe, selectLibrary } from '../model/library';
-import ZAlert from "./ZAlert";
-import ZAuthToolsWithSessionCheck from "./ZAuthToolsWithSessionCheck";
-import { useEffect } from "react";
-import { ClientLibrary, ERROR, ResourceRef } from '../model/types';
-import deckNew from '../store/actions/deckNew';
-import alertPost from '../store/actions/alertPost';
-import { useNavigate } from 'react-router-dom';
 import { deckEditRoute } from '../model/routes';
+import { ClientLibrary, ERROR, ResourceRef } from '../model/types';
+import alertPost from '../store/actions/alertPost';
+import deckNew from '../store/actions/deckNew';
 import { HEADER_STYLE } from './header';
+import ZAccessDeniedAlert from './ZAccessDeniedAlert';
+import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
+import ZAlert from "./ZAlert";
+import ZAuthTools from './ZAuthTools';
 
 
 function ZFlashcardLibraryHeader() {
@@ -48,7 +51,7 @@ function ZFlashcardLibraryHeader() {
                 </Button>
             </Tooltip>
             <ZAlert/>
-            <ZAuthToolsWithSessionCheck/>
+            <ZAuthTools/>
         </Box>
     )
 }
@@ -113,12 +116,27 @@ function ZLibraryContent() {
 
     }, [dispatch, userUid])
 
-    if (!session && !registrationState && !signInState && !lib) {
-       return <CircularProgress/>
+    if (registrationState || signInState) {
+        return null;
+    }
+
+    if (!session) {
+       return (
+        <Box sx={{marginTop: "2rem"}}>
+            <ZAccessDeniedAlert>
+                <ZAccessDeniedMessage resourceName='Library'/>
+            </ZAccessDeniedAlert>
+        </Box>
+       )
+
     }
 
     if (!lib) {
-        return null;
+        return (
+            <Box sx={{display: "flex", height: "100%", width: "100%", alignContent: "center", justifyContent: "center"}}>
+                <CircularProgress/>
+            </Box>
+        );
     }
 
     return <ZLibraryResourceList lib={lib}/>;

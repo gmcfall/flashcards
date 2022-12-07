@@ -19,6 +19,9 @@ const theme = createTheme({
   typography: {
     h1: {
       fontSize: "2rem"
+    },
+    subtitle1: {
+      fontWeight: "bold"
     }
   }
 })
