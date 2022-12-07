@@ -9,9 +9,11 @@ import { librarySubscribe, libraryUnsubscribe, selectLibrary } from '../model/li
 import ZAlert from "./ZAlert";
 import ZAuthToolsWithSessionCheck from "./ZAuthToolsWithSessionCheck";
 import { useEffect } from "react";
-import { ClientLibrary, ERROR } from '../model/types';
+import { ClientLibrary, ERROR, ResourceRef } from '../model/types';
 import deckNew from '../store/actions/deckNew';
 import alertPost from '../store/actions/alertPost';
+import { useNavigate } from 'react-router-dom';
+import { deckEditRoute } from '../model/routes';
 
 
 function ZFlashcardLibraryHeader() {
@@ -58,6 +60,25 @@ function ZFlashcardLibraryHeader() {
     )
 }
 
+interface LibResourceProps {
+    resource: ResourceRef
+}
+
+function ZLibResource(props: LibResourceProps) {
+    const {resource} = props;
+    const navigate = useNavigate();
+
+    function handleClick() {
+        navigate(deckEditRoute(resource.id));
+    }
+
+    return (
+        <ListItemButton onClick={handleClick}>
+            <ListItemText primary={resource.name}/>
+        </ListItemButton>
+    )
+}
+
 interface LibraryContentProps {
     lib: ClientLibrary
 }
@@ -69,9 +90,7 @@ function ZLibraryResourceList(props: LibraryContentProps) {
             {
                 lib.resources.map(resource => (
                     <ListItem key={resource.id}>
-                        <ListItemButton >
-                            <ListItemText primary={resource.name}/>
-                        </ListItemButton>
+                        <ZLibResource resource={resource}/>
                     </ListItem>
                 ))
             }

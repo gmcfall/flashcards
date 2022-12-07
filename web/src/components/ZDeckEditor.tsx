@@ -1,9 +1,7 @@
-import { ZEditorHeader } from "./ZEditorHeader";
 
 export default function ZDeckEditor() {
+    console.log('ZDeckEditor')
     return (
-        <>
-            <ZEditorHeader/>
-        </>
+        <h1>Deck Editor</h1>
     )
 }

@@ -5,7 +5,7 @@ import { styled } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
 import { selectSession } from '../model/auth';
-import { LIBRARY } from '../model/routes';
+import { libraryRoute } from '../model/routes';
 import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
 
@@ -76,7 +76,7 @@ function ZLibraryLink() {
         return null;
     }
     return (
-            <Link to={LIBRARY}>
+            <Link to={libraryRoute()}>
                 <Box sx={{display: "flex", alignItems: "center"}}>
                     <LocalLibraryIcon sx={{marginRight: '0.5em'}}/> <span>My Library</span>
                 </Box>

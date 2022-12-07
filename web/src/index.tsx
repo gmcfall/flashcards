@@ -31,12 +31,9 @@ root.render(
         <ZAuth/>
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<ZFlashcardHome/>}>
-              <Route path="decks">
-                <Route path=":id/edit" element={<ZDeckEditor/>}/>
-              </Route>
-            </Route>
+            <Route path="/" element={<ZFlashcardHome/>}/>
             <Route path="/library" element={<ZFlashcardLibrary/>}/>
+            <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
           </Routes>
         </BrowserRouter>
       </ThemeProvider>
