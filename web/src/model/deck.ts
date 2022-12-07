@@ -6,8 +6,8 @@ import deckReceive from "../store/actions/deckReceive";
 import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
-import { DECKS, LIBRARIES, LibraryField } from "./firestoreConstants";
-import { DECK, Deck, DeckApp, ResourceRef, UNTITLED_DECK } from "./types";
+import { DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
+import { DECK, Deck, DeckAccess, DeckApp, ResourceRef, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -19,11 +19,23 @@ export function createDeck() : Deck {
     }
 }
 
+/**
+ * Create a DeckAccess object
+ * @param owner The uid of the User that owns the Deck
+ */
+function createDeckAccess(owner: string) : DeckAccess {
+    return {owner}
+}
+
 export async function saveDeck(userUid: string, deck: Deck) {
 
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deck.id);
     const deckPromise = setDoc(deckRef, deck);
+
+    const deckAccess = createDeckAccess(userUid);
+    const accessRef = doc(db, DECK_ACCESS, deck.id);
+    const accessPromise = setDoc(accessRef, deckAccess);
 
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deck.id);
@@ -34,7 +46,7 @@ export async function saveDeck(userUid: string, deck: Deck) {
     }
     const libPromise = updateDoc(libRef, path, deckResourceRef)
 
-    return Promise.all([deckPromise, libPromise])
+    return Promise.all([deckPromise, accessPromise, libPromise])
 }
 
 
