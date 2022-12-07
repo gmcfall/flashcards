@@ -124,7 +124,7 @@ function ZLibraryContent() {
        return (
         <Box sx={{marginTop: "2rem"}}>
             <ZAccessDeniedAlert>
-                <ZAccessDeniedMessage resourceName='Library'/>
+                <ZAccessDeniedMessage resourceName='the Library'/>
             </ZAccessDeniedAlert>
         </Box>
        )
