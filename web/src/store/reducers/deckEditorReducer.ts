@@ -40,6 +40,7 @@ import alertPost from "../actions/alertPost";
 import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
 import libraryReceive from "../actions/libraryReceive";
 import { doLibraryReceive } from "../../model/library";
+import deckNew from "../actions/deckNew";
 
 const initialState: DeckApp = {}
 
@@ -99,6 +100,7 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(authSigninTwitter.pending, doAuthSigninCancel)
         .addCase(authSigninTwitter.rejected, doErrorDisplay)
         .addCase(authSignout.pending, doAuthSignout)
+        .addCase(deckNew.rejected, doErrorDisplay)
         .addCase(libraryReceive, doLibraryReceive)
 });
 export default deckEditorReducer;

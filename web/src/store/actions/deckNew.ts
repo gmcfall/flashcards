@@ -1,45 +1,31 @@
-import { createAction } from '@reduxjs/toolkit'
-import { Deck, Flashcard } from '../../model/types'
-import generateUid from '../../util/uid'
-import { AppDispatch, RootState } from '../store'
-import firebaseApp from '../../model/firebaseApp'
-import { doc, getFirestore, setDoc } from 'firebase/firestore'
-import { DECKS } from '../../model/firestoreConstants'
+import { createAppAsyncThunk } from "../../hooks/hooks";
+import { selectSession } from "../../model/auth";
+import { createDeck, saveDeck } from "../../model/deck";
+import { createErrorInfo } from "../../model/errorHandler";
 
-const newDeckAction = createAction<Deck>("deck/new");
 
-export default function deckNew() {
-    return (state: RootState, dispatch: AppDispatch) => {
-        const deck = createNewDeck();
-        const action = newDeckAction(deck);
+const deckNew = createAppAsyncThunk(
+    "deck/new",
+    async (_, thunkApi) => {
+        try {
+            const state = thunkApi.getState();
+            const session = selectSession(state);
+            if (!session) {
+                return thunkApi.rejectWithValue({
+                    message: "Cannot create a new Deck because you are not signed-in"
+                })
+            }
+            const deck = createDeck();
+            await saveDeck(session.user.uid, deck);
 
-        saveDeck(deck);
-        dispatch(action);
+        } catch (error) {
+            
+            return thunkApi.rejectWithValue(createErrorInfo(
+                "An error occurred while saving the new Deck",
+                error
+            ))
+        }
     }
-}
+)
 
-function saveDeck(deck: Deck) {
-    const db = getFirestore(firebaseApp);
-    const ref = doc(db, DECKS, deck.id);
-    setDoc(ref, deck);
-}
-
-function createNewDeck() : Deck {
-    const card = createNewFlashcard();
-
-    return {
-        id: generateUid(),
-        name: "Untitled Deck",
-        cards: {
-            [card.id]: card
-        },
-        sequence: [card.id]
-    }
-}
-
-function createNewFlashcard() : Flashcard {
-    return {
-        id: generateUid(),
-        content: ''
-    }
-}
+export default deckNew;

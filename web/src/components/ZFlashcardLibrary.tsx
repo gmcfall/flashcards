@@ -1,15 +1,35 @@
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import { Box, CircularProgress, Typography, List, ListItem, ListItemButton, ListItemText } from "@mui/material";
+import { Box, CircularProgress, Typography, List, ListItem, ListItemButton, 
+    ListItemText, Button, Tooltip
+} from "@mui/material";
+import AddIcon from '@mui/icons-material/Add';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { librarySubscribe, libraryUnsubscribe, selectLibrary } from '../model/library';
 import ZAlert from "./ZAlert";
 import ZAuthToolsWithSessionCheck from "./ZAuthToolsWithSessionCheck";
 import { useEffect } from "react";
-import { ClientLibrary } from '../model/types';
+import { ClientLibrary, ERROR } from '../model/types';
+import deckNew from '../store/actions/deckNew';
+import alertPost from '../store/actions/alertPost';
 
 
 function ZFlashcardLibraryHeader() {
+
+    const dispatch = useAppDispatch();
+    const session = useAppSelector(selectSession);
+
+    function handleNewDeckButtonClick() {
+        if (session) {
+            dispatch(deckNew());
+            // TODO: dispatch navigation to the DeckEditor
+        } else {
+            dispatch(alertPost({
+                severity: ERROR,
+                message: "You must be signed in to create a new Deck"
+            }))
+        }
+    }
 
     return (
         <Box sx={{
@@ -22,7 +42,16 @@ function ZFlashcardLibraryHeader() {
             paddingLeft: "2em"
         }}>
             <LocalLibraryIcon/>
-            <Typography variant="h1" sx={{marginLeft: "1rem"}}>Library</Typography>
+            <Typography variant="h1" sx={{marginLeft: "1rem", marginRight: '1.5rem'}}>Library</Typography>
+            <Tooltip title="Create a new deck of flashcards and add it to your library">
+                <Button 
+                    variant="outlined"
+                    startIcon={<AddIcon/>}
+                    onClick={handleNewDeckButtonClick}
+                >
+                    New Deck
+                </Button>
+            </Tooltip>
             <ZAlert/>
             <ZAuthToolsWithSessionCheck/>
         </Box>
@@ -89,8 +118,10 @@ export default function ZFlashcardLibrary() {
     return (
         <Box sx={{display: "flex", flexDirection: "column"}}>
             <ZFlashcardLibraryHeader/>
-            <Box sx={{display: "flex", flexDirection: "column", alignContent: "center"}}>
-                <ZLibraryContent/>
+            <Box id="contentRoot" sx={{display: "flex", justifyContent: "center", width: "100%"}}>
+                <Box id="contentContainer" sx={{maxWidth: "50rem", minWidth: "20rem"}}>
+                    <ZLibraryContent/>
+                </Box>
             </Box>
         </Box>
     )

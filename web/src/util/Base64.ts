@@ -1,7 +1,7 @@
 
 // We have replaced '/' characters with '_' since it results in uid values that are valid
 // firestore path elements
-const _Rixits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+_";
+export const Rixits = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+_";
 
 
 // This cannot handle negative numbers and only works on the 
@@ -17,7 +17,7 @@ export function base64FromNumber(number: number) {
   var result = '';
   while (true) {
       rixit = residual % 64
-      result = _Rixits.charAt(rixit) + result;
+      result = Rixits.charAt(rixit) + result;
       residual = Math.floor(residual / 64);
 
       if (residual === 0)

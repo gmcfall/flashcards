@@ -8,6 +8,14 @@ export interface Flashcard {
     content: string,
 }
 
+/**
+ * The universal interface for Deck objects. This interface is
+ * used for Firebase documents and in the client.
+ * 
+ * Conceptually a deck contains a list of Flashcard resources.
+ * The Deck holds the cards in a Record to facilitate lookup by id,
+ * plus an array that lists the sequential order of the cards in the deck.
+ */
 export interface Deck {
     /** An identifier for this Deck */
     id: string,
@@ -25,8 +33,14 @@ export interface Deck {
      * The order in which cards should be displayed.
      * Each element of the array is the id for a Flashcard.
      */
-    sequence: [string]
+    sequence: string[]
 }
+
+/**
+ * The default name for a newly created deck
+ */
+export const UNTITLED_DECK="Untitled Deck";
+
 
 /** 
  * A union of the various types of resources supported by the app.
@@ -81,8 +95,6 @@ export interface ErrorInfo {
 
 export type FirestoreCollection = 'libraries';
 
-/** The name of the firestore "libraries" collection */
-export const LIBRARIES = 'libraries';
 
 export type RegisterState =  'REGISTER_BEGIN' | 'REGISTER_EMAIL' | 'REGISTER_EMAIL_VERIFY';
 /**

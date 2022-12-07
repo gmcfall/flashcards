@@ -3,7 +3,8 @@ import { doc, getFirestore, onSnapshot, setDoc, Unsubscribe } from "firebase/fir
 import libraryReceive from "../store/actions/libraryReceive";
 import { AppDispatch, RootState } from "../store/store";
 import firebaseApp from "./firebaseApp";
-import { ClientLibrary, DeckApp, FirestoreLibrary, LIBRARIES, ResourceRef } from "./types";
+import { LIBRARIES } from "./firestoreConstants";
+import { ClientLibrary, DeckApp, FirestoreLibrary, ResourceRef } from "./types";
 
 export function doLibraryReceive(editor: DeckApp, action: PayloadAction<ClientLibrary>) {
     editor.library = action.payload;
