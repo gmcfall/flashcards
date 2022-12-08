@@ -1,8 +1,8 @@
 import { Box } from "@mui/material";
 import { CardInfo } from "../model/types";
 
-const cardWidth="30em";
-const cardHeight="20em";
+const cardWidth="15em";
+const cardHeight="10em";
 
 interface FlashcardProps {
     cardInfo?: CardInfo

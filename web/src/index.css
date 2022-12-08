@@ -7,6 +7,23 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+html, body {
+  height: 100%;
+}
+
+.tiptap-container > div {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.deck-editor-tiptap {
+  height: 100%;
+  padding: 1em;
+  border: solid rgb(189, 189, 189) 2px;
+}
+
+
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
@@ -14,6 +31,11 @@ code {
 
 .alert {
   animation: alertTransition 10s ease-in forwards;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
 }
 
 @keyframes alertTransition {
