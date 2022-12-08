@@ -1,18 +1,18 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
-import { AlertData, DeckApp } from "./types";
+import { AlertData, LerniApp } from "./types";
 
-export function doAlertRemove(editor: DeckApp, action: PayloadAction) {
-    delete editor.alertData;
+export function doAlertRemove(lerni: LerniApp, action: PayloadAction) {
+    delete lerni.alertData;
 }
 
-export function doAlertPost(editor: DeckApp, action: PayloadAction<AlertData>) {
-    editor.alertData = action.payload;
+export function doAlertPost(lerni: LerniApp, action: PayloadAction<AlertData>) {
+    lerni.alertData = action.payload;
 }
-export function setAlert(editor: DeckApp, data: AlertData) {
-    editor.alertData = data;
+export function setAlert(lerni: LerniApp, data: AlertData) {
+    lerni.alertData = data;
 }
 
 export function selectAlert(state: RootState) {
-    return state.editor.alertData;
+    return state.lerni.alertData;
 }

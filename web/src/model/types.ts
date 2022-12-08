@@ -282,7 +282,7 @@ export const PENDING='pending';
 /** The 'failed' value of the LoadStatus type */
 export const FAILED='failed';
 
-export interface DeckApp {
+export interface LerniApp {
 
     /** Details about the current session */
     session?: Session,

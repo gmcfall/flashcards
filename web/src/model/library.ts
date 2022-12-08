@@ -4,10 +4,10 @@ import libraryReceive from "../store/actions/libraryReceive";
 import { AppDispatch, RootState } from "../store/store";
 import firebaseApp from "./firebaseApp";
 import { LIBRARIES } from "./firestoreConstants";
-import { ClientLibrary, DeckApp, FirestoreLibrary, ResourceRef } from "./types";
+import { ClientLibrary, LerniApp, FirestoreLibrary, ResourceRef } from "./types";
 
-export function doLibraryReceive(editor: DeckApp, action: PayloadAction<ClientLibrary>) {
-    editor.library = action.payload;
+export function doLibraryReceive(lerni: LerniApp, action: PayloadAction<ClientLibrary>) {
+    lerni.library = action.payload;
 }
 
 /**
@@ -35,7 +35,7 @@ export async function saveLibrary(userUid: string, lib: FirestoreLibrary) {
 }
 
 export function selectLibrary(state: RootState) {
-    return state.editor.library;
+    return state.lerni.library;
 }
 
 function toClientLibrary(lib: FirestoreLibrary) : ClientLibrary {

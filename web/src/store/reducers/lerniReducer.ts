@@ -2,7 +2,7 @@ import { createReducer } from "@reduxjs/toolkit";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
 import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEmailVerified, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
 import { doErrorDisplay } from "../../model/errorHandler";
-import { DeckApp } from "../../model/types";
+import { LerniApp } from "../../model/types";
 import accountDeletePasswordBegin from "../actions/accountDeletePasswordBegin";
 import accountDeleteEmailChange from "../actions/accountDeleteEmailChange";
 import accountDeleteFacebook from "../actions/accountDeleteFacebook";
@@ -50,11 +50,11 @@ import flashcardNew from "../actions/flashcardNew";
 import flashcardReceive from "../actions/flashcardReceive";
 import { doFlashcardReceive } from "../../model/flashcard";
 
-const initialState: DeckApp = {
+const initialState: LerniApp = {
     cards: {}
 }
 
-const deckEditorReducer = createReducer(initialState, builder => {
+const lerniReducer = createReducer(initialState, builder => {
     builder
         .addCase(accountDeleteEmailChange, doAccountDeleteEmailChange)
         .addCase(accountDeleteFacebook.fulfilled, doAccountDeleteEnd)
@@ -119,4 +119,4 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(flashcardReceive, doFlashcardReceive)
         .addCase(libraryReceive, doLibraryReceive)
 });
-export default deckEditorReducer;
+export default lerniReducer;

@@ -1,9 +1,9 @@
 import { configureStore } from '@reduxjs/toolkit';
-import deckEditorReducer from './reducers/deckEditorReducer';
+import lerniReducer from './reducers/lerniReducer';
 
 const store = configureStore({
     reducer: {
-        editor: deckEditorReducer
+        lerni: lerniReducer
     }
 })
 export default store;

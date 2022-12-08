@@ -4,7 +4,7 @@ import flashcardReceive from "../store/actions/flashcardReceive";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { CARDS, DeckField, DECKS } from "./firestoreConstants";
-import { CardRef, ClientFlashcard, DeckApp, FLASHCARD, ServerFlashcard } from "./types";
+import { CardRef, ClientFlashcard, LerniApp, FLASHCARD, ServerFlashcard } from "./types";
 
 export function createFlashCard(ownerDeck: string) : ServerFlashcard {
 
@@ -42,11 +42,11 @@ export function subscribeCard(dispatch: Dispatch, cardId: string) {
 
 }
 
-export function doFlashcardReceive(editor: DeckApp, action: PayloadAction<ServerFlashcard>) {
+export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<ServerFlashcard>) {
     const serverCard = action.payload;
     const clientCard = toClientFlashcard(serverCard);
 
-    const cards = editor.cards;
+    const cards = lerni.cards;
     const info = cards[clientCard.id];
     if (info) {
         info.data = clientCard;

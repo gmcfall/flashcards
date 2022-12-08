@@ -8,7 +8,7 @@ import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
-import { DECK, Deck, DeckAccess, DeckApp, ResourceRef, UNTITLED_DECK } from "./types";
+import { DECK, Deck, DeckAccess, LerniApp, ResourceRef, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -85,13 +85,13 @@ export function deckUnsubscribe() {
     }
 }
 
-export function doDeckReceive(editor: DeckApp, action: PayloadAction<Deck>) {
+export function doDeckReceive(lerni: LerniApp, action: PayloadAction<Deck>) {
     const deck = action.payload;
-    editor.deck = deck;
+    lerni.deck = deck;
 }
 
-export function doDeckNameUpdate(editor: DeckApp, action: PayloadAction<string>) {
-    const deck = editor.deck;
+export function doDeckNameUpdate(lerni: LerniApp, action: PayloadAction<string>) {
+    const deck = lerni.deck;
     if (deck) {
         deck.name = action.payload;
     }
@@ -99,7 +99,7 @@ export function doDeckNameUpdate(editor: DeckApp, action: PayloadAction<string>)
 
 /** Select the current deck being edited or viewed */
 export function selectDeck(state: RootState) {
-    return state.editor.deck;
+    return state.lerni.deck;
 }
 
 export async function deleteDeck(deckId: string, userUid: string) {
