@@ -1,12 +1,12 @@
 // This file provides features that span multiple parts of the app
 
 import { PayloadAction } from "@reduxjs/toolkit";
-import { deleteField, doc, FieldPath, getFirestore, onSnapshot, setDoc, Unsubscribe, updateDoc, writeBatch } from "firebase/firestore";
+import { deleteField, doc, FieldPath, getFirestore, onSnapshot, runTransaction, setDoc, Unsubscribe, updateDoc } from "firebase/firestore";
 import deckReceive from "../store/actions/deckReceive";
 import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
-import { DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
+import { CARDS, DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { DECK, Deck, DeckAccess, LerniApp, ResourceRef, UNTITLED_DECK } from "./types";
 
@@ -110,11 +110,18 @@ export async function deleteDeck(deckId: string, userUid: string) {
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deckId);
 
-    const batch = writeBatch(db);
-
-    batch.delete(deckRef);
-    batch.delete(deckAccessRef);
-    batch.update(libRef, path, deleteField());
-
-    await batch.commit();
+    return runTransaction(db, async txn => {
+        const deckDoc = await txn.get(deckRef);
+        if (deckDoc.exists()) {
+            const deckData = deckDoc.data() as Deck;
+            
+            deckData.cards.forEach(card => {
+                const cardRef = doc(db, CARDS, card.id);
+                txn.delete(cardRef)
+            })
+            txn.delete(deckRef);
+            txn.delete(deckAccessRef);
+            txn.update(libRef, path, deleteField())
+        }
+    })
 }
