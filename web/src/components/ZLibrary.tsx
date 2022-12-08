@@ -168,7 +168,7 @@ function ZLibraryContent() {
         );
     }
 
-    if (lib.resources.length==0) {
+    if (lib.resources.length===0) {
         return (
             <Alert severity="info" sx={{width: "30em", marginTop: "2em"}}>
                 <Box sx={{display: "flex", flexDirection:"column"}}>

@@ -42,6 +42,14 @@ export function subscribeCard(dispatch: Dispatch, cardId: string) {
 
 }
 
+export function unsubscribeAllCards() {
+    for (const key in unsubscribeFunctions) {
+        const unsubscribe = unsubscribeFunctions[key];
+        unsubscribe();
+        delete unsubscribeFunctions[key];
+    }
+}
+
 export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<ServerFlashcard>) {
     const serverCard = action.payload;
     const clientCard = toClientFlashcard(serverCard);

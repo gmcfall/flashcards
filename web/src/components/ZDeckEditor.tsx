@@ -9,6 +9,7 @@ import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
 import { Deck } from "../model/types";
 import ZFlashcard from "./ZFlashcard";
+import { unsubscribeAllCards } from "../model/flashcard";
 
 export function ZDeckEditorContent() {
     
@@ -29,6 +30,7 @@ export function ZDeckEditorContent() {
 
         return () => {
             deckUnsubscribe();
+            unsubscribeAllCards();
         }
 
     }, [dispatch, deckId, userUid])
