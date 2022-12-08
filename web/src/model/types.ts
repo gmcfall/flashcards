@@ -60,7 +60,7 @@ export interface NamedUser {
  * A ClientFlashcard plus additional information related to the card.
  */
 export interface CardInfo {
-    data: ClientFlashcard,
+    card: ClientFlashcard,
 
     /**
      * The user who is currently editing the card. For now, only one person
@@ -282,6 +282,14 @@ export const PENDING='pending';
 /** The 'failed' value of the LoadStatus type */
 export const FAILED='failed';
 
+export interface DeckEditor {
+    /**
+     * The id of the "active" card, i.e. the one currently
+     * loaded into the rich text editor.
+     */
+    activeCard?: string;
+}
+
 export interface LerniApp {
 
     /** Details about the current session */
@@ -313,10 +321,13 @@ export interface LerniApp {
     /** The status of the process to load the current deck */
     deckLoadStatus?: LoadStatus,
 
-    /** The current deck being edited */
+    /** The current deck being edited or viewed */
     deck?: Deck,
 
     /** A map containing the cards within the current deck */
-    cards: Record<string, CardInfo>
+    cards: Record<string, CardInfo>,
+
+    deckEditor: DeckEditor
+
 }
 

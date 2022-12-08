@@ -2,12 +2,12 @@ import { Box, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect } from "react";
+import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
-import { unsubscribeAllCards } from "../model/flashcard";
-import { Deck } from "../model/types";
+import { selectCards, unsubscribeAllCards } from "../model/flashcard";
 import LerniTheme from "./lerniTheme";
 import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
@@ -79,6 +79,7 @@ function ZDeckEditorContent(props: TiptapProps) {
 
 function ZCardList() {
     const deck = useAppSelector(selectDeck);
+    const cards = useSelector(selectCards);
     
     if (!deck) {
         return null;
@@ -86,17 +87,23 @@ function ZCardList() {
     
     return (
         <Box id="card-list" sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "1em",
             width: "20em",
             height: "100%",
             borderRightStyle: "solid",
             borderRightWidth: "1px",
             borderRightColor: LerniTheme.dividerColor,
-            padding: "1em"
+            padding: "1.5em"
         }}>
         {deck.cards.map(ref => {
-            // TODO: lookup the CardInfo and pass as an argument.
+            const cardInfo = cards[ref.id];
+            if (!cardInfo) {
+                return null;
+            }
             return (
-                <ZFlashcard key={ref.id}/>
+                <ZFlashcard key={ref.id} cardInfo={cardInfo}/>
             )
         })}
         </Box>

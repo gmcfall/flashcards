@@ -1,10 +1,23 @@
 import { Dispatch, PayloadAction } from "@reduxjs/toolkit";
 import { collection, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, where } from "firebase/firestore";
 import flashcardReceive from "../store/actions/flashcardReceive";
+import { RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { CARDS, DeckField, DECKS } from "./firestoreConstants";
 import { CardRef, ClientFlashcard, LerniApp, FLASHCARD, ServerFlashcard } from "./types";
+
+export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>) {
+    lerni.deckEditor.activeCard = action.payload;
+}
+
+export function selectActiveCard(state: RootState) {
+    return state.lerni.deckEditor.activeCard;
+}
+
+export function selectCards(state: RootState) {
+    return state.lerni.cards;
+}
 
 export function createFlashCard(ownerDeck: string) : ServerFlashcard {
 
@@ -57,10 +70,10 @@ export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<Server
     const cards = lerni.cards;
     const info = cards[clientCard.id];
     if (info) {
-        info.data = clientCard;
+        info.card = clientCard;
     } else {
         cards[clientCard.id] = {
-            data: clientCard
+            card: clientCard
         }
     }
 }
