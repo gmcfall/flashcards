@@ -3,7 +3,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import {
     Box, Button, ListItemButton, CircularProgress, IconButton, List, ListItem, Tooltip, Typography,
-    ListItemText
+    ListItemText, Alert, Divider
 } from "@mui/material";
 import { useEffect } from "react";
 import { useSelector } from 'react-redux';
@@ -166,6 +166,23 @@ function ZLibraryContent() {
                 <CircularProgress/>
             </Box>
         );
+    }
+
+    if (lib.resources.length==0) {
+        return (
+            <Alert severity="info" sx={{width: "30em", marginTop: "2em"}}>
+                <Box sx={{display: "flex", flexDirection:"column"}}>
+                    <Typography variant="subtitle1">Your Library is empty</Typography>
+                    <Divider/>
+                    <Box sx={{marginTop: "1em"}}>
+                        Use the
+                        <Typography sx={{display: "inline-block"}} variant='button'>&nbsp;New Deck&nbsp;</Typography>
+                        button to create a new deck and add it to your library.
+                    </Box>
+                    
+                </Box>
+            </Alert>
+        )
     }
 
     return <ZLibraryResourceList lib={lib}/>;
