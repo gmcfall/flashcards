@@ -18,11 +18,12 @@ interface AuthToolsProps {
     /**
      * A callback that fires when the sign-in dialog closes
      */
-    onCloseSignInDialog?: () => void
+    onCloseSignInDialog?: () => void,
+    children?: React.ReactNode
 }
 
 export default function ZAuthTools(props: AuthToolsProps) {
-    const {disableRegisterCancel, onCloseSignInDialog} = props;
+    const {disableRegisterCancel, onCloseSignInDialog, children} = props;
     const dispatch = useAppDispatch();
     function handleSetRegisterDialogOpen(isOpen: boolean) {
         if (!isOpen) {
@@ -31,6 +32,7 @@ export default function ZAuthTools(props: AuthToolsProps) {
     }
     return (
         <Box sx={{display: 'inline', marginLeft: 'auto'}}>
+            {children}
             <ZRegisterButton/>
             <ZSignInButton/>
             <ZUserTools/>
