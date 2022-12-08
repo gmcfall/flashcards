@@ -7,6 +7,7 @@ import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
+import { subscribeCard } from "./flashcard";
 import { DECK, Deck, DeckAccess, DeckApp, ResourceRef, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
@@ -14,8 +15,7 @@ export function createDeck() : Deck {
     return {
         id: generateUid(),
         name: UNTITLED_DECK,
-        cards: {},
-        sequence: []
+        cards: []
     }
 }
 
@@ -68,8 +68,13 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
         if (document.exists()) {
             const data = document.data() as Deck;
             dispatch(deckReceive(data));
+            subscribeAllCards(dispatch, data);
         }
     })
+}
+
+function subscribeAllCards(dispatch: AppDispatch, deck: Deck) {
+    deck.cards.forEach(cardRef => subscribeCard(dispatch, cardRef.id))
 }
 
 export function deckUnsubscribe() {
@@ -81,7 +86,8 @@ export function deckUnsubscribe() {
 }
 
 export function doDeckReceive(editor: DeckApp, action: PayloadAction<Deck>) {
-    editor.deck = action.payload;
+    const deck = action.payload;
+    editor.deck = deck;
 }
 
 export function doDeckNameUpdate(editor: DeckApp, action: PayloadAction<string>) {

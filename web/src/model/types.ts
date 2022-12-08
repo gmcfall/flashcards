@@ -1,12 +1,87 @@
 
-export interface Flashcard {
+
+export type FlashCardType = 'flashcard';
+/** The "flashcard" value of the FlashCardType */
+export const FLASHCARD = 'flashcard';
+
+export interface FlashcardBase {
+
+    type: FlashCardType,
 
     /** An identifier for the card */
     id: string,
 
-    /** The card contents represented as an HTML string */
+
+    /** The id of the deck that owns this card */
+    ownerDeck: string,
+}
+
+/**
+ * A Flashcard representation suitable for persisting in Firestore.
+ * In this representation, the card content is serialized as an
+ * HTML string.
+ */
+export interface ServerFlashcard extends FlashcardBase{
+
+    /** The card content represented as an HTML string */
     content: string,
 }
+
+/**
+ * A representation of rich text in the format used by ProseMirror.
+ * For now, we stub this out as a string. Later we'll redefine it as
+ * a Javascript object.
+ */
+type ProseMirrorContent = string;
+
+/**
+ * The Flashcard representation used in the client.
+ * In this representation, the card content is stored in the
+ * format required by ProseMirror.
+ */
+export interface ClientFlashcard extends FlashcardBase {
+
+    /** The card content in the format used by ProseMirror */
+    content: ProseMirrorContent
+}
+
+export interface NamedUser {
+    /** The `uid` value of the user as defined by Firebase Auth */
+    uid: string;
+
+    /** 
+     * The user's display name, which may be the person's real name
+     * or an alias.
+     */
+    displayName: string;
+}
+
+/**
+ * A ClientFlashcard plus additional information related to the card.
+ */
+export interface CardInfo {
+    data: ClientFlashcard,
+
+    /**
+     * The user who is currently editing the card. For now, only one person
+     * can edit a card at a time. If we support collaborative editing in the
+     * future, this will change to an array of NamedUsers.
+     */
+    currentEditor?: NamedUser
+}
+
+/**
+ * The type of a Card. 
+ * For now, there is only one type, namely, "flashcard".
+ * In the future, we anticipate other types.
+ */
+export type CardType = FlashCardType;
+
+export interface CardRef {
+    type: string,
+    id: string
+}
+
 
 /**
  * The universal interface for Deck objects. This interface is
@@ -23,17 +98,10 @@ export interface Deck {
     /** A friendly name for the Deck suitable for display */
     name: string,
 
-    /**
-     * A map of cards where the key is the card `id` and the value is
-     * the Flashcard object.
-     */
-    cards: Record<string, Flashcard>,
-
     /** 
-     * The order in which cards should be displayed.
-     * Each element of the array is the id for a Flashcard.
+     * A list of references to cards within this Deck.
      */
-    sequence: string[]
+    cards: CardRef[]
 }
 
 /**
@@ -129,12 +197,10 @@ export const SIGNIN_BEGIN = 'SIGNIN_BEGIN';
  */
 export const SIGNIN_PASSWORD = 'SIGNIN_PASSWORD';
 
-export interface MinimalUser {
-    /** The firebase unique identifier for the user */
-    uid: string,
-
-    /** The user's real name or an alias suitable for display to other users */
-    displayName: string,
+/**
+ * A representation of a User stored in the client-side Session.
+ */
+export interface SessionUser extends NamedUser {
 
     /**
      * The list of identity providers for the user.
@@ -154,7 +220,7 @@ export interface MinimalUser {
     requiresVerification?: boolean
 }
 export interface Session {
-    user: MinimalUser
+    user: SessionUser
 }
 /**
  * The default `displayName` for users
@@ -248,6 +314,9 @@ export interface DeckApp {
     deckLoadStatus?: LoadStatus,
 
     /** The current deck being edited */
-    deck?: Deck
+    deck?: Deck,
+
+    /** A map containing the cards within the current deck */
+    cards: Record<string, CardInfo>
 }
 

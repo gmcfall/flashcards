@@ -1,12 +1,15 @@
 
-/** The "decks" collection */
+/** The "decks" collection in Firestore */
 export const DECKS = 'decks';
 
-/** The "libraries" collection */
+/** The "libraries" collection in Firestore */
 export const LIBRARIES = 'libraries';
 
-/** The "deck_access" collection */
+/** The "deck_access" collection in Firestore */
 export const DECK_ACCESS = "deck_access";
+
+/** The "cards" collection in Firestore */
+export const CARDS = "cards";
 
 /** Field names used when updating documents in the 'libraries' collection */
 export const LibraryField = {
@@ -16,5 +19,6 @@ export const LibraryField = {
 /** Field names used when updating documents in the 'decks' collection */
 export const DeckField = {
     resources: 'resources',
-    name: 'name'
+    name: 'name',
+    cards: 'cards'
 }

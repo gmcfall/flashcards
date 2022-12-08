@@ -46,8 +46,13 @@ import { doDeckNameUpdate, doDeckReceive } from "../../model/deck";
 import deckNameUpdate from "../actions/deckNameUpdate";
 import deckNameSubmit from "../actions/deckNameSubmit";
 import deckDelete from "../actions/deckDelete";
+import flashcardNew from "../actions/flashcardNew";
+import flashcardReceive from "../actions/flashcardReceive";
+import { doFlashcardReceive } from "../../model/flashcard";
 
-const initialState: DeckApp = {}
+const initialState: DeckApp = {
+    cards: {}
+}
 
 const deckEditorReducer = createReducer(initialState, builder => {
     builder
@@ -110,6 +115,8 @@ const deckEditorReducer = createReducer(initialState, builder => {
         .addCase(deckNameUpdate, doDeckNameUpdate)
         .addCase(deckReceive, doDeckReceive)
         .addCase(deckNameSubmit.rejected, doErrorDisplay)
+        .addCase(flashcardNew.rejected, doErrorDisplay)
+        .addCase(flashcardReceive, doFlashcardReceive)
         .addCase(libraryReceive, doLibraryReceive)
 });
 export default deckEditorReducer;

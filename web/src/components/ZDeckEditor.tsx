@@ -7,6 +7,8 @@ import { useEffect } from "react"
 import { useParams } from "react-router-dom";
 import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
+import { Deck } from "../model/types";
+import ZFlashcard from "./ZFlashcard";
 
 export function ZDeckEditorContent() {
     
@@ -54,7 +56,28 @@ export function ZDeckEditorContent() {
     }
 
     return (
-        <Box></Box>
+        <Box sx={{marginTop: "2em"}}>
+            <ZCardList deck={deck}/>
+        </Box>
+    )
+}
+
+interface CardListProps {
+    deck: Deck
+}
+
+export function ZCardList(props: CardListProps) {
+    const {deck} = props;
+    
+    return (
+        <>
+        {deck.cards.map(ref => {
+            // TODO: lookup the CardInfo and pass as an argument.
+            return (
+                <ZFlashcard key={ref.id}/>
+            )
+        })}
+        </>
     )
 }
 
