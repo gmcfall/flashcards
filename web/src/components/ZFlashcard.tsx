@@ -7,8 +7,9 @@ import flashcardSelect from "../store/actions/flashcardSelect";
 import { Editor } from '@tiptap/react';
 import { useEffect, useRef } from "react";
 
-const cardWidth="15rem";
-const cardHeight="10rem";
+// const heightWidthRatio = 0.5625;
+const cardWidth="150px";
+const cardHeight="90px";
 
 interface FlashcardProps {
     cardInfo: CardInfo,
@@ -58,7 +59,14 @@ export default function ZFlashcard(props: FlashcardProps) {
                 height: cardHeight,
                 borderWidth,
                 borderStyle: 'solid',
-                borderColor
+                borderColor,
+                "&:first-child": {
+                    marginTop: "20px"
+                },
+                "& p" : {
+                    marginBlockStart: "0.2em",
+                    marginBlockEnd: "0.2em"
+                }
             }}
         >
             

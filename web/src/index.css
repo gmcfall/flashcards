@@ -12,16 +12,21 @@ html, body {
 }
 
 .tiptap-container > div {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  display: flex;
+  align-items: stretch;
+  flex-grow: 1;
 }
 
 .deck-editor-tiptap {
-  height: 100%;
   padding: 1em;
+  flex-grow: 1;
   font-size: 200%;
   border: solid rgb(189, 189, 189) 2px;
+}
+
+.deck-editor-tiptap p {
+  margin-block-start: 0.2em;
+  margin-block-end: 0.2em;
 }
 
 

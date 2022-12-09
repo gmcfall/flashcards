@@ -69,10 +69,13 @@ function ZDeckEditorContent(props: TiptapProps) {
     }
 
     return (
-        <Box id="content-root" sx={{display: "flex", justifyContent: "center", width: "100%"}}>
-            <Box className="tiptap-container" sx={{width: "100%", position: "relative", padding: "5em"}}>
-                <EditorContent editor={editor}/>
-            </Box>
+        <Box className="tiptap-container" sx={{
+            display: "flex", 
+            justifyContent: "center",
+            width: "100%",
+            padding: "2rem"
+        }}>
+            <EditorContent editor={editor}/>
         </Box>
     )
 }
@@ -87,16 +90,17 @@ function ZCardList(props: TiptapProps) {
     }
     
     return (
-        <Box id="card-list" sx={{
+        <Box className="card-list" sx={{
             display: "flex",
             flexDirection: "column",
-            gap: "1em",
-            width: "20em",
+            gap: "20px",
+            width: "175px",
             height: "100%",
             borderRightStyle: "solid",
             borderRightWidth: "1px",
             borderRightColor: LerniTheme.dividerColor,
-            padding: "1.5em"
+            paddingLeft: "20px",
+            paddingRight: "20px",
         }}>
         {deck.cards.map(ref => {
             const cardInfo = cards[ref.id];
