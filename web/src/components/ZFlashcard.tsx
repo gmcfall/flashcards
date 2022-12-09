@@ -49,7 +49,7 @@ export default function ZFlashcard(props: FlashcardProps) {
             
             editor.commands.setContent(content);
         }
-        }
+    }
 
     return (
         <button
