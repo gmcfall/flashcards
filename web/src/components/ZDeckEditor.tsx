@@ -1,13 +1,13 @@
 import { Box, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
-import { selectCards, unsubscribeAllCards } from "../model/flashcard";
+import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
 import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
 import LerniTheme from "./lerniTheme";
@@ -136,6 +136,8 @@ function ZDeckBody(props: TiptapProps) {
 
 export default function ZDeckEditor() {
     const dispatch = useAppDispatch();
+    const activeCardId = useSelector(selectActiveCard);
+    
     
     const editor = useEditor({        
         editorProps: {
@@ -146,7 +148,7 @@ export default function ZDeckEditor() {
         extensions: [
             StarterKit,
         ],
-        content: '<p>Hello World!</p>',
+        content: '',
     })
 
     useEffect(() => {
@@ -168,6 +170,14 @@ export default function ZDeckEditor() {
             })
         }
     }, [editor, dispatch])
+
+    useEffect(() => {
+        if (editor) {
+            const value = Boolean(activeCardId);
+            editor.setEditable(value);
+        }
+    }, [activeCardId, editor])
+    
 
     return (
         <Box id="deck-editor" sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%"}}>

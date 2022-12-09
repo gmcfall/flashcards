@@ -13,7 +13,7 @@ export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>
 
 export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<string>) {
 
-    const activeId = lerni.deckEditor.activeCard;
+    const activeId = getActiveCardId(lerni);
     if (activeId) {
         const cardInfo = lerni.cards[activeId];
         if (cardInfo) {
@@ -23,7 +23,7 @@ export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<
 }
 
 export function selectActiveCard(state: RootState) {
-    return state.lerni.deckEditor.activeCard;
+    return getActiveCardId(state.lerni);
 }
 
 export function selectCards(state: RootState) {
@@ -69,7 +69,7 @@ let lastSavedId = '';
 let lastSavedContent = '';
 export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string | null) {
     
-    const activeId = activeIdArg || lerni.deckEditor.activeCard;
+    const activeId = activeIdArg || getActiveCardId(lerni);
     const cards = lerni.cards;
     if (activeId) {
         const cardInfo = cards[activeId];
@@ -86,6 +86,17 @@ export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string 
         }
     }
     return true;
+}
+
+function getActiveCardId(lerni: LerniApp) {
+    const id = lerni.deckEditor.activeCard;
+    if (id) {
+        // Verify that the card exists
+        if (!lerni.cards[id]) {
+            return null;
+        }
+    }
+    return id;
 }
 
 export function unsubscribeAllCards() {
@@ -105,7 +116,7 @@ export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<Flashc
         // If the received card is the active card, then the local content is more 
         // up-to-date than the received content. Hence, we overwrite the received
         // content with the local content.
-        const activeId = lerni.deckEditor.activeCard;
+        const activeId = getActiveCardId(lerni);
         if (activeId === card.id) {
             card.content = info.card.content;
         }

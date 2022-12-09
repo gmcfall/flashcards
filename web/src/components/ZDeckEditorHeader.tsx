@@ -108,6 +108,7 @@ function ZDeckEditorBanner() {
     return (        
         <Box sx={{
             display: 'flex',
+            paddingTop: "5px",
             borderBottomWidth: "1px",
             paddingLeft: "2em"
         }}>
