@@ -175,7 +175,6 @@ export default function ZDeckEditor() {
 
     useEffect(() => {
         if (newActiveCard && editor) {
-            console.log('set first content', newActiveCard);
             editor.commands.setContent(newActiveCard.content);
             dispatch(deckeditorNewActiveCardDelete());
         }

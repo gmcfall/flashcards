@@ -99,7 +99,6 @@ export function doDeckeditorUnmount(lerni: LerniApp, action: PayloadAction) {
 }
 
 export function doDeckeditorNewActiveCardDelete(lerni: LerniApp, action: PayloadAction) {
-    console.log('doDeckeditorNewActiveCardDelete', JSON.parse(JSON.stringify(lerni)));
     delete lerni.deckEditor.newActiveCard;
 }
 

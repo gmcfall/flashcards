@@ -79,7 +79,6 @@ export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string 
             if (lastSavedId !== card.id || lastSavedContent !== content) {
                 lastSavedId = card.id;
                 lastSavedContent = content;
-                console.log('saveFlashcardContent', content)
                 const db = getFirestore(firebaseApp);
                 const cardRef = doc(db, CARDS, card.id);
                 await updateDoc(cardRef, CardField.content, content);
@@ -151,7 +150,6 @@ export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<Flashc
             }
         }
     }
-    console.log('doFlashcardReceive', JSON.parse(JSON.stringify(lerni)))
 }
 
 export function createFlashcardRef(cardId: string) : CardRef {

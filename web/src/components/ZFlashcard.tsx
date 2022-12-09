@@ -23,8 +23,6 @@ export default function ZFlashcard(props: FlashcardProps) {
     const isActive = activeCard === card.id;
     const content = card.content;
 
-    console.log('ZFlashcard', content);
-
     useEffect(()=> {
 
         const current = buttonEl.current;
