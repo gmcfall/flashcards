@@ -1,4 +1,4 @@
-import { ButtonBase } from "@mui/material";
+import { useTheme } from "@mui/material";
 import { useDispatch } from "react-redux";
 import { useAppSelector } from "../hooks/hooks";
 import { selectActiveCard } from "../model/flashcard";
@@ -19,6 +19,7 @@ export default function ZFlashcard(props: FlashcardProps) {
     const {cardInfo, editor} = props;
 
     const dispatch = useDispatch();
+    const theme = useTheme();
     const activeCard = useAppSelector(selectActiveCard);
     const buttonEl = useRef<HTMLButtonElement>(null);
 
@@ -32,44 +33,29 @@ export default function ZFlashcard(props: FlashcardProps) {
 
         if (current) {
             current.innerHTML = content;
+            console.log(content);
         }
 
     }, [buttonEl, content])
 
-    const borderColor = isActive ? "warning.main" : "grey.400";
-    const borderWidth = isActive ? 2 : 1;
+    const style = isActive ? {
+        borderColor: theme.palette.warning.main,
+        borderWidth: 2
+    } :  {
+        borderColor: theme.palette.grey["400"]
+    }
 
-    
     function handleClick() {
         dispatch(flashcardSelect(card.id));
         editor.commands.setContent(content);
     }
 
     return (
-        <ButtonBase
+        <button
             ref={buttonEl}
-            disableRipple
+            className="deck-editor-thumbnail"
             onClick={handleClick}
-            sx={{
-                display: "block",
-                padding: "1em",
-                textAlign: "start",
-                fontSize: "70%",
-                width: cardWidth,
-                height: cardHeight,
-                borderWidth,
-                borderStyle: 'solid',
-                borderColor,
-                "&:first-child": {
-                    marginTop: "20px"
-                },
-                "& p" : {
-                    marginBlockStart: "0.2em",
-                    marginBlockEnd: "0.2em"
-                }
-            }}
-        >
-            
-        </ButtonBase>
+            style={style}
+        />
     )
 }
