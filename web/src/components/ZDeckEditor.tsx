@@ -144,7 +144,7 @@ export default function ZDeckEditor() {
             }
         },
         extensions: [
-        StarterKit,
+            StarterKit,
         ],
         content: '<p>Hello World!</p>',
     })
@@ -171,7 +171,7 @@ export default function ZDeckEditor() {
 
     return (
         <Box id="deck-editor" sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%"}}>
-            <ZDeckEditorHeader/>
+            <ZDeckEditorHeader editor={editor}/>
             <ZDeckBody editor={editor}/>
         </Box>
     )
