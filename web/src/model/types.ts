@@ -4,7 +4,7 @@ export type FlashCardType = 'flashcard';
 /** The "flashcard" value of the FlashCardType */
 export const FLASHCARD = 'flashcard';
 
-export interface FlashcardBase {
+export interface Flashcard {
 
     type: FlashCardType,
 
@@ -14,36 +14,12 @@ export interface FlashcardBase {
 
     /** The id of the deck that owns this card */
     ownerDeck: string,
-}
-
-/**
- * A Flashcard representation suitable for persisting in Firestore.
- * In this representation, the card content is serialized as an
- * HTML string.
- */
-export interface ServerFlashcard extends FlashcardBase{
 
     /** The card content represented as an HTML string */
     content: string,
 }
 
-/**
- * A representation of rich text in the format used by ProseMirror.
- * For now, we stub this out as a string. Later we'll redefine it as
- * a Javascript object.
- */
-type ProseMirrorContent = string;
 
-/**
- * The Flashcard representation used in the client.
- * In this representation, the card content is stored in the
- * format required by ProseMirror.
- */
-export interface ClientFlashcard extends FlashcardBase {
-
-    /** The card content in the format used by ProseMirror */
-    content: ProseMirrorContent
-}
 
 export interface NamedUser {
     /** The `uid` value of the user as defined by Firebase Auth */
@@ -60,7 +36,7 @@ export interface NamedUser {
  * A ClientFlashcard plus additional information related to the card.
  */
 export interface CardInfo {
-    card: ClientFlashcard,
+    card: Flashcard,
 
     /**
      * The user who is currently editing the card. For now, only one person

@@ -20,6 +20,7 @@ html, body {
 .deck-editor-tiptap {
   height: 100%;
   padding: 1em;
+  font-size: 200%;
   border: solid rgb(189, 189, 189) 2px;
 }
 

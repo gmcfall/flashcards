@@ -5,10 +5,21 @@ import { RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { CARDS, DeckField, DECKS } from "./firestoreConstants";
-import { CardRef, ClientFlashcard, LerniApp, FLASHCARD, ServerFlashcard } from "./types";
+import { CardRef, Flashcard, LerniApp, FLASHCARD } from "./types";
 
 export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>) {
     lerni.deckEditor.activeCard = action.payload;
+}
+
+export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<string>) {
+
+    const activeId = lerni.deckEditor.activeCard;
+    if (activeId) {
+        const cardInfo = lerni.cards[activeId];
+        if (cardInfo) {
+            cardInfo.card.content = action.payload;
+        }
+    }
 }
 
 export function selectActiveCard(state: RootState) {
@@ -19,7 +30,7 @@ export function selectCards(state: RootState) {
     return state.lerni.cards;
 }
 
-export function createFlashCard(ownerDeck: string) : ServerFlashcard {
+export function createFlashCard(ownerDeck: string) : Flashcard {
 
     return {
         type: FLASHCARD,
@@ -45,7 +56,7 @@ export function subscribeCard(dispatch: Dispatch, cardId: string) {
             switch (change.type) {
                 case 'added' :
                 case 'modified':
-                    dispatch(flashcardReceive(change.doc.data() as ServerFlashcard));
+                    dispatch(flashcardReceive(change.doc.data() as Flashcard));
                     break;
             }
         })
@@ -63,27 +74,22 @@ export function unsubscribeAllCards() {
     }
 }
 
-export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<ServerFlashcard>) {
-    const serverCard = action.payload;
-    const clientCard = toClientFlashcard(serverCard);
+export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<Flashcard>) {
+    const card = action.payload;
 
     const cards = lerni.cards;
-    const info = cards[clientCard.id];
+    const info = cards[card.id];
     if (info) {
-        info.card = clientCard;
+        info.card = card;
     } else {
-        cards[clientCard.id] = {
-            card: clientCard
+        cards[card.id] = {
+            card
         }
     }
 }
 
 
-function toClientFlashcard(serverCard: ServerFlashcard) {
-    return serverCard as ClientFlashcard;
-}
-
-export async function saveFlashcard(card: ServerFlashcard) {
+export async function saveFlashcard(card: Flashcard) {
 
     const db = getFirestore(firebaseApp);
 

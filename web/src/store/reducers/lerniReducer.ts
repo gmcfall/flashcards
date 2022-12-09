@@ -48,8 +48,9 @@ import deckNameSubmit from "../actions/deckNameSubmit";
 import deckDelete from "../actions/deckDelete";
 import flashcardNew from "../actions/flashcardNew";
 import flashcardReceive from "../actions/flashcardReceive";
-import { doFlashcardReceive, doFlashcardSelect } from "../../model/flashcard";
+import { doFlashcardContentUpdate, doFlashcardReceive, doFlashcardSelect } from "../../model/flashcard";
 import flashcardSelect from "../actions/flashcardSelect";
+import flashcardContentUpdate from "../actions/flashcardContentUpdate";
 
 const initialState: LerniApp = {
     cards: {},
@@ -117,6 +118,7 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(deckNameUpdate, doDeckNameUpdate)
         .addCase(deckReceive, doDeckReceive)
         .addCase(deckNameSubmit.rejected, doErrorDisplay)
+        .addCase(flashcardContentUpdate, doFlashcardContentUpdate)
         .addCase(flashcardNew.rejected, doErrorDisplay)
         .addCase(flashcardReceive, doFlashcardReceive)
         .addCase(flashcardSelect, doFlashcardSelect)
