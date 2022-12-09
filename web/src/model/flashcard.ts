@@ -1,10 +1,10 @@
 import { Dispatch, PayloadAction } from "@reduxjs/toolkit";
-import { collection, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, where } from "firebase/firestore";
+import { collection, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where } from "firebase/firestore";
 import flashcardReceive from "../store/actions/flashcardReceive";
 import { RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
-import { CARDS, DeckField, DECKS } from "./firestoreConstants";
+import { CardField, CARDS, DeckField, DECKS } from "./firestoreConstants";
 import { CardRef, Flashcard, LerniApp, FLASHCARD } from "./types";
 
 export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>) {
@@ -63,7 +63,29 @@ export function subscribeCard(dispatch: Dispatch, cardId: string) {
     })
 
     unsubscribeFunctions[cardId] = unsubscribe;
+}
 
+let lastSavedId = '';
+let lastSavedContent = '';
+export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string | null) {
+    
+    const activeId = activeIdArg || lerni.deckEditor.activeCard;
+    const cards = lerni.cards;
+    if (activeId) {
+        const cardInfo = cards[activeId];
+        if (cardInfo) {
+            const card = cardInfo.card;
+            const content = card.content;
+            if (lastSavedId !== card.id || lastSavedContent !== content) {
+                lastSavedId = card.id;
+                lastSavedContent = content;
+                const db = getFirestore(firebaseApp);
+                const cardRef = doc(db, CARDS, card.id);
+                await updateDoc(cardRef, CardField.content, content);
+            }
+        }
+    }
+    return true;
 }
 
 export function unsubscribeAllCards() {
@@ -80,7 +102,15 @@ export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<Flashc
     const cards = lerni.cards;
     const info = cards[card.id];
     if (info) {
+        // If the received card is the active card, then the local content is more 
+        // up-to-date than the received content. Hence, we overwrite the received
+        // content with the local content.
+        const activeId = lerni.deckEditor.activeCard;
+        if (activeId === card.id) {
+            card.content = info.card.content;
+        }
         info.card = card;
+        
     } else {
         cards[card.id] = {
             card

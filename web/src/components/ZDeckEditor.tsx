@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectCards, unsubscribeAllCards } from "../model/flashcard";
+import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
 import LerniTheme from "./lerniTheme";
 import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
@@ -132,8 +133,10 @@ function ZDeckBody(props: TiptapProps) {
     )
 }
 
+
 export default function ZDeckEditor() {
     const dispatch = useAppDispatch();
+    
     const editor = useEditor({        
         editorProps: {
             attributes: {
@@ -145,6 +148,17 @@ export default function ZDeckEditor() {
         ],
         content: '<p>Hello World!</p>',
     })
+
+    useEffect(() => {
+        const token = setInterval(() => {
+            dispatch(flashcardContentSave(null));
+        }, 5000)
+
+        return () => {
+            dispatch(flashcardContentSave(null));
+            clearInterval(token);
+        }
+    }, [dispatch]);
 
     useEffect(() => {
         if (editor) {

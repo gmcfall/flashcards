@@ -22,3 +22,8 @@ export const DeckField = {
     name: 'name',
     cards: 'cards'
 }
+
+/** Field names used when updating documents in the 'cards' collection */
+export const CardField = {
+    content: 'content'
+}

@@ -1,15 +1,11 @@
 import { useTheme } from "@mui/material";
-import { useDispatch } from "react-redux";
-import { useAppSelector } from "../hooks/hooks";
-import { selectActiveCard } from "../model/flashcard";
-import { CardInfo } from "../model/types";
-import flashcardSelect from "../store/actions/flashcardSelect";
 import { Editor } from '@tiptap/react';
 import { useEffect, useRef } from "react";
-
-// const heightWidthRatio = 0.5625;
-const cardWidth="150px";
-const cardHeight="90px";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks";
+import { selectActiveCard } from "../model/flashcard";
+import { CardInfo } from "../model/types";
+import flashcardContentSave from "../store/actions/flashcardContentSave";
+import flashcardSelect from "../store/actions/flashcardSelect";
 
 interface FlashcardProps {
     cardInfo: CardInfo,
@@ -18,7 +14,7 @@ interface FlashcardProps {
 export default function ZFlashcard(props: FlashcardProps) {
     const {cardInfo, editor} = props;
 
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const theme = useTheme();
     const activeCard = useAppSelector(selectActiveCard);
     const buttonEl = useRef<HTMLButtonElement>(null);
@@ -33,7 +29,6 @@ export default function ZFlashcard(props: FlashcardProps) {
 
         if (current) {
             current.innerHTML = content;
-            console.log(content);
         }
 
     }, [buttonEl, content])
@@ -46,9 +41,15 @@ export default function ZFlashcard(props: FlashcardProps) {
     }
 
     function handleClick() {
-        dispatch(flashcardSelect(card.id));
-        editor.commands.setContent(content);
-    }
+        if (activeCard !== card.id) {
+            if (activeCard) {
+                dispatch(flashcardContentSave(activeCard))
+            }
+            dispatch(flashcardSelect(card.id));
+            
+            editor.commands.setContent(content);
+        }
+        }
 
     return (
         <button
