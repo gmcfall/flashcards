@@ -1,14 +1,14 @@
 // This file provides features that span multiple parts of the app
 
 import { PayloadAction } from "@reduxjs/toolkit";
-import { deleteField, doc, FieldPath, getFirestore, onSnapshot, runTransaction, setDoc, Unsubscribe, updateDoc } from "firebase/firestore";
+import { deleteField, doc, FieldPath, getFirestore, onSnapshot, runTransaction, setDoc, Unsubscribe, writeBatch } from "firebase/firestore";
 import deckReceive from "../store/actions/deckReceive";
 import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { CARDS, DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
-import { DECK, Deck, DeckAccess, LerniApp, ResourceRef, UNTITLED_DECK } from "./types";
+import { DECK, Deck, DeckAccess, Flashcard, LerniApp, ResourceRef, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -27,26 +27,33 @@ function createDeckAccess(owner: string) : DeckAccess {
     return {owner}
 }
 
-export async function saveDeck(userUid: string, deck: Deck) {
+export async function saveDeck(userUid: string, deck: Deck, card: Flashcard) {
 
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deck.id);
-    const deckPromise = setDoc(deckRef, deck);
 
     const deckAccess = createDeckAccess(userUid);
     const accessRef = doc(db, DECK_ACCESS, deck.id);
-    const accessPromise = setDoc(accessRef, deckAccess);
-
+    const cardRef = doc(db, CARDS, card.id);
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deck.id);
     const deckResourceRef: ResourceRef = {
-        id: deck.id,
         type: DECK,
+        id: deck.id,
         name: deck.name
     }
-    const libPromise = updateDoc(libRef, path, deckResourceRef)
 
-    return Promise.all([deckPromise, accessPromise, libPromise])
+    const batch = writeBatch(db);
+    batch.set(accessRef, deckAccess);
+    batch.set(deckRef, deck);
+    batch.update(libRef, path, deckResourceRef);
+
+    await batch.commit();
+
+    // We cannot save the `cardRef` in the batch because the security rules rely on
+    // the existence of the `deckAccess` record. Therefore, we do it now, outside the batch.
+
+    setDoc(cardRef, card);
 }
 
 
@@ -91,6 +98,11 @@ export function doDeckeditorUnmount(lerni: LerniApp, action: PayloadAction) {
     delete lerni.deck;
 }
 
+export function doDeckeditorNewActiveCardDelete(lerni: LerniApp, action: PayloadAction) {
+    console.log('doDeckeditorNewActiveCardDelete', JSON.parse(JSON.stringify(lerni)));
+    delete lerni.deckEditor.newActiveCard;
+}
+
 export function doDeckReceive(lerni: LerniApp, action: PayloadAction<Deck>) {
     const deck = action.payload;
     lerni.deck = deck;
@@ -106,6 +118,19 @@ export function doDeckNameUpdate(lerni: LerniApp, action: PayloadAction<string>)
 /** Select the current deck being edited or viewed */
 export function selectDeck(state: RootState) {
     return state.lerni.deck;
+}
+
+export function selectNewActiveCard(state: RootState) {
+    const lerni = state.lerni;
+    const deckEditor = lerni.deckEditor;
+    const activeCard = deckEditor.activeCard;
+    if (deckEditor.newActiveCard && activeCard) {
+        const cardInfo = lerni.cards[activeCard];
+        if (cardInfo) {
+            return cardInfo.card;
+        }
+    }
+    return null;
 }
 
 export async function deleteDeck(deckId: string, userUid: string) {

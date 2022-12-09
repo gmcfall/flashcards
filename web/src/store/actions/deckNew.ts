@@ -3,6 +3,7 @@ import { createAppAsyncThunk } from "../../hooks/hooks";
 import { selectSession } from "../../model/auth";
 import { createDeck, saveDeck } from "../../model/deck";
 import { createErrorInfo } from "../../model/errorHandler";
+import { createFlashCard, createFlashcardRef } from "../../model/flashcard";
 import { deckEditRoute } from "../../model/routes";
 
 
@@ -18,7 +19,11 @@ const deckNew = createAppAsyncThunk(
                 })
             }
             const deck = createDeck();
-            await saveDeck(session.user.uid, deck);
+            const card = createFlashCard(deck.id);
+            const cardRef = createFlashcardRef(card.id);
+            deck.cards.push(cardRef);
+
+            await saveDeck(session.user.uid, deck, card);
 
             navigate(deckEditRoute(deck.id));
 

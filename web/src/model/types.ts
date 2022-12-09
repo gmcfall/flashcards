@@ -264,6 +264,14 @@ export interface DeckEditor {
      * loaded into the rich text editor.
      */
     activeCard?: string;
+
+    /**
+     * A flag indicating that the `activeCard` was newly set by an asynchronous process. 
+     * For instance, when the first card in the deck is loaded from Firestore, it is
+     * set as the "active" card. If this flag is present, ZEditor will set the card content
+     * into the TipTap editor and then dispatch an action to delete the flag.
+     */
+    newActiveCard?: boolean;
 }
 
 export interface LerniApp {

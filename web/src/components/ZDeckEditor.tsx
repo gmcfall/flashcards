@@ -1,13 +1,14 @@
 import { Box, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
-import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
-import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
+import { deckSubscribe, deckUnsubscribe, selectDeck, selectNewActiveCard } from "../model/deck";
+import { selectCards, unsubscribeAllCards } from "../model/flashcard";
+import deckeditorNewActiveCardDelete from "../store/actions/deckeditorNewActiveCardDelete";
 import deckeditorUnmount from "../store/actions/deckeditorUnmount";
 import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
@@ -138,7 +139,7 @@ function ZDeckBody(props: TiptapProps) {
 
 export default function ZDeckEditor() {
     const dispatch = useAppDispatch();
-    const activeCardId = useSelector(selectActiveCard);
+    const newActiveCard = useSelector(selectNewActiveCard);
     
     const editor = useEditor({        
         editorProps: {
@@ -173,11 +174,12 @@ export default function ZDeckEditor() {
     }, [editor, dispatch])
 
     useEffect(() => {
-        if (editor) {
-            const value = Boolean(activeCardId);
-            editor.setEditable(value);
+        if (newActiveCard && editor) {
+            console.log('set first content', newActiveCard);
+            editor.commands.setContent(newActiveCard.content);
+            dispatch(deckeditorNewActiveCardDelete());
         }
-    }, [activeCardId, editor])
+    }, [newActiveCard, editor, dispatch])
     
 
     return (

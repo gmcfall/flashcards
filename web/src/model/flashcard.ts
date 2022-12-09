@@ -79,6 +79,7 @@ export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string 
             if (lastSavedId !== card.id || lastSavedContent !== content) {
                 lastSavedId = card.id;
                 lastSavedContent = content;
+                console.log('saveFlashcardContent', content)
                 const db = getFirestore(firebaseApp);
                 const cardRef = doc(db, CARDS, card.id);
                 await updateDoc(cardRef, CardField.content, content);
@@ -127,6 +128,37 @@ export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<Flashc
             card
         }
     }
+
+    const deck = lerni.deck;
+    const deckEditor = lerni.deckEditor;
+    if (deck && !deckEditor.activeCard && deck) {
+
+        const list = deck.cards;
+        if (list.length>0) {
+            const firstCardRef = list[0];
+            if (firstCardRef.id === card.id) {
+                // The currently received card is the first card. Make it active!
+                deckEditor.activeCard = card.id;
+                deckEditor.newActiveCard = true;
+            } else {
+                // The currently received card is NOT the first card.
+                // If the first card was received earlier make it active now.
+                const firstCardInfo = lerni.cards[firstCardRef.id];
+                if (firstCardInfo) {
+                    deckEditor.activeCard = firstCardInfo.card.id;
+                    deckEditor.newActiveCard = true;
+                }
+            }
+        }
+    }
+    console.log('doFlashcardReceive', JSON.parse(JSON.stringify(lerni)))
+}
+
+export function createFlashcardRef(cardId: string) : CardRef {
+    return {
+        type: FLASHCARD,
+        id: cardId
+    }
 }
 
 
@@ -144,10 +176,7 @@ export async function saveFlashcard(card: Flashcard) {
             throw new Error(`Deck(${card.ownerDeck}) does not exist`)
         }
 
-        const cardRef: CardRef = {
-            type: FLASHCARD,
-            id: card.id
-        }
+        const cardRef = createFlashcardRef(card.id);
 
         const deckData = deckDoc.data();
         const cardList = [...deckData.cards, cardRef];
