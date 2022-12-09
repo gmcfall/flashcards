@@ -22,6 +22,10 @@ export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<
     }
 }
 
+export function doFlashcardNewFulfilled(lerni: LerniApp, action: PayloadAction<string>) {
+    lerni.deckEditor.activeCard = action.payload;
+}
+
 export function selectActiveCard(state: RootState) {
     return getActiveCardId(state.lerni);
 }

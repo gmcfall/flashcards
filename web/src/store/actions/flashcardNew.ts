@@ -11,15 +11,13 @@ const flashcardNew = createAppAsyncThunk(
           
             const state = thunkApi.getState();
             const deck = selectDeck(state);
-            if (deck == null) {
-                thunkApi.rejectWithValue(createErrorInfo(
-                    "An error occurred while creating the new Flashcard",
-                    new Error("Cannot create new Flashcard: deck is undefined")
-                ))
-                return;
+            if (deck == null) {                
+                throw new Error("Cannot create new Flashcard: deck is undefined");
             }
             const card = createFlashCard(deck.id);
             await saveFlashcard(card);
+
+            return card.id;
 
         } catch (error) {
             console.log(error);

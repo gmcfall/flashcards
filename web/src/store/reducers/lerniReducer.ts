@@ -48,7 +48,7 @@ import deckNameSubmit from "../actions/deckNameSubmit";
 import deckDelete from "../actions/deckDelete";
 import flashcardNew from "../actions/flashcardNew";
 import flashcardReceive from "../actions/flashcardReceive";
-import { doFlashcardContentUpdate, doFlashcardReceive, doFlashcardSelect } from "../../model/flashcard";
+import { doFlashcardContentUpdate, doFlashcardNewFulfilled, doFlashcardReceive, doFlashcardSelect } from "../../model/flashcard";
 import flashcardSelect from "../actions/flashcardSelect";
 import flashcardContentUpdate from "../actions/flashcardContentUpdate";
 import flashcardContentSave from "../actions/flashcardContentSave";
@@ -125,6 +125,7 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(deckNameSubmit.rejected, doErrorDisplay)
         .addCase(flashcardContentSave.rejected, doErrorDisplay)
         .addCase(flashcardContentUpdate, doFlashcardContentUpdate)
+        .addCase(flashcardNew.fulfilled, doFlashcardNewFulfilled)
         .addCase(flashcardNew.rejected, doErrorDisplay)
         .addCase(flashcardReceive, doFlashcardReceive)
         .addCase(flashcardSelect, doFlashcardSelect)
