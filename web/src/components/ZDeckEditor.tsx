@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
+import deckeditorUnmount from "../store/actions/deckeditorUnmount";
 import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
 import LerniTheme from "./lerniTheme";
@@ -41,8 +42,9 @@ function ZDeckEditorContent(props: TiptapProps) {
         }
 
         return () => {
-            deckUnsubscribe();
             unsubscribeAllCards();
+            deckUnsubscribe();
+            dispatch(deckeditorUnmount())
         }
 
     }, [dispatch, deckId, userUid])
@@ -137,7 +139,6 @@ function ZDeckBody(props: TiptapProps) {
 export default function ZDeckEditor() {
     const dispatch = useAppDispatch();
     const activeCardId = useSelector(selectActiveCard);
-    
     
     const editor = useEditor({        
         editorProps: {

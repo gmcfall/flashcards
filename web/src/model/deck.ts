@@ -85,6 +85,12 @@ export function deckUnsubscribe() {
     }
 }
 
+export function doDeckeditorUnmount(lerni: LerniApp, action: PayloadAction) {
+    lerni.deckEditor = {}
+    lerni.cards = {}
+    delete lerni.deck;
+}
+
 export function doDeckReceive(lerni: LerniApp, action: PayloadAction<Deck>) {
     const deck = action.payload;
     lerni.deck = deck;
