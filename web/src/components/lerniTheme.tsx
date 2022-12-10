@@ -1,6 +1,5 @@
 
-// TODO: Make LerniTheme available via a React Context
-// See https://reactjs.org/docs/context.html
+// TODO: Make these properties available via the mui Theme
 
 const LerniTheme = {
     dividerColor: "grey.400"

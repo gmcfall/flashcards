@@ -6,8 +6,9 @@ import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
-import { deckSubscribe, deckUnsubscribe, selectDeck, selectNewActiveCard } from "../model/deck";
+import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectCards, unsubscribeAllCards } from "../model/flashcard";
+import { selectNewActiveCard } from "../model/deckEditor";
 import deckeditorNewActiveCardDelete from "../store/actions/deckeditorNewActiveCardDelete";
 import deckeditorUnmount from "../store/actions/deckeditorUnmount";
 import flashcardContentSave from "../store/actions/flashcardContentSave";
@@ -17,6 +18,9 @@ import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
 import ZDeckEditorHeader from "./ZDeckEditorHeader";
 import ZFlashcard from "./ZFlashcard";
+import deckeditorMount from "../store/actions/deckeditorMount";
+import flashcardDelete from "../store/actions/flashcardDelete";
+import { DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
 
 
 export interface TiptapProps {
@@ -27,28 +31,13 @@ function ZDeckEditorContent(props: TiptapProps) {
 
     const {editor} = props;
     
-    const dispatch = useAppDispatch();
     const session = useAppSelector(selectSession);
     const registrationState = useAppSelector(selectRegistrationState);
     const signInState = useAppSelector(selectSigninState);
 
-    const {deckId} = useParams();
-    const userUid = session?.user.uid;
 
     const deck = useAppSelector(selectDeck);
 
-    useEffect(() => {
-        if (deckId && userUid) {
-            deckSubscribe(dispatch, deckId);
-        }
-
-        return () => {
-            unsubscribeAllCards();
-            deckUnsubscribe();
-            dispatch(deckeditorUnmount())
-        }
-
-    }, [dispatch, deckId, userUid])
     
     if (registrationState || signInState || !editor) {
         return null;
@@ -136,15 +125,18 @@ function ZDeckBody(props: TiptapProps) {
     )
 }
 
-
 export default function ZDeckEditor() {
     const dispatch = useAppDispatch();
     const newActiveCard = useSelector(selectNewActiveCard);
     
+    const {deckId} = useParams();
+    const session = useAppSelector(selectSession);
+    const userUid = session?.user.uid;
+    
     const editor = useEditor({        
         editorProps: {
             attributes: {
-                class: 'deck-editor-tiptap'
+                class: DECK_EDITOR_TIPTAP
             }
         },
         extensions: [
@@ -152,6 +144,52 @@ export default function ZDeckEditor() {
         ],
         content: '',
     })
+
+    useEffect(() => {
+        function handleKeyup(event: KeyboardEvent) {
+            const target = event.target as any;
+            const classList = target.classList;
+            if (
+                classList.contains(DECK_EDITOR_TIPTAP) ||
+                classList.contains(DECK_NAME_INPUT)
+            ) {
+                return;
+            }
+            switch (event.key) {
+                case 'Delete': 
+                    dispatch(flashcardDelete())
+                    break;
+            }
+        }
+        if (deckId) {
+            document.addEventListener('keyup', handleKeyup);
+            dispatch(deckeditorMount(deckId))
+        }
+
+        return () => {
+            if (deckId) {
+                document.removeEventListener('keyup', handleKeyup);
+                dispatch(deckeditorUnmount())
+            }
+        }
+
+    }, [dispatch, deckId]);
+
+    
+    useEffect(() => {
+        const ok = deckId && userUid;
+        if (ok) {
+            deckSubscribe(dispatch, deckId);
+        }
+
+        return () => {
+            if (ok) {
+                unsubscribeAllCards();
+                deckUnsubscribe();
+            }
+        }
+
+    }, [dispatch, deckId, userUid])
 
     useEffect(() => {
         const token = setInterval(() => {

@@ -4,6 +4,7 @@ import { selectSession } from "../model/auth";
 import { selectDeck } from "../model/deck";
 import deckNameSubmit from "../store/actions/deckNameSubmit";
 import deckNameUpdate from "../store/actions/deckNameUpdate";
+import { DECK_NAME_INPUT } from "./lerniConstants";
 
 export default function ZDeckNameInput() {
     const dispatch = useAppDispatch();
@@ -42,6 +43,7 @@ export default function ZDeckNameInput() {
     return (
         
         <TextField
+            className={DECK_NAME_INPUT}
             inputProps={{size}}
             size="small"
             variant="outlined"

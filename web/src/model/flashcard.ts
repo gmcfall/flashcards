@@ -1,14 +1,19 @@
 import { Dispatch, PayloadAction } from "@reduxjs/toolkit";
-import { collection, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where } from "firebase/firestore";
-import flashcardReceive from "../store/actions/flashcardReceive";
+import { collection, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where, writeBatch } from "firebase/firestore";
+import flashcardAdded from "../store/actions/flashcardAdded";
+import flashcardModified from "../store/actions/flashcardModified";
+import flashcardRemoved from "../store/actions/flashcardRemoved";
 import { RootState } from "../store/store";
 import generateUid from "../util/uid";
+import { deckEditorReceiveAddedCard } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
 import { CardField, CARDS, DeckField, DECKS } from "./firestoreConstants";
-import { CardRef, Flashcard, LerniApp, FLASHCARD } from "./types";
+import { CardRef, Deck, Flashcard, FLASHCARD, LerniApp } from "./types";
 
 export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>) {
-    lerni.deckEditor.activeCard = action.payload;
+    if (lerni.deckEditor) {
+        lerni.deckEditor.activeCard = action.payload;
+    }
 }
 
 export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<string>) {
@@ -22,8 +27,44 @@ export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<
     }
 }
 
-export function doFlashcardNewFulfilled(lerni: LerniApp, action: PayloadAction<string>) {
-    lerni.deckEditor.activeCard = action.payload;
+export function doFlashcardRemoved(lerni: LerniApp, action: PayloadAction<string>) {
+    const cardId = action.payload;
+    delete lerni.cards[cardId];
+    if (lerni.deckEditor) {
+        
+    }
+}
+
+export async function deleteFlashcard(deck: Deck, cardId: string) {
+
+    let updateDeck = true;
+    const cardList = [...deck.cards];
+    for (let i=0; i<cardList.length; i++) {
+        const ref = cardList[i];
+        if (ref.id === cardId) {
+            cardList.splice(i, 1);
+            updateDeck = true;
+            break;
+        }
+    }
+
+    const db = getFirestore(firebaseApp);
+    const cardRef = doc(db, CARDS, cardId);
+    const deckRef = doc(db, DECKS, deck.id);
+
+    const batch = writeBatch(db);
+    if (updateDeck) {
+        batch.update(deckRef, DeckField.cards, cardList);
+    }
+    batch.delete(cardRef);
+    await batch.commit();
+
+}
+
+export function doFlashcardAddFulfilled(lerni: LerniApp, action: PayloadAction<string>) {
+    if (lerni.deckEditor) {
+        lerni.deckEditor.activeCard = action.payload;
+    }
 }
 
 export function selectActiveCard(state: RootState) {
@@ -57,10 +98,18 @@ export function subscribeCard(dispatch: Dispatch, cardId: string) {
     const q = query(cardsRef, where(documentId(), "==", cardId));
     const unsubscribe = onSnapshot(q, snapshot => {
         snapshot.docChanges().forEach( change => {
+            const data = change.doc.data() as Flashcard;
             switch (change.type) {
                 case 'added' :
+                    dispatch(flashcardAdded(data));
+                    break;
+
                 case 'modified':
-                    dispatch(flashcardReceive(change.doc.data() as Flashcard));
+                    dispatch(flashcardModified(data));
+                    break;
+
+                case 'removed':
+                    dispatch(flashcardRemoved(data.id));
                     break;
             }
         })
@@ -93,7 +142,7 @@ export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string 
 }
 
 function getActiveCardId(lerni: LerniApp) {
-    const id = lerni.deckEditor.activeCard;
+    const id = lerni.deckEditor ? lerni.deckEditor.activeCard : null;
     if (id) {
         // Verify that the card exists
         if (!lerni.cards[id]) {
@@ -111,49 +160,19 @@ export function unsubscribeAllCards() {
     }
 }
 
-export function doFlashcardReceive(lerni: LerniApp, action: PayloadAction<Flashcard>) {
+/**
+ * Handle a newly added Flashcard.
+ */
+export function doFlashcardAdded(lerni: LerniApp, action: PayloadAction<Flashcard>) {
     const card = action.payload;
+    lerni.cards[card.id] = {card};
 
-    const cards = lerni.cards;
-    const info = cards[card.id];
-    if (info) {
-        // If the received card is the active card, then the local content is more 
-        // up-to-date than the received content. Hence, we overwrite the received
-        // content with the local content.
-        const activeId = getActiveCardId(lerni);
-        if (activeId === card.id) {
-            card.content = info.card.content;
-        }
-        info.card = card;
-        
-    } else {
-        cards[card.id] = {
-            card
-        }
-    }
+    deckEditorReceiveAddedCard(lerni, card);
+}
 
-    const deck = lerni.deck;
-    const deckEditor = lerni.deckEditor;
-    if (deck && !deckEditor.activeCard && deck) {
-
-        const list = deck.cards;
-        if (list.length>0) {
-            const firstCardRef = list[0];
-            if (firstCardRef.id === card.id) {
-                // The currently received card is the first card. Make it active!
-                deckEditor.activeCard = card.id;
-                deckEditor.newActiveCard = true;
-            } else {
-                // The currently received card is NOT the first card.
-                // If the first card was received earlier make it active now.
-                const firstCardInfo = lerni.cards[firstCardRef.id];
-                if (firstCardInfo) {
-                    deckEditor.activeCard = firstCardInfo.card.id;
-                    deckEditor.newActiveCard = true;
-                }
-            }
-        }
-    }
+export function doFlashcardModified(lerni: LerniApp, action: PayloadAction<Flashcard>) {
+    const card = action.payload;
+    lerni.cards[card.id] = {card};
 }
 
 export function createFlashcardRef(cardId: string) : CardRef {

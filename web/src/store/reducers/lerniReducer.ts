@@ -40,24 +40,29 @@ import alertPost from "../actions/alertPost";
 import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
 import libraryReceive from "../actions/libraryReceive";
 import { doLibraryReceive } from "../../model/library";
-import deckNew from "../actions/deckNew";
-import deckReceive from "../actions/deckReceive";
-import { doDeckeditorNewActiveCardDelete, doDeckeditorUnmount, doDeckNameUpdate, doDeckReceive } from "../../model/deck";
+import deckAdd from "../actions/deckAdd";
+import deckAdded from "../actions/deckAdded";
+import { doDeckNameUpdate, doDeckAdded, doDeckModified } from "../../model/deck";
 import deckNameUpdate from "../actions/deckNameUpdate";
 import deckNameSubmit from "../actions/deckNameSubmit";
 import deckDelete from "../actions/deckDelete";
-import flashcardNew from "../actions/flashcardNew";
-import flashcardReceive from "../actions/flashcardReceive";
-import { doFlashcardContentUpdate, doFlashcardNewFulfilled, doFlashcardReceive, doFlashcardSelect } from "../../model/flashcard";
+import flashcardAdd from "../actions/flashcardAdd";
+import flashcardAdded from "../actions/flashcardAdded";
+import { doFlashcardContentUpdate, doFlashcardAddFulfilled, doFlashcardAdded, doFlashcardSelect, doFlashcardModified, doFlashcardRemoved } from "../../model/flashcard";
 import flashcardSelect from "../actions/flashcardSelect";
 import flashcardContentUpdate from "../actions/flashcardContentUpdate";
 import flashcardContentSave from "../actions/flashcardContentSave";
 import deckeditorUnmount from "../actions/deckeditorUnmount";
 import deckeditorNewActiveCardDelete from "../actions/deckeditorNewActiveCardDelete";
+import flashcardDelete from "../actions/flashcardDelete";
+import { doDeckeditorMount, doDeckeditorNewActiveCardDelete, doDeckeditorUnmount } from "../../model/deckEditor";
+import deckModified from "../actions/deckModified";
+import flashcardModified from "../actions/flashcardModified";
+import deckeditorMount from "../actions/deckeditorMount";
+import flashcardRemoved from "../actions/flashcardRemoved";
 
 const initialState: LerniApp = {
-    cards: {},
-    deckEditor: {}
+    cards: {}
 }
 
 const lerniReducer = createReducer(initialState, builder => {
@@ -117,17 +122,22 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(authSigninTwitter.rejected, doErrorDisplay)
         .addCase(authSignout.pending, doAuthSignout)
         .addCase(deckDelete.rejected, doErrorDisplay)
-        .addCase(deckNew.rejected, doErrorDisplay)
+        .addCase(deckAdd.rejected, doErrorDisplay)
         .addCase(deckNameUpdate, doDeckNameUpdate)
-        .addCase(deckReceive, doDeckReceive)
+        .addCase(deckAdded, doDeckAdded)
+        .addCase(deckModified, doDeckModified)
+        .addCase(deckeditorMount, doDeckeditorMount)
         .addCase(deckeditorUnmount, doDeckeditorUnmount)
         .addCase(deckeditorNewActiveCardDelete, doDeckeditorNewActiveCardDelete)
         .addCase(deckNameSubmit.rejected, doErrorDisplay)
         .addCase(flashcardContentSave.rejected, doErrorDisplay)
         .addCase(flashcardContentUpdate, doFlashcardContentUpdate)
-        .addCase(flashcardNew.fulfilled, doFlashcardNewFulfilled)
-        .addCase(flashcardNew.rejected, doErrorDisplay)
-        .addCase(flashcardReceive, doFlashcardReceive)
+        .addCase(flashcardDelete.rejected, doErrorDisplay)
+        .addCase(flashcardAdd.fulfilled, doFlashcardAddFulfilled)
+        .addCase(flashcardAdd.rejected, doErrorDisplay)
+        .addCase(flashcardAdded, doFlashcardAdded)
+        .addCase(flashcardModified, doFlashcardModified)
+        .addCase(flashcardRemoved, doFlashcardRemoved)
         .addCase(flashcardSelect, doFlashcardSelect)
         .addCase(libraryReceive, doLibraryReceive)
 });

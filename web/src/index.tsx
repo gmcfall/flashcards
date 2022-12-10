@@ -26,22 +26,25 @@ const theme = createTheme({
   }
 })
 
+// We don't use React.Strict mode because it simulates a future feature by unmounting and then
+// mounting again each component.  The result is that useEffect will run twice even if its 
+// dependencies don't change. 
+//
+// For more information see https://reactjs.org/blog/2022/03/08/react-18-upgrade-guide.html#updates-to-strict-mode
 
 root.render(
-  <React.StrictMode>
-    <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <ZAuth/>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ZHome/>}/>
-            <Route path="/library" element={<ZLibrary/>}/>
-            <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
-          </Routes>
-        </BrowserRouter>
-      </ThemeProvider>
-    </Provider>
-  </React.StrictMode>
+  <Provider store={store}>
+    <ThemeProvider theme={theme}>
+      <ZAuth/>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<ZHome/>}/>
+          <Route path="/library" element={<ZLibrary/>}/>
+          <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
+        </Routes>
+      </BrowserRouter>
+    </ThemeProvider>
+  </Provider>
 );
 
 // If you want to start measuring performance in your app, pass a function

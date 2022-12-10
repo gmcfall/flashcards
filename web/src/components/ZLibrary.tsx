@@ -15,7 +15,7 @@ import { deckEditRoute } from '../model/routes';
 import { ClientLibrary, ERROR, ResourceRef } from '../model/types';
 import alertPost from '../store/actions/alertPost';
 import deckDelete from '../store/actions/deckDelete';
-import deckNew from '../store/actions/deckNew';
+import deckAdd from '../store/actions/deckAdd';
 import { HEADER_STYLE } from './header';
 import ZAccessDeniedAlert from './ZAccessDeniedAlert';
 import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
@@ -31,7 +31,7 @@ function ZLibraryHeader() {
 
     function handleNewDeckButtonClick() {
         if (session) {
-            dispatch(deckNew(navigate));
+            dispatch(deckAdd(navigate));
             // TODO: dispatch navigation to the DeckEditor
         } else {
             dispatch(alertPost({

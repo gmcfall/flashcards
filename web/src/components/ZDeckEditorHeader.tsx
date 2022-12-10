@@ -6,7 +6,7 @@ import ZAuthTools from "./ZAuthTools";
 import ZDeckNameInput from "./ZDeckNameInput";
 import AddIcon from '@mui/icons-material/Add';
 import { useAppDispatch } from "../hooks/hooks";
-import flashcardNew from "../store/actions/flashcardNew";
+import flashcardAdd from "../store/actions/flashcardAdd";
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import { useNavigate } from "react-router-dom";
 import { libraryRoute } from "../model/routes";
@@ -20,7 +20,7 @@ function ZAddCardButton() {
     const dispatch = useAppDispatch();
 
     function handleClick() {
-        dispatch(flashcardNew());
+        dispatch(flashcardAdd());
     }
     return (
         <Tooltip title="Add a new Flashcard">

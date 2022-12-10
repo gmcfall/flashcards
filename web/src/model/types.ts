@@ -258,7 +258,54 @@ export const PENDING='pending';
 /** The 'failed' value of the LoadStatus type */
 export const FAILED='failed';
 
+
+/**
+ * Maintains state during the process of loading the initial
+ * snapshot of a Deck and its cards.
+ */
+interface DeckBootstrap {
+
+    /** The id of the deck received */
+    deckId?: string;
+
+    /** The number of cards received */
+    cardCount: number;
+}
+
+
+/**
+ * State used during the process of removing a card from the deck.
+ */
+export interface CardRemove {
+    /** The Deck state before the Card was removed. */
+    oldDeck: Deck; 
+}
+
+/**
+ * State used during the process of adding a new card to the Deck
+ * after the bootstrap process ends.
+ * 
+ * The `cardId` field is set when the Firestore listener receives and "added" Flashcard.
+ * The `deckId` field is set when the Firestore listener receives a "modified" Deck
+ * containing a reference to the added card.
+ * 
+ * When both fields are set, the `activeCard` is updated and the CardAdd record
+ * is deleted from `lerni.deckEditor`
+ */
+export interface CardAdd {
+
+    /** The id of the Flashcard that was added */
+    cardId?: string;
+
+    /** The id of the Deck that was modified reference the added card */
+    deckId?: string;
+}
+
 export interface DeckEditor {
+
+    /** The id of the deck being edited */
+    deckId?: string;
+
     /**
      * The id of the "active" card, i.e. the one currently
      * loaded into the rich text editor.
@@ -266,12 +313,29 @@ export interface DeckEditor {
     activeCard?: string;
 
     /**
-     * A flag indicating that the `activeCard` was newly set by an asynchronous process. 
-     * For instance, when the first card in the deck is loaded from Firestore, it is
-     * set as the "active" card. If this flag is present, ZEditor will set the card content
-     * into the TipTap editor and then dispatch an action to delete the flag.
+     * A flag indicating that the `activeCard` was newly changed by an asynchronous process. 
+     * If this flag is present, ZEditor will set the card content into the TipTap editor and 
+     * then dispatch an action to delete the flag.
      */
     newActiveCard?: boolean;
+
+    /** 
+     * A structure that tracks the number of cards received from Firestore during the
+     * bootstrap process. This record is added when ZDeckEditor mounts and is deleted
+     * after the Deck and all cards have been received from Firestore.
+     */
+    bootstrap?: DeckBootstrap;
+
+    /**
+     * State used during the process of adding a card to the deck.
+     */
+    cardAdd?: CardAdd;
+
+    /**
+     * State used during the process of removing a card from the deck.
+     */
+    cardRemove?: CardRemove;
+
 }
 
 export interface LerniApp {
@@ -311,7 +375,7 @@ export interface LerniApp {
     /** A map containing the cards within the current deck */
     cards: Record<string, CardInfo>,
 
-    deckEditor: DeckEditor
+    deckEditor?: DeckEditor
 
 }
 

@@ -7,8 +7,8 @@ import { createFlashCard, createFlashcardRef } from "../../model/flashcard";
 import { deckEditRoute } from "../../model/routes";
 
 
-const deckNew = createAppAsyncThunk(
-    "deck/new",
+const deckAdd = createAppAsyncThunk(
+    "deck/add",
     async (navigate: NavigateFunction, thunkApi) => {
         try {
             const state = thunkApi.getState();
@@ -37,4 +37,4 @@ const deckNew = createAppAsyncThunk(
     }
 )
 
-export default deckNew;
+export default deckAdd;

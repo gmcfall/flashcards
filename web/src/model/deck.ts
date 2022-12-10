@@ -1,10 +1,12 @@
 // This file provides features that span multiple parts of the app
 
 import { PayloadAction } from "@reduxjs/toolkit";
-import { deleteField, doc, FieldPath, getFirestore, onSnapshot, runTransaction, setDoc, Unsubscribe, writeBatch } from "firebase/firestore";
-import deckReceive from "../store/actions/deckReceive";
+import { collection, deleteField, doc, documentId, FieldPath, getFirestore, onSnapshot, query, runTransaction, setDoc, Unsubscribe, where, writeBatch } from "firebase/firestore";
+import deckAdded from "../store/actions/deckAdded";
+import deckModified from "../store/actions/deckModified";
 import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
+import { deckEditorReceiveAddedDeck, deckEditorReceiveModifiedDeck } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
 import { CARDS, DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
@@ -68,13 +70,36 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
     if (unsubscribe) {
         unsubscribe();
     }
+    subscribedDeck = deckId;
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deckId);
+    const decksRef = collection(db, DECKS);
+
+    const q = query(decksRef, where(documentId(), "==", deckId));
+    unsubscribe = onSnapshot(q, snapshot => {
+        snapshot.docChanges().forEach(change => {
+            switch (change.type) {
+                case 'added' : {
+                    const data = change.doc.data() as Deck;
+                    dispatch(deckAdded(data));
+                    subscribeAllCards(dispatch, data);
+                    break;
+                }
+                case 'modified' : {
+                    const data = change.doc.data() as Deck;
+                    dispatch(deckModified(data));
+                    subscribeAllCards(dispatch, data);
+                    break;
+                }
+            }
+        })
+    })
+
     
     unsubscribe = onSnapshot(deckRef, (document) => {
         if (document.exists()) {
             const data = document.data() as Deck;
-            dispatch(deckReceive(data));
+            dispatch(deckAdded(data));
             subscribeAllCards(dispatch, data);
         }
     })
@@ -92,19 +117,23 @@ export function deckUnsubscribe() {
     }
 }
 
-export function doDeckeditorUnmount(lerni: LerniApp, action: PayloadAction) {
-    lerni.deckEditor = {}
-    lerni.cards = {}
-    delete lerni.deck;
+export function doDeckModified(lerni: LerniApp, action: PayloadAction<Deck>) {
+    const newDeck = action.payload;
+    // The deck may have been modified for two reasons:
+    // 1. To update the `name`
+    // 2. To update the `cards` array.
+
+    const oldDeck = lerni.deck;
+    lerni.deck = newDeck;
+    deckEditorReceiveModifiedDeck(lerni, oldDeck, newDeck);
 }
 
-export function doDeckeditorNewActiveCardDelete(lerni: LerniApp, action: PayloadAction) {
-    delete lerni.deckEditor.newActiveCard;
-}
-
-export function doDeckReceive(lerni: LerniApp, action: PayloadAction<Deck>) {
+export function doDeckAdded(lerni: LerniApp, action: PayloadAction<Deck>) {
     const deck = action.payload;
     lerni.deck = deck;
+    if (lerni.deckEditor) {
+        deckEditorReceiveAddedDeck(lerni, lerni.deckEditor, deck.id);
+    }
 }
 
 export function doDeckNameUpdate(lerni: LerniApp, action: PayloadAction<string>) {
@@ -117,19 +146,6 @@ export function doDeckNameUpdate(lerni: LerniApp, action: PayloadAction<string>)
 /** Select the current deck being edited or viewed */
 export function selectDeck(state: RootState) {
     return state.lerni.deck;
-}
-
-export function selectNewActiveCard(state: RootState) {
-    const lerni = state.lerni;
-    const deckEditor = lerni.deckEditor;
-    const activeCard = deckEditor.activeCard;
-    if (deckEditor.newActiveCard && activeCard) {
-        const cardInfo = lerni.cards[activeCard];
-        if (cardInfo) {
-            return cardInfo.card;
-        }
-    }
-    return null;
 }
 
 export async function deleteDeck(deckId: string, userUid: string) {
