@@ -22,6 +22,7 @@ html, body {
   flex-grow: 1;
   font-size: 200%;
   border: solid rgb(189, 189, 189) 2px;
+  background: white;
 }
 
 .deck-editor-tiptap p {

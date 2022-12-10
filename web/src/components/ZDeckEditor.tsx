@@ -66,7 +66,8 @@ function ZDeckEditorContent(props: TiptapProps) {
             display: "flex", 
             justifyContent: "center",
             width: "100%",
-            padding: "2rem"
+            padding: "2rem",
+            background: LerniTheme.contrastBackground
         }}>
             <EditorContent editor={editor}/>
         </Box>
