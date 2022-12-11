@@ -22,9 +22,50 @@ import deckeditorMount from "../store/actions/deckeditorMount";
 import flashcardDelete from "../store/actions/flashcardDelete";
 import { DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
 
+const HEIGHT_WIDTH_RATIO = 0.6;
+const MAX_FONT_SIZE = 200; // %
+const MAX_WIDTH = 1500;
+const MAX_HEIGHT = HEIGHT_WIDTH_RATIO*MAX_WIDTH;
+const MARGIN = 40;
 
 export interface TiptapProps {
     editor: Editor | null;
+}
+
+function resizeEditorContent() {
+    const container = document.getElementById('tiptap-container');
+    if (container) {
+        const target = container.firstChild as HTMLElement | null;
+        if (target) {
+
+            const box = container.getBoundingClientRect();
+            const bw = box.width - MARGIN;
+            const bh = box.height - MARGIN;
+            const cx = 0.5*box.width;
+            const cy = 0.5*box.height;
+
+            const wMax = Math.min(bw, MAX_WIDTH);
+            const hMax = Math.min(bh, MAX_HEIGHT);
+
+            const w1 = wMax;
+            const h1 = w1 * HEIGHT_WIDTH_RATIO;
+            const d1 = w1*w1 + h1*h1;
+
+            const h2 = hMax;
+            const w2 = h2/HEIGHT_WIDTH_RATIO;
+            const d2 = w2*w2 + h2*h2;
+
+            // fontSize/MAX_FONT_SIZE = width/MAX_WIDTH
+
+            const [width, height] = d1<=d2 ? [w1, h1] : [w2, h2];
+            const style = target.style;
+            style.left = cx - 0.5*width + "px";
+            style.top = cy - 0.5*height + "px";
+            style.width = width + "px";
+            style.height = height + "px";
+            style.fontSize = MAX_FONT_SIZE*width/MAX_WIDTH + "%";
+        }
+    }
 }
 
 function ZDeckEditorContent(props: TiptapProps) {
@@ -34,9 +75,23 @@ function ZDeckEditorContent(props: TiptapProps) {
     const session = useAppSelector(selectSession);
     const registrationState = useAppSelector(selectRegistrationState);
     const signInState = useAppSelector(selectSigninState);
-
-
     const deck = useAppSelector(selectDeck);
+
+    const userUid = session?.user.uid;
+    const deckId = deck?.id;
+
+    useEffect(() => {
+        const ok = Boolean(userUid && deckId);
+        if (ok) {
+            resizeEditorContent();
+            window.addEventListener("resize", resizeEditorContent);
+        }
+        return () => {
+            if (ok) {
+                window.removeEventListener("resize", resizeEditorContent);
+            }
+        }
+    }, [userUid, deckId]);
 
     
     if (registrationState || signInState || !editor) {
@@ -62,13 +117,16 @@ function ZDeckEditorContent(props: TiptapProps) {
     }
 
     return (
-        <Box className="tiptap-container" sx={{
-            display: "flex", 
-            justifyContent: "center",
-            width: "100%",
-            padding: "2rem",
-            background: LerniTheme.contrastBackground
-        }}>
+        <Box 
+            id="tiptap-container"
+            className="tiptap-container" 
+            sx={{
+                display: "block", 
+                position: "relative",
+                width: "100%",
+                background: LerniTheme.contrastBackground
+            }}
+        >
             <EditorContent editor={editor}/>
         </Box>
     )

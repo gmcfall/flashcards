@@ -21,10 +21,9 @@ html, body {
   the actual width to the natural width.
 */
 .tiptap-container > div {
+  position: absolute;
   display: flex;
   align-items: stretch;
-  flex-grow: 1;
-  max-width:  900px;
 }
 
 .deck-editor-tiptap {
