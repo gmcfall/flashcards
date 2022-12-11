@@ -1,8 +1,8 @@
 import { createAction } from '@reduxjs/toolkit';
-import { ClientLibrary } from '../../model/types';
+import { FirestoreLibrary } from '../../model/types';
 
 /**
  * Receive a library from Firestore
  */
-const libraryReceive = createAction<ClientLibrary>("library/receive");
+const libraryReceive = createAction<FirestoreLibrary>("library/receive");
 export default libraryReceive;

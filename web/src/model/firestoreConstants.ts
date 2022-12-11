@@ -11,6 +11,9 @@ export const ACCESS = "access";
 /** The "cards" collection in Firestore */
 export const CARDS = "cards";
 
+/** The "metadata" collection in Firestore */
+export const METADATA = "metadata";
+
 /** Field names used when updating documents in the 'libraries' collection */
 export const LibraryField = {
     resources: 'resources'
@@ -26,4 +29,9 @@ export const DeckField = {
 /** Field names used when updating documents in the 'cards' collection */
 export const CardField = {
     content: 'content'
+}
+
+/** Field names used when updating documents in the 'metadata' collection */
+export const MetadataField = {
+    name: 'name'
 }

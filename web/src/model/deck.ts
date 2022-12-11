@@ -8,9 +8,10 @@ import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
 import { deckEditorReceiveAddedDeck, deckEditorReceiveModifiedDeck } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
-import { CARDS, DECKS, ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
+import { ACCESS, CARDS, DECKS, LIBRARIES, LibraryField, METADATA } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
-import { DECK, Deck, DeckAccess, Flashcard, LerniApp, ResourceRef, UNTITLED_DECK } from "./types";
+import { createMetadata } from "./metadata";
+import { DECK, Deck, DeckAccess, Flashcard, LerniApp, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -34,21 +35,20 @@ export async function saveDeck(userUid: string, deck: Deck, card: Flashcard) {
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deck.id);
 
+    const metadata = createMetadata(DECK, deck.name);
+    const metadataRef = doc(db, METADATA, deck.id);
+
     const deckAccess = createDeckAccess(userUid);
     const accessRef = doc(db, ACCESS, deck.id);
     const cardRef = doc(db, CARDS, card.id);
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deck.id);
-    const deckResourceRef: ResourceRef = {
-        type: DECK,
-        id: deck.id,
-        name: deck.name
-    }
 
     const batch = writeBatch(db);
     batch.set(accessRef, deckAccess);
+    batch.set(metadataRef, metadata);
     batch.set(deckRef, deck);
-    batch.update(libRef, path, deckResourceRef);
+    batch.update(libRef, path, true);
 
     await batch.commit();
 
@@ -152,6 +152,7 @@ export async function deleteDeck(deckId: string, userUid: string) {
     const db = getFirestore(firebaseApp);
 
     const deckRef = doc(db, DECKS, deckId);
+    const metadataRef = doc(db, METADATA, deckId);
     const deckAccessRef = doc(db, ACCESS, deckId);
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deckId);
@@ -167,6 +168,7 @@ export async function deleteDeck(deckId: string, userUid: string) {
             })
             txn.delete(deckRef);
             txn.delete(deckAccessRef);
+            txn.delete(metadataRef);
             txn.update(libRef, path, deleteField())
         }
     })

@@ -39,7 +39,7 @@ import accountDeletePasswordSubmit from "../actions/accountDeletePasswordSubmit"
 import alertPost from "../actions/alertPost";
 import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
 import libraryReceive from "../actions/libraryReceive";
-import { doLibraryReceive } from "../../model/library";
+import { doLibraryReceive, doMetadataReceived } from "../../model/library";
 import deckAdd from "../actions/deckAdd";
 import deckAdded from "../actions/deckAdded";
 import { doDeckNameUpdate, doDeckAdded, doDeckModified } from "../../model/deck";
@@ -60,6 +60,7 @@ import deckModified from "../actions/deckModified";
 import flashcardModified from "../actions/flashcardModified";
 import deckeditorMount from "../actions/deckeditorMount";
 import flashcardRemoved from "../actions/flashcardRemoved";
+import metadataReceived from "../actions/metadataReceived";
 
 const initialState: LerniApp = {
     cards: {}
@@ -140,5 +141,6 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(flashcardRemoved, doFlashcardRemoved)
         .addCase(flashcardSelect, doFlashcardSelect)
         .addCase(libraryReceive, doLibraryReceive)
+        .addCase(metadataReceived, doMetadataReceived)
 });
 export default lerniReducer;

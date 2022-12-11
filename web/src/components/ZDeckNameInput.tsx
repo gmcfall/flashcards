@@ -14,7 +14,6 @@ export default function ZDeckNameInput() {
     if (!deck || !session) {
         return null;
     }
-    const userUid = session.user.uid;
     const deckId = deck.id;
 
     const name = deck.name;
@@ -37,7 +36,7 @@ export default function ZDeckNameInput() {
     }
 
     function handleBlur() {
-        dispatch(deckNameSubmit({name, userUid, deckId}))
+        dispatch(deckNameSubmit({name, deckId}))
     }
 
     return (

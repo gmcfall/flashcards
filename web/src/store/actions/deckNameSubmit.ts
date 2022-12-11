@@ -1,32 +1,35 @@
-import { doc, FieldPath, getFirestore, updateDoc } from "firebase/firestore";
+import { doc, getFirestore, writeBatch } from "firebase/firestore";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
-import { DeckField, DECKS, LIBRARIES } from "../../model/firestoreConstants";
+import { DECKS, METADATA } from "../../model/firestoreConstants";
 
 
 interface DeckNameSubmitProps {
     name: string,
-    deckId: string,
-    userUid: string
+    deckId: string
 }
 
 const deckNameSubmit = createAppAsyncThunk(
     "deck/name/submit",
     async (props: DeckNameSubmitProps, thunkApi) => {
-        const {name, deckId, userUid} = props;
+        const {name, deckId} = props;
         try {
 
             const db = getFirestore(firebaseApp);
 
             const deckRef = doc(db, DECKS, deckId);
-            const deckPromise = updateDoc(deckRef, {name});
+            const metaRef = doc(db, METADATA, deckId);
 
-            const libRef = doc(db, LIBRARIES, userUid);
-            const path = new FieldPath(DeckField.resources, deckId, DeckField.name);
-            const libPromise = updateDoc(libRef, path, name);
+            const nameRecord = {name};
+
+            const batch = writeBatch(db);
+            batch.update(deckRef, nameRecord);
+            batch.update(metaRef, nameRecord);
+
+            await batch.commit();
+
           
-            await Promise.all([deckPromise, libPromise]);
             return true;
 
         } catch (error) {

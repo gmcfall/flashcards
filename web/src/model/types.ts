@@ -58,6 +58,23 @@ export interface CardRef {
     id: string
 }
 
+/**
+ * Metadata about a given resource
+ */
+export interface Metadata {
+
+    /** The type of resource */
+    type: ResourceType,
+
+    /** A friendly name for the resource suitable for display to users */
+    name: string
+}
+
+export interface MetadataEnvelope {
+    id: string,
+    metadata: Metadata
+}
+
 
 /**
  * The universal interface for Deck objects. This interface is
@@ -89,11 +106,18 @@ export const UNTITLED_DECK="Untitled Deck";
 /** 
  * A union of the various types of resources supported by the app.
  * For now, there is just one possible type of resource, namely a Deck.
+ * The "unknown" type allows us to to stub-out the type while loading 
+ * resource metadata.
  */
-export type ResourceType = 'deck';
+export type ResourceType = 'deck' | 'unknown';
 
 /**
- * The string used as the Deck `type`.
+ * The 'unknown' value of ResourceType
+ */
+export const UNKNOWN_RESOURCE_TYPE = 'unknown';
+
+/**
+ * The 'deck' value of ResourceType
  */
 export const DECK = 'deck';
 
@@ -115,12 +139,14 @@ export interface ResourceRef {
  * Firestore path: /libraries/{user.uid}
  */
 export interface FirestoreLibrary {
+
     /** 
-     * A map where the key is the `id` for a Resource and the value is reference to tha resource. 
-     * This structure makes it easy to update individual entries via the Firestore SDK.
-     * See {@link ClientLibrary} for the client-side representation of the library.
+     * A map whose key is the `id` for a resource
+     * and whose value is `true` indicating that the resource
+     * is included in the library.  This representation makes it easy 
+     * to add and remove resources from the library.
      */
-    resources: Record<string, ResourceRef>
+    resources: Record<string, boolean>;
 }
 
 /**
@@ -129,7 +155,11 @@ export interface FirestoreLibrary {
  * converted to an array sorted alphabetically.
  */
 export interface ClientLibrary {
-    resources: ResourceRef[]
+    /** The list of `id` values for resources in the library */
+    resources: string[];
+
+    /** A map where the key is the `id` for a resource and the value is its metadata */
+    metadata: Record<string, Metadata>;
 }
 
 export interface ErrorInfo {

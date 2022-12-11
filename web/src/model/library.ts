@@ -1,13 +1,40 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { doc, getFirestore, onSnapshot, setDoc, Unsubscribe } from "firebase/firestore";
+import { collection, doc, documentId, getFirestore, onSnapshot, query, setDoc, Unsubscribe, where } from "firebase/firestore";
 import libraryReceive from "../store/actions/libraryReceive";
+import metadataReceived from "../store/actions/metadataReceived";
+import metadataRemoved from "../store/actions/metadataRemoved";
 import { AppDispatch, RootState } from "../store/store";
 import firebaseApp from "./firebaseApp";
-import { LIBRARIES } from "./firestoreConstants";
-import { ClientLibrary, LerniApp, FirestoreLibrary, ResourceRef } from "./types";
+import { LIBRARIES, METADATA } from "./firestoreConstants";
+import { ClientLibrary, FirestoreLibrary, LerniApp, Metadata, MetadataEnvelope } from "./types";
 
-export function doLibraryReceive(lerni: LerniApp, action: PayloadAction<ClientLibrary>) {
-    lerni.library = action.payload;
+export function doLibraryReceive(lerni: LerniApp, action: PayloadAction<FirestoreLibrary>) {
+    const serverLib = action.payload;
+    if (!lerni.library) {
+        lerni.library = toClientLibrary(serverLib);
+    } else {
+        lerni.library.resources = Object.keys(serverLib.resources);
+    }
+}
+
+export function doMetadataReceived(lerni: LerniApp, action: PayloadAction<MetadataEnvelope>) {
+    const lib = lerni.library;
+    if (!lib) {
+        console.log("ERROR:doMetadataReceived: expected `lerni.library` to be defined");
+    } else {
+        const envelope = action.payload;
+        const metadata = lib.metadata;
+        metadata[envelope.id] = envelope.metadata;
+    }
+}
+
+export function doMetadataRemoved(lerni: LerniApp, action: PayloadAction<string>) {
+
+    const lib = lerni.library;
+    if (lib) {
+        const id = action.payload;
+        delete lib.metadata[id];
+    }
 }
 
 /**
@@ -39,16 +66,18 @@ export function selectLibrary(state: RootState) {
 }
 
 function toClientLibrary(lib: FirestoreLibrary) : ClientLibrary {
-    const firestoreResources = Object.values(lib.resources) as ResourceRef[];
 
-    const resources = firestoreResources.sort((a, b) => a.name.localeCompare(b.name))
-
-    return {resources}
+    const resources = Object.keys(lib.resources);
+    
+    return {
+        resources: resources,
+        metadata: {}
+    }
 }
 
 let unsubscribe: Unsubscribe | null = null;
 let libraryUser: string | null = null;
-export function librarySubscribe(dispatch: AppDispatch, userUid: string) {
+export function subscribeLibrary(dispatch: AppDispatch, userUid: string) {
 
     if (libraryUser === userUid) {
         // Already subscribed
@@ -62,17 +91,78 @@ export function librarySubscribe(dispatch: AppDispatch, userUid: string) {
     const docRef = doc(db, LIBRARIES, userUid);
 
     unsubscribe = onSnapshot(docRef, (document) => {
-        const data = document.data();
-        const lib = toClientLibrary(data as FirestoreLibrary);
+        const lib = document.data() as FirestoreLibrary;
         dispatch(libraryReceive(lib));
+        updateMetadataSubscriptions(dispatch, lib);
     })
+}
+
+function updateMetadataSubscriptions(dispatch: AppDispatch, lib: FirestoreLibrary) {
+    const resources = Object.keys(lib.resources);
+    const set = new Set<string>(resources);
+    const map = metadataUnsubscribeFunctions;
+    for (const id in map) {
+        if (!set.has(id)) {
+            const unsubscribe = map[id];
+            unsubscribe();
+            delete map[id];
+        }
+    }
+    subscribeMetadata(dispatch, resources);
 }
 
 export function libraryUnsubscribe() {
     if (unsubscribe) {
         unsubscribe();
+        unsubscribeAllMetadata();
         libraryUser = null;
         unsubscribe = null;
+    }
+}
+
+const metadataUnsubscribeFunctions: Record<string, Unsubscribe> = {};
+export function subscribeMetadata(dispatch: AppDispatch, resources: string[]) {
+
+    const db = getFirestore(firebaseApp);
+    const collectionRef = collection(db, METADATA);
+
+    resources.forEach(id => {
+        if (!metadataUnsubscribeFunctions[id]) {
+            const q = query(collectionRef, where(documentId(), "==", id));
+            const unsubscribe = onSnapshot(q, snapshot => {
+                snapshot.docChanges().forEach( change => {
+                    const metadata = change.doc.data() as Metadata;
+                    switch (change.type) {
+                        case 'added' :
+                        case 'modified' :
+                            dispatch(metadataReceived({id, metadata}));
+                            break;
+
+                        case 'removed' :
+                            dispatch(metadataRemoved(id));
+                            unsubscribeMetadata(id);
+                            break;
+                    }
+                })
+            })
+            metadataUnsubscribeFunctions[id] = unsubscribe;
+        }
+    })
+}
+
+function unsubscribeMetadata(id: string) {
+    
+    const unsubscribe = metadataUnsubscribeFunctions[id];
+    if (unsubscribe) {
+        unsubscribe();
+        delete metadataUnsubscribeFunctions[id];
+    }
+}
+
+function unsubscribeAllMetadata() {
+
+    for (const id in metadataUnsubscribeFunctions) {
+        unsubscribeMetadata(id);
     }
 }
 

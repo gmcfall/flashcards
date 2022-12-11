@@ -10,9 +10,9 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
-import { librarySubscribe, libraryUnsubscribe, selectLibrary } from '../model/library';
+import { subscribeLibrary, libraryUnsubscribe, selectLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
-import { ClientLibrary, ERROR, ResourceRef } from '../model/types';
+import { ClientLibrary, ERROR, Metadata, ResourceRef, UNKNOWN_RESOURCE_TYPE } from '../model/types';
 import alertPost from '../store/actions/alertPost';
 import deckDelete from '../store/actions/deckDelete';
 import deckAdd from '../store/actions/deckAdd';
@@ -109,14 +109,29 @@ function ZLibResource(props: LibResourceProps) {
 interface LibraryContentProps {
     lib: ClientLibrary
 }
+
+function resourceRef(id: string, map: Record<string, Metadata>) : ResourceRef {
+    const metadata = map[id];
+    return (metadata) ? {
+        id,
+        type: metadata.type,
+        name: metadata.name
+    } : {
+        id,
+        type: UNKNOWN_RESOURCE_TYPE,
+        name: "Loading..."
+    }
+}
 function ZLibraryResourceList(props: LibraryContentProps) {
     const {lib} = props;
+
+    const metadata = lib.metadata;
 
     return (
         <List>
             {
-                lib.resources.map(resource => (
-                    <ZLibResource key={resource.id} resource={resource}/>
+                lib.resources.map(id => (
+                    <ZLibResource key={id} resource={resourceRef(id, metadata)}/>
                 ))
             }
         </List>
@@ -136,7 +151,7 @@ function ZLibraryContent() {
 
     useEffect(() => {
         if (userUid) {
-            librarySubscribe(dispatch, userUid);
+            subscribeLibrary(dispatch, userUid);
         }
 
         return () => {

@@ -27,6 +27,8 @@ const deckAdd = createAppAsyncThunk(
 
             navigate(deckEditRoute(deck.id));
 
+            return deck;
+
         } catch (error) {
             
             return thunkApi.rejectWithValue(createErrorInfo(
