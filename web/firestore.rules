@@ -16,10 +16,10 @@ service cloud.firestore {
     match /cards/{cardId} {
     	allow read, update, delete: if request.auth.uid == get(/databases/$(database)/documents/access/$(resource.data.access)).data.owner
       allow create: if request.auth.uid == get(/databases/$(database)/documents/access/$(request.resource.data.access)).data.owner
-    }
+    }    
     match /metadata/{resourceId} {
-      allow read, update, delete: if request.auth.uid == resource.owner
-      allow read,write: if request.auth.uid != request.resource.data.owner
+      allow read, update, delete: if request.auth.uid == resource.data.owner
+      allow create: if request.auth.uid == request.resource.data.owner
     }
   }
 }
