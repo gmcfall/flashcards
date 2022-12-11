@@ -66,6 +66,9 @@ export interface Metadata {
     /** The type of resource */
     type: ResourceType,
 
+    /** The uid of the User who owns this resource */
+    owner: string;
+
     /** A friendly name for the resource suitable for display to users */
     name: string
 }

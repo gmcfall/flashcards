@@ -35,7 +35,7 @@ export async function saveDeck(userUid: string, deck: Deck, card: Flashcard) {
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deck.id);
 
-    const metadata = createMetadata(DECK, deck.name);
+    const metadata = createMetadata(DECK, userUid, deck.name);
     const metadataRef = doc(db, METADATA, deck.id);
 
     const deckAccess = createDeckAccess(userUid);
