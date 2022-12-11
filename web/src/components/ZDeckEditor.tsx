@@ -1,4 +1,4 @@
-import { Box, CircularProgress } from "@mui/material";
+import { Box, Button, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import { useEffect } from "react";
@@ -7,20 +7,21 @@ import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
-import { selectCards, unsubscribeAllCards } from "../model/flashcard";
 import { selectNewActiveCard } from "../model/deckEditor";
+import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
+import deckeditorMount from "../store/actions/deckeditorMount";
 import deckeditorNewActiveCardDelete from "../store/actions/deckeditorNewActiveCardDelete";
 import deckeditorUnmount from "../store/actions/deckeditorUnmount";
+import flashcardAdd from "../store/actions/flashcardAdd";
 import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
+import flashcardDelete from "../store/actions/flashcardDelete";
+import { DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
 import LerniTheme from "./lerniTheme";
 import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
 import ZDeckEditorHeader from "./ZDeckEditorHeader";
 import ZFlashcard from "./ZFlashcard";
-import deckeditorMount from "../store/actions/deckeditorMount";
-import flashcardDelete from "../store/actions/flashcardDelete";
-import { DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
 
 const HEIGHT_WIDTH_RATIO = 0.6;
 const MAX_FONT_SIZE = 200; // %
@@ -70,16 +71,17 @@ function ZDeckEditorContent(props: TiptapProps) {
 
     const {editor} = props;
     
+    const dispatch = useAppDispatch();
     const session = useAppSelector(selectSession);
     const registrationState = useAppSelector(selectRegistrationState);
     const signInState = useAppSelector(selectSigninState);
     const deck = useAppSelector(selectDeck);
+    const activeCard = useAppSelector(selectActiveCard);
 
     const userUid = session?.user.uid;
-    const deckId = deck?.id;
 
     useEffect(() => {
-        const ok = Boolean(userUid && deckId);
+        const ok = Boolean(userUid && activeCard);
         if (ok) {
             resizeEditorContent();
             window.addEventListener("resize", resizeEditorContent);
@@ -89,7 +91,7 @@ function ZDeckEditorContent(props: TiptapProps) {
                 window.removeEventListener("resize", resizeEditorContent);
             }
         }
-    }, [userUid, deckId]);
+    }, [userUid, activeCard]);
 
     
     if (registrationState || signInState || !editor) {
@@ -112,6 +114,26 @@ function ZDeckEditorContent(props: TiptapProps) {
                 <CircularProgress/>
             </Box>
         );
+    }
+
+    function handleClick() {
+        dispatch(flashcardAdd());
+    }
+    if (deck.cards.length===0) {
+        return (
+            <Box
+                sx={{
+                    display: "flex",
+                    width: "100%",
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}
+            >
+                <Button variant="text" onClick={handleClick}>
+                    Click to add a new Card
+                </Button>
+            </Box>
+        )
     }
 
     return (
