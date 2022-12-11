@@ -1,21 +1,18 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import {
-    Box, Button, ListItemButton, CircularProgress, IconButton, List, ListItem, Tooltip, Typography,
-    ListItemText, Alert, Divider
-} from "@mui/material";
+import { Alert, Box, Button, CircularProgress, IconButton, List, ListItem, ListItemButton, ListItemText, Tooltip, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
-import { subscribeLibrary, libraryUnsubscribe, selectLibrary } from '../model/library';
+import { libraryUnsubscribe, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import { ClientLibrary, ERROR, Metadata, ResourceRef, UNKNOWN_RESOURCE_TYPE } from '../model/types';
 import alertPost from '../store/actions/alertPost';
-import deckDelete from '../store/actions/deckDelete';
 import deckAdd from '../store/actions/deckAdd';
+import deckDelete from '../store/actions/deckDelete';
 import { HEADER_STYLE } from './header';
 import ZAccessDeniedAlert from './ZAccessDeniedAlert';
 import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
@@ -32,7 +29,6 @@ function ZLibraryHeader() {
     function handleNewDeckButtonClick() {
         if (session) {
             dispatch(deckAdd(navigate));
-            // TODO: dispatch navigation to the DeckEditor
         } else {
             dispatch(alertPost({
                 severity: ERROR,
@@ -144,6 +140,7 @@ function ZLibraryContent() {
     const session = useAppSelector(selectSession);
     const registrationState = useAppSelector(selectRegistrationState);
     const signInState = useAppSelector(selectSigninState);
+    const navigate = useNavigate();
 
     const lib = useAppSelector(selectLibrary);
 
@@ -183,20 +180,29 @@ function ZLibraryContent() {
         );
     }
 
+    function handleNewDeck() {
+        dispatch(deckAdd(navigate));
+    }
     if (lib.resources.length===0) {
         return (
-            <Alert severity="info" sx={{width: "30em", marginTop: "2em"}}>
-                <Box sx={{display: "flex", flexDirection:"column"}}>
-                    <Typography variant="subtitle1">Your Library is empty</Typography>
-                    <Divider/>
-                    <Box sx={{marginTop: "1em"}}>
-                        Use the
-                        <Typography sx={{display: "inline-block"}} variant='button'>&nbsp;New Deck&nbsp;</Typography>
-                        button to create a new deck and add it to your library.
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "20px"
+                }}
+            >
+                <Alert severity="info" sx={{width: "30em", marginTop: "2em"}}>
+                    <Box sx={{display: "flex", flexDirection:"column"}}>
+                        <Typography>Your Library is empty</Typography>
                     </Box>
-                    
-                </Box>
-            </Alert>
+                </Alert>
+                <div>
+                    <Button variant="text" onClick={handleNewDeck}>
+                        Click to add a Deck
+                    </Button>
+                </div>
+            </Box>
         )
     }
 
