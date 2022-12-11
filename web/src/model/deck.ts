@@ -8,7 +8,7 @@ import { AppDispatch, RootState } from "../store/store";
 import generateUid from "../util/uid";
 import { deckEditorReceiveAddedDeck, deckEditorReceiveModifiedDeck } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
-import { CARDS, DECKS, DECK_ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
+import { CARDS, DECKS, ACCESS, LIBRARIES, LibraryField } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { DECK, Deck, DeckAccess, Flashcard, LerniApp, ResourceRef, UNTITLED_DECK } from "./types";
 
@@ -35,7 +35,7 @@ export async function saveDeck(userUid: string, deck: Deck, card: Flashcard) {
     const deckRef = doc(db, DECKS, deck.id);
 
     const deckAccess = createDeckAccess(userUid);
-    const accessRef = doc(db, DECK_ACCESS, deck.id);
+    const accessRef = doc(db, ACCESS, deck.id);
     const cardRef = doc(db, CARDS, card.id);
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deck.id);
@@ -152,7 +152,7 @@ export async function deleteDeck(deckId: string, userUid: string) {
     const db = getFirestore(firebaseApp);
 
     const deckRef = doc(db, DECKS, deckId);
-    const deckAccessRef = doc(db, DECK_ACCESS, deckId);
+    const deckAccessRef = doc(db, ACCESS, deckId);
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deckId);
 

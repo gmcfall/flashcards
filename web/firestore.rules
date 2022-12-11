@@ -6,16 +6,16 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
     match /decks/{deckId} {
-    	allow read, update, delete: if request.auth.uid == get(/databases/$(database)/documents/deck_access/$(deckId)).data.owner
+    	allow read, update, delete: if request.auth.uid == get(/databases/$(database)/documents/access/$(deckId)).data.owner
       allow create: if request.auth != null
     }
-    match /deck_access/{deckId} {
+    match /access/{deckId} {
       allow read, update, delete: if request.auth.uid == resource.data.owner;
       allow create: if request.auth.uid == request.resource.data.owner;
     }
     match /cards/{cardId} {
-    	allow read, update, delete: if request.auth.uid == get(/databases/$(database)/documents/deck_access/$(resource.data.ownerDeck)).data.owner
-      allow create: if request.auth.uid == get(/databases/$(database)/documents/deck_access/$(request.resource.data.ownerDeck)).data.owner
+    	allow read, update, delete: if request.auth.uid == get(/databases/$(database)/documents/access/$(resource.data.access)).data.owner
+      allow create: if request.auth.uid == get(/databases/$(database)/documents/access/$(request.resource.data.access)).data.owner
     }
   }
 }

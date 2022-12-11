@@ -75,12 +75,12 @@ export function selectCards(state: RootState) {
     return state.lerni.cards;
 }
 
-export function createFlashCard(ownerDeck: string) : Flashcard {
+export function createFlashCard(access: string) : Flashcard {
 
     return {
         type: FLASHCARD,
         id: generateUid(),
-        ownerDeck,
+        access,
         content: ''
     }
 }
@@ -189,12 +189,12 @@ export async function saveFlashcard(card: Flashcard) {
 
     return runTransaction(db, async txn => {
 
-        const deckRef = doc(db, DECKS, card.ownerDeck);
+        const deckRef = doc(db, DECKS, card.access);
         const cardDocRef = doc(db, CARDS, card.id);
         const deckDoc = await txn.get(deckRef);
 
         if (!deckDoc.exists()) {
-            throw new Error(`Deck(${card.ownerDeck}) does not exist`)
+            throw new Error(`Deck(${card.access}) does not exist`)
         }
 
         const cardRef = createFlashcardRef(card.id);

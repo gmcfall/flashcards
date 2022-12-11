@@ -13,7 +13,7 @@ export interface Flashcard {
 
 
     /** The id of the deck that owns this card */
-    ownerDeck: string,
+    access: string,
 
     /** The card content represented as an HTML string */
     content: string,

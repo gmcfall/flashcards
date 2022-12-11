@@ -5,8 +5,8 @@ export const DECKS = 'decks';
 /** The "libraries" collection in Firestore */
 export const LIBRARIES = 'libraries';
 
-/** The "deck_access" collection in Firestore */
-export const DECK_ACCESS = "deck_access";
+/** The "access" collection in Firestore */
+export const ACCESS = "access";
 
 /** The "cards" collection in Firestore */
 export const CARDS = "cards";
