@@ -55,8 +55,6 @@ function resizeEditorContent() {
             const w2 = h2/HEIGHT_WIDTH_RATIO;
             const d2 = w2*w2 + h2*h2;
 
-            // fontSize/MAX_FONT_SIZE = width/MAX_WIDTH
-
             const [width, height] = d1<=d2 ? [w1, h1] : [w2, h2];
             const style = target.style;
             style.left = cx - 0.5*width + "px";
