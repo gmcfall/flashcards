@@ -1,9 +1,10 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, doc, documentId, getFirestore, onSnapshot, query, setDoc, Unsubscribe, where } from "firebase/firestore";
+import { collection, deleteDoc, doc, documentId, getDoc, getFirestore, onSnapshot, query, setDoc, Unsubscribe, where } from "firebase/firestore";
 import libraryReceive from "../store/actions/libraryReceive";
 import metadataReceived from "../store/actions/metadataReceived";
 import metadataRemoved from "../store/actions/metadataRemoved";
 import { AppDispatch, RootState } from "../store/store";
+import { deleteDeck } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { LIBRARIES, METADATA } from "./firestoreConstants";
 import { ClientLibrary, FirestoreLibrary, LerniApp, Metadata, MetadataEnvelope } from "./types";
@@ -164,5 +165,19 @@ function unsubscribeAllMetadata() {
     for (const id in metadataUnsubscribeFunctions) {
         unsubscribeMetadata(id);
     }
+}
+
+export async function deleteLibrary(userUid: string) {
+    const db = getFirestore(firebaseApp);
+    const libRef = doc(db, LIBRARIES, userUid);
+
+    const libDoc = await getDoc(libRef);
+    if (libDoc.exists()) {
+        const lib = libDoc.data() as FirestoreLibrary;
+        for (const resourceId in lib.resources) {
+            deleteDeck(resourceId, userUid);
+        }
+    }
+    await deleteDoc(libRef);
 }
 

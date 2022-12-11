@@ -1,7 +1,10 @@
 // This file provides features that span multiple parts of the app
 
 import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, deleteField, doc, documentId, FieldPath, getFirestore, onSnapshot, query, runTransaction, setDoc, Unsubscribe, where, writeBatch } from "firebase/firestore";
+import {
+    collection, deleteField, doc, documentId, FieldPath, getFirestore, onSnapshot, query, runTransaction,
+    setDoc, Unsubscribe, where, writeBatch
+} from "firebase/firestore";
 import deckAdded from "../store/actions/deckAdded";
 import deckModified from "../store/actions/deckModified";
 import { AppDispatch, RootState } from "../store/store";

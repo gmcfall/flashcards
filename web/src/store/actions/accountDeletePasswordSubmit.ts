@@ -2,6 +2,8 @@ import { deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential } 
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
+import { unsubscribeLerni } from "../../model/lerni";
+import { deleteLibrary } from "../../model/library";
 import { PasswordCredentials } from "../../model/types";
 
 
@@ -20,6 +22,8 @@ const accountDeletePasswordSubmit = createAppAsyncThunk(
             const result = await reauthenticateWithCredential(user, credential);
             const freshUser = result.user;
 
+            unsubscribeLerni();
+            await deleteLibrary(freshUser.uid);
             await deleteUser(freshUser);
            
            return true;

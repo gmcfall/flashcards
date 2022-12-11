@@ -2,6 +2,8 @@ import { AuthProvider, deleteUser, getAuth, GoogleAuthProvider, reauthenticateWi
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createErrorInfo } from "../../model/errorHandler";
 import firebaseApp from "../../model/firebaseApp";
+import { unsubscribeLerni } from "../../model/lerni";
+import { deleteLibrary } from "../../model/library";
 
 
 const accountDeleteGoogle = createAppAsyncThunk(
@@ -31,5 +33,7 @@ export async function reauthenticateWithProvider(provider: AuthProvider) {
     }
     const result = await reauthenticateWithPopup(user, provider);
     const freshUser = result.user;
+    unsubscribeLerni();
+    await deleteLibrary(freshUser.uid);
     await deleteUser(freshUser);
 }
