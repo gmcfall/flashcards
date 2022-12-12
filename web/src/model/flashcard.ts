@@ -1,4 +1,5 @@
 import { Dispatch, PayloadAction } from "@reduxjs/toolkit";
+import { JSONContent } from "@tiptap/core";
 import { collection, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where, writeBatch } from "firebase/firestore";
 import flashcardAdded from "../store/actions/flashcardAdded";
 import flashcardModified from "../store/actions/flashcardModified";
@@ -8,7 +9,7 @@ import generateUid from "../util/uid";
 import { deckEditorReceiveAddedCard } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
 import { CardField, CARDS, DeckField, DECKS } from "./firestoreConstants";
-import { CardRef, Deck, Flashcard, FLASHCARD, LerniApp } from "./types";
+import { CardRef, ClientFlashcard, Deck, FLASHCARD, LerniApp, ServerFlashcard } from "./types";
 
 export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>) {
     if (lerni.deckEditor) {
@@ -16,7 +17,7 @@ export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>
     }
 }
 
-export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<string>) {
+export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<JSONContent>) {
 
     const activeId = getActiveCardId(lerni);
     if (activeId) {
@@ -75,13 +76,13 @@ export function selectCards(state: RootState) {
     return state.lerni.cards;
 }
 
-export function createFlashCard(access: string) : Flashcard {
+export function createServerFlashCard(access: string) : ServerFlashcard {
 
     return {
         type: FLASHCARD,
         id: generateUid(),
         access,
-        content: ''
+        content: '{"type": "doc", "content": []}'
     }
 }
 
@@ -98,7 +99,7 @@ export function subscribeCard(dispatch: Dispatch, cardId: string) {
     const q = query(cardsRef, where(documentId(), "==", cardId));
     const unsubscribe = onSnapshot(q, snapshot => {
         snapshot.docChanges().forEach( change => {
-            const data = change.doc.data() as Flashcard;
+            const data = change.doc.data() as ServerFlashcard;
             switch (change.type) {
                 case 'added' :
                     dispatch(flashcardAdded(data));
@@ -128,7 +129,8 @@ export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string 
         const cardInfo = cards[activeId];
         if (cardInfo) {
             const card = cardInfo.card;
-            const content = card.content;
+            const content = JSON.stringify(card.content);
+            
             if (lastSavedId !== card.id || lastSavedContent !== content) {
                 lastSavedId = card.id;
                 lastSavedContent = content;
@@ -163,16 +165,24 @@ export function unsubscribeAllCards() {
 /**
  * Handle a newly added Flashcard.
  */
-export function doFlashcardAdded(lerni: LerniApp, action: PayloadAction<Flashcard>) {
-    const card = action.payload;
+export function doFlashcardAdded(lerni: LerniApp, action: PayloadAction<ServerFlashcard>) {
+    const card = toClientFlashcard(action.payload);
     lerni.cards[card.id] = {card};
 
     deckEditorReceiveAddedCard(lerni, card);
 }
 
-export function doFlashcardModified(lerni: LerniApp, action: PayloadAction<Flashcard>) {
-    const card = action.payload;
+function toClientFlashcard(serverCard: ServerFlashcard) : ClientFlashcard {
+    return {
+        ...serverCard,
+        content: JSON.parse(serverCard.content)
+    }
+}
+
+export function doFlashcardModified(lerni: LerniApp, action: PayloadAction<ServerFlashcard>) {
+    const card = toClientFlashcard(action.payload);    
     lerni.cards[card.id] = {card};
+
 }
 
 export function createFlashcardRef(cardId: string) : CardRef {
@@ -183,7 +193,7 @@ export function createFlashcardRef(cardId: string) : CardRef {
 }
 
 
-export async function saveFlashcard(card: Flashcard) {
+export async function saveFlashcard(card: ServerFlashcard) {
 
     const db = getFirestore(firebaseApp);
 

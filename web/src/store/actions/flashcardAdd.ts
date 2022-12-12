@@ -1,7 +1,7 @@
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { selectDeck } from "../../model/deck";
 import { createErrorInfo } from "../../model/errorHandler";
-import { createFlashCard, saveFlashcard } from "../../model/flashcard";
+import { createServerFlashCard, saveFlashcard } from "../../model/flashcard";
 
 
 const flashcardAdd = createAppAsyncThunk(
@@ -14,7 +14,7 @@ const flashcardAdd = createAppAsyncThunk(
             if (deck == null) {                
                 throw new Error("Cannot create new Flashcard: deck is undefined");
             }
-            const card = createFlashCard(deck.id);
+            const card = createServerFlashCard(deck.id);
             await saveFlashcard(card);
 
             return card.id;

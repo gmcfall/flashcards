@@ -1,25 +1,55 @@
 
+import {JSONContent} from "@tiptap/core";
+/**
+ * A record that specifies the type of markup that should be
+ * applied to some text, such as "bold" or "italic"
+ */
+export interface TipTapMark {
+    type: string;
+}
+
+/** The TipTap 'doc' content type */
+export const DOC = 'doc';
+
+/** The TipTap 'paragraph' content type */
+export const PARAGRAPH='paragraph';
+
+/** The TipTap 'orderedList' content type */
+export const ORDERED_LIST='orderedList';
+
+/** The TipTap 'bulletList' content type */
+export const BULLET_LIST='bulletList';
+
+/** The TipTap 'bold' mark type */
+export const BOLD='bold';
+
+/** The TipTap 'italic' mark type */
+export const ITALIC='italic';
 
 export type FlashCardType = 'flashcard';
 /** The "flashcard" value of the FlashCardType */
 export const FLASHCARD = 'flashcard';
 
-export interface Flashcard {
-
+export interface FlashcardBase {    
     type: FlashCardType,
 
     /** An identifier for the card */
     id: string,
 
-
     /** The id of the deck that owns this card */
     access: string,
+}
+
+export interface ServerFlashcard extends FlashcardBase {
 
     /** The card content represented as an HTML string */
     content: string,
 }
 
-
+export interface ClientFlashcard extends FlashcardBase {
+    /** The card content represented as a JSON object */
+    content: JSONContent;
+}
 
 export interface NamedUser {
     /** The `uid` value of the user as defined by Firebase Auth */
@@ -36,7 +66,7 @@ export interface NamedUser {
  * A ClientFlashcard plus additional information related to the card.
  */
 export interface CardInfo {
-    card: Flashcard,
+    card: ClientFlashcard,
 
     /**
      * The user who is currently editing the card. For now, only one person

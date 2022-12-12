@@ -6,6 +6,8 @@ import { selectActiveCard } from "../model/flashcard";
 import { CardInfo } from "../model/types";
 import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardSelect from "../store/actions/flashcardSelect";
+import { generateHTML } from "@tiptap/html";
+import { TIP_TAP_EXTENSIONS } from "./deckEditorConstants";
 
 interface FlashcardProps {
     cardInfo: CardInfo,
@@ -28,7 +30,8 @@ export default function ZFlashcard(props: FlashcardProps) {
         const current = buttonEl.current;
 
         if (current) {
-            current.innerHTML = content;
+            const htmlContent = generateHTML(content, TIP_TAP_EXTENSIONS);
+            current.innerHTML = htmlContent;
         }
 
     }, [buttonEl, content])

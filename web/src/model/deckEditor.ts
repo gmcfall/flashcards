@@ -1,7 +1,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
 import { displayError } from "./errorHandler";
-import { Deck, DeckEditor, Flashcard, LerniApp } from "./types";
+import { ClientFlashcard, Deck, DeckEditor, LerniApp } from "./types";
 
 export function doDeckeditorMount(lerni: LerniApp, action: PayloadAction<string>) {
     lerni.deckEditor = {
@@ -53,7 +53,7 @@ export function deckEditorReceiveRemovedCard(lerni: LerniApp, deckEditor: DeckEd
  * 1. We are receiving cards during the DeckEditor bootstrap process
  * 2. The user clicked the [Add Flashcard] button in the editor
  */
-export function deckEditorReceiveAddedCard(lerni: LerniApp, card: Flashcard) {
+export function deckEditorReceiveAddedCard(lerni: LerniApp, card: ClientFlashcard) {
     const deckEditor = lerni.deckEditor;
     if (deckEditor) {
         const deck = lerni.deck;

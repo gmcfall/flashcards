@@ -1,6 +1,5 @@
 import { Box, Button, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
@@ -16,6 +15,7 @@ import flashcardAdd from "../store/actions/flashcardAdd";
 import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
 import flashcardDelete from "../store/actions/flashcardDelete";
+import { TIP_TAP_EXTENSIONS } from "./deckEditorConstants";
 import { DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
 import LerniTheme from "./lerniTheme";
 import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
@@ -218,9 +218,7 @@ export default function ZDeckEditor() {
                 class: DECK_EDITOR_TIPTAP
             }
         },
-        extensions: [
-            StarterKit,
-        ],
+        extensions: TIP_TAP_EXTENSIONS,
         content: '',
     })
 
@@ -284,8 +282,8 @@ export default function ZDeckEditor() {
     useEffect(() => {
         if (editor) {
             editor.on('update', () => {
-                const content = editor.getHTML();
-                dispatch(flashcardContentUpdate(content));
+                const json = editor.getJSON();
+                dispatch(flashcardContentUpdate(json));
             })
         }
     }, [editor, dispatch])

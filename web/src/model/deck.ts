@@ -14,7 +14,7 @@ import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DECKS, LIBRARIES, LibraryField, METADATA } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { createMetadata } from "./metadata";
-import { DECK, Deck, DeckAccess, Flashcard, LerniApp, UNTITLED_DECK } from "./types";
+import { DECK, Deck, DeckAccess, LerniApp, ServerFlashcard, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -33,7 +33,7 @@ function createDeckAccess(owner: string) : DeckAccess {
     return {owner}
 }
 
-export async function saveDeck(userUid: string, deck: Deck, card: Flashcard) {
+export async function saveDeck(userUid: string, deck: Deck, card: ServerFlashcard) {
 
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deck.id);

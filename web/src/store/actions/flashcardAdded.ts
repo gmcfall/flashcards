@@ -1,8 +1,8 @@
 import { createAction } from "@reduxjs/toolkit";
-import { Flashcard } from "../../model/types";
+import { ServerFlashcard } from "../../model/types";
 
 /**
  * Receive from the Firestore listener, an "added" card
  */
-const flashcardAdded = createAction<Flashcard>("flashcard/added");
+const flashcardAdded = createAction<ServerFlashcard>("flashcard/added");
 export default flashcardAdded;
