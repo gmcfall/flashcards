@@ -13,17 +13,18 @@ html, body {
 
 /*
   TipTap puts its editable element inside a div. It is the lone child element
-  within our `tiptap-container` Box.
+  within our `card-container` Box.
 
   The natural width is 900px. We set this as the max-width. At this width, we
   set the font-size at 200%. We have a React effect which checks the width of 
   this block after it mounts and adjusts the font-size based on the ratio of 
   the actual width to the natural width.
 */
-.tiptap-container > div {
+.card-container > div {
   position: absolute;
   display: flex;
   align-items: stretch;
+  overflow: hidden;
 }
 
 .deck-editor-tiptap {

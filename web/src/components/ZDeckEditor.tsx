@@ -16,7 +16,7 @@ import flashcardContentSave from "../store/actions/flashcardContentSave";
 import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
 import flashcardDelete from "../store/actions/flashcardDelete";
 import { TIP_TAP_EXTENSIONS } from "./deckEditorConstants";
-import { DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
+import { CARD_CONTAINER, DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
 import LerniTheme from "./lerniTheme";
 import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
@@ -33,8 +33,19 @@ export interface TiptapProps {
     editor: Editor | null;
 }
 
+/**
+ * Dynamically adjust the height, width and fontSize of the "card-container"
+ * element so that it is appropriate for the current window size.
+ * 
+ * This method gets invoked when the TipTap editor is initially rendered
+ * and again whenever the window size changes.
+ * 
+ * This invocation during the initial load is tricky because the TipTap
+ * editable will be empty until the card renders. In this case, we set 
+ * a timeout to `updateCardFontSize` after a slight delay.
+ */
 function resizeEditorContent() {
-    const container = document.getElementById('tiptap-container');
+    const container = document.getElementById(CARD_CONTAINER);
     if (container) {
         const target = container.firstChild as HTMLElement | null;
         if (target) {
@@ -58,11 +69,71 @@ function resizeEditorContent() {
 
             const [width, height] = d1<=d2 ? [w1, h1] : [w2, h2];
             const style = target.style;
+            const fontSize = Math.round(MAX_FONT_SIZE*width/MAX_WIDTH) + "%";
             style.left = cx - 0.5*width + "px";
             style.top = cy - 0.5*height + "px";
             style.width = width + "px";
             style.height = height + "px";
-            style.fontSize = MAX_FONT_SIZE*width/MAX_WIDTH + "%";
+            style.fontSize = fontSize;
+            target.setAttribute("data-basefontsize", fontSize);
+            
+            const editable = target.firstChild as HTMLElement | null; 
+
+            // Getting innerHTML might be an expensive operation. If we see performance
+            // issues, we should consider implementing a function to determine if the
+            // editor is empty. This will become a non-issue once we refactor to create
+            // a new TipTap Editor for each Card.
+            
+            const text = editable?.innerHTML || null;
+            if (text !== '<p><br class="ProseMirror-trailingBreak"></p>') {
+                
+                updateCardFontSize();
+            } else {
+                setTimeout(() => {
+                    updateCardFontSize()
+                }, 5);
+            }
+        }
+    }
+}
+
+function updateCardFontSize() {
+    const container = document.getElementById(CARD_CONTAINER);
+    if (container) {
+        const target = container.firstChild as HTMLElement | null;
+        if (target) {
+            const style = target.style;
+            let fontSize = parseInt(style.fontSize);
+            let clientHeight = target.clientHeight;
+            let scrollHeight = target.scrollHeight;
+            
+            while (scrollHeight > clientHeight) {
+                fontSize--;
+                style.fontSize = fontSize + "%";
+                clientHeight = target.clientHeight;
+                scrollHeight = target.scrollHeight;
+            }
+
+            const baseFontSizePercent = target.dataset.basefontsize;
+            if (baseFontSizePercent) {
+                const baseFontSize = parseInt(baseFontSizePercent);
+                while (fontSize < baseFontSize) {
+                    fontSize++;
+                    style.fontSize = fontSize + "%";
+                    clientHeight = target.clientHeight;
+                    scrollHeight = target.scrollHeight;
+                    if (scrollHeight > clientHeight) {
+                        fontSize--;
+                        style.fontSize = fontSize + "%";
+                        break;
+                    }
+                }
+            }
+            
+            
+
+           
+            
         }
     }
 }
@@ -138,8 +209,8 @@ function ZDeckEditorContent(props: TiptapProps) {
 
     return (
         <Box 
-            id="tiptap-container"
-            className="tiptap-container" 
+            id={CARD_CONTAINER}
+            className={CARD_CONTAINER} 
             sx={{
                 display: "block", 
                 position: "relative",
@@ -284,6 +355,7 @@ export default function ZDeckEditor() {
             editor.on('update', () => {
                 const json = editor.getJSON();
                 dispatch(flashcardContentUpdate(json));
+                updateCardFontSize();
             })
         }
     }, [editor, dispatch])
