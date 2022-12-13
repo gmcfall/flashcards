@@ -54,24 +54,62 @@ export async function publishDeck(lerni: LerniApp) {
         const tags = getDeckTags(lerni);
         const db = getFirestore(firebaseApp);
         const tagsRef = doc(db, TAGS, deck.id);
-        const tagsData: Tags = {tags};
+        const newTagsData: Tags = {
+            tags
+        };
 
-        await runTransaction(db, async txn => {
+        const [remove, add] = await runTransaction(db, async txn => {
             const tagsDoc = await txn.get(tagsRef);
             if (!tagsDoc.exists()) {
-                txn.set(tagsRef, tagsData);
-            } else {
-                // TODO: Get list of obsolete words.
-                //       Get list of new words.
-                //       Delete obsolete words from `search` documents
-                //       Add new words to `search` documents
+                txn.set(tagsRef, newTagsData);
+                return [[], newTagsData.tags]
+            } else { 
+                const oldTagsData = tagsDoc.data() as Tags;
+                return computeSearchDelta(oldTagsData.tags, newTagsData.tags);
             }
         })
-        addSearchResources(db, tags, deck.id);
+        addSearchResources(db, deck.id, deck.name, add);
+        removeSearchResources(db, deck.id, remove);
     }
 }
 
-async function addSearchResources(db: Firestore, tags: string[], resourceId: string) {
+async function removeSearchResources(db: Firestore, resourceId: string, tags: string[]) {
+    for (const tag of tags) {
+        const docRef = doc(db, SEARCH, tag);
+        const path = new FieldPath(SearchField.resources, resourceId);
+        await runTransaction(db, async txn => {
+            const searchDoc = await txn.get(docRef);
+            if (!searchDoc.exists()) {
+                // Do nothing
+            } else {
+                txn.update(docRef, path, deleteField());
+            }
+        })
+    }
+}
+
+function computeSearchDelta(oldTags: string[], newTags: string[]) {
+    const oldSet = new Set<string>(Array.from(oldTags));
+    const newSet = new Set<string>(Array.from(newTags));
+
+    const remove: string[] = [];
+    const add: string[] = [];
+
+    for (let tag of oldSet) {
+        if (!newSet.has(tag)) {
+            remove.push(tag);
+        }
+    }
+    for (let tag of newSet) {
+        if (!oldSet.has(tag)) {
+            add.push(tag);
+        }
+    }
+    return [remove, add];
+}
+
+
+async function addSearchResources(db: Firestore, resourceId: string, resourceName: string, tags: string[]) {
 
     for (const tag of tags) {
         const docRef = doc(db, SEARCH, tag);
@@ -81,12 +119,12 @@ async function addSearchResources(db: Firestore, tags: string[], resourceId: str
             if (!searchDoc.exists()) {
                 const searchData: Search = {
                     resources: {
-                        [resourceId] : true
+                        [resourceId] : resourceName
                     }
                 }
                 txn.set(docRef, searchData);
             } else {
-                txn.update(docRef, path, true);
+                txn.update(docRef, path, resourceName);
             }
         })
     }

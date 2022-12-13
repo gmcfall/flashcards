@@ -190,14 +190,16 @@ export interface FirestoreLibrary {
 }
 
 /**
- * A Firestore document that stores "tags" under which the document is indexed for searching.
+ * A Firestore document that stores "tags" under which some resource is indexed for searching.
  * 
- * Firestore path: /tags/{deck.id}
+ * Firestore path: /tags/{resource.id}
  * 
  * Each tag is the porter stem for a word from the deck name or the card contents.
- * Tags exclude pronouns, determiners, conjunctions, prepositions, units of measure
+ * Tags exclude pronouns, determiners, conjunctions, and prepositions
  */
 export interface Tags {
+
+    /** The last list tags publshed for the resource */
     tags: string[];
 }
 
@@ -209,10 +211,10 @@ export interface Tags {
 
 export interface Search {
     /** 
-     * A map whose key is the id of a Deck and whose value is a boolean
-     * specifying whether the deck contains the tag.
+     * A map whose key is the id of a Resource (Deck) and whose value is 
+     * the name of the resource.
      */
-    resources: Record<string, boolean>;
+    resources: Record<string, string>;
 }
 
 /**
