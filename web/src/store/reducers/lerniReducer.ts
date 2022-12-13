@@ -42,7 +42,7 @@ import libraryReceive from "../actions/libraryReceive";
 import { doLibraryReceive, doMetadataReceived } from "../../model/library";
 import deckAdd from "../actions/deckAdd";
 import deckAdded from "../actions/deckAdded";
-import { doDeckNameUpdate, doDeckAdded, doDeckModified } from "../../model/deck";
+import { doDeckNameUpdate, doDeckAdded, doDeckModified, doDeckPublishFulfilled } from "../../model/deck";
 import deckNameUpdate from "../actions/deckNameUpdate";
 import deckNameSubmit from "../actions/deckNameSubmit";
 import deckDelete from "../actions/deckDelete";
@@ -61,6 +61,7 @@ import flashcardModified from "../actions/flashcardModified";
 import deckeditorMount from "../actions/deckeditorMount";
 import flashcardRemoved from "../actions/flashcardRemoved";
 import metadataReceived from "../actions/metadataReceived";
+import deckPublish from "../actions/deckPublish";
 
 const initialState: LerniApp = {
     cards: {}
@@ -127,6 +128,8 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(deckNameUpdate, doDeckNameUpdate)
         .addCase(deckAdded, doDeckAdded)
         .addCase(deckModified, doDeckModified)
+        .addCase(deckPublish.fulfilled, doDeckPublishFulfilled)
+        .addCase(deckPublish.rejected, doErrorDisplay)
         .addCase(deckeditorMount, doDeckeditorMount)
         .addCase(deckeditorUnmount, doDeckeditorUnmount)
         .addCase(deckeditorNewActiveCardDelete, doDeckeditorNewActiveCardDelete)

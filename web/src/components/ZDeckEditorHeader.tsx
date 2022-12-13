@@ -1,20 +1,22 @@
 
-import { Box, IconButton, Tooltip } from "@mui/material";
-import { HEADER_STYLE } from "./header";
-import ZAlert from "./ZAlert";
-import ZAuthTools from "./ZAuthTools";
-import ZDeckNameInput from "./ZDeckNameInput";
 import AddIcon from '@mui/icons-material/Add';
-import { useAppDispatch } from "../hooks/hooks";
-import flashcardAdd from "../store/actions/flashcardAdd";
-import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import { useNavigate } from "react-router-dom";
-import { libraryRoute } from "../model/routes";
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
+import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
+import PublishIcon from '@mui/icons-material/Publish';
+import { Box, IconButton, Tooltip } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch } from "../hooks/hooks";
+import { libraryRoute } from "../model/routes";
+import deckPublish from "../store/actions/deckPublish";
+import flashcardAdd from "../store/actions/flashcardAdd";
+import { HEADER_STYLE } from "./header";
+import ZAlert from "./ZAlert";
+import ZAuthTools from "./ZAuthTools";
 import { TiptapProps } from "./ZDeckEditor";
+import ZDeckNameInput from "./ZDeckNameInput";
 
 function ZAddCardButton() {
     const dispatch = useAppDispatch();
@@ -84,7 +86,8 @@ function ZDeckEditorButtons(props: TiptapProps) {
 
     return (
         <Box sx={HEADER_STYLE}>
-            <ZAddCardButton/>
+            <ZAddCardButton/>            
+            <ZPublishButton/>
             <IconButton onClick={handleBoldClick} sx={{marginLeft: "140px"}}>
                 <FormatBoldIcon/>
             </IconButton>
@@ -101,6 +104,24 @@ function ZDeckEditorButtons(props: TiptapProps) {
             </IconButton>
             
         </Box>
+    )
+}
+
+function ZPublishButton() {
+    const dispatch = useAppDispatch();
+    function handleClick() {
+        dispatch(deckPublish());
+    }
+    return (
+        <Tooltip title="Publish this deck so that anyone can search for it">
+            <IconButton
+                onClick={handleClick}
+                size="small"
+                sx={{marginLeft: "20px"}}
+            >
+                <PublishIcon/>
+            </IconButton>
+        </Tooltip>
     )
 }
 

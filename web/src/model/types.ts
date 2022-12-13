@@ -1,5 +1,8 @@
 
 import {JSONContent} from "@tiptap/core";
+
+export type {JSONContent} from "@tiptap/core";
+
 /**
  * A record that specifies the type of markup that should be
  * applied to some text, such as "bold" or "italic"
@@ -10,6 +13,9 @@ export interface TipTapMark {
 
 /** The TipTap 'doc' content type */
 export const DOC = 'doc';
+
+/** The TipTap 'text' content type */
+export const TEXT='text';
 
 /** The TipTap 'paragraph' content type */
 export const PARAGRAPH='paragraph';
@@ -50,6 +56,7 @@ export interface ClientFlashcard extends FlashcardBase {
     /** The card content represented as a JSON object */
     content: JSONContent;
 }
+
 
 export interface NamedUser {
     /** The `uid` value of the user as defined by Firebase Auth */
@@ -157,10 +164,10 @@ export const DECK = 'deck';
 export interface ResourceRef {
     
     /** The type of resource */
-    type: ResourceType,
+    type: ResourceType;
 
     /** An identifier for the resource */
-    id: string,
+    id: string;
 
     /** A name for the resource suitable for display */
     name: string
@@ -183,6 +190,32 @@ export interface FirestoreLibrary {
 }
 
 /**
+ * A Firestore document that stores "tags" under which the document is indexed for searching.
+ * 
+ * Firestore path: /tags/{deck.id}
+ * 
+ * Each tag is the porter stem for a word from the deck name or the card contents.
+ * Tags exclude pronouns, determiners, conjunctions, prepositions, units of measure
+ */
+export interface Tags {
+    tags: string[];
+}
+
+/**
+ * A Firestore document that stores all decks that contain a given tag.
+ * 
+ * Firestore path: /search/{tag}
+ */
+
+export interface Search {
+    /** 
+     * A map whose key is the id of a Deck and whose value is a boolean
+     * specifying whether the deck contains the tag.
+     */
+    resources: Record<string, boolean>;
+}
+
+/**
  * A client-side representation of a user's library of resources.
  * In this representation, the map from the {@link FirestoreLibrary} is
  * converted to an array sorted alphabetically.
@@ -196,7 +229,7 @@ export interface ClientLibrary {
 }
 
 export interface ErrorInfo {
-    message: string,
+    message: string;
     cause?: string
 }
 
@@ -297,19 +330,28 @@ export interface AlertData {
     message: string
 }
 
+
+
+/** A role that determines permissions for accessing a Deck */
+export type Role = 'editor' | 'viewer';
+
+/** The 'editor' Role */
+export const EDITOR="editor";
+
+/** The 'viewer' Role */
+export const VIEWER="viewer"
+
 /**
- * Defines the access control rules for a given Deck
+ * A Firestore document that defines the access control rules for a given Deck
+ * 
+ * Firestore path: /access/{deck.id}
  */
 export interface DeckAccess {
     /** The uid of the user who owns the Deck */
     owner: string;
-}
 
-
-export interface DeckLibrary {
-    /** A unique identifier for the library */
-    id: string,
-
+    /** The roles for public access to the Deck */
+    public: Role[];
 }
 
 /** The status of a loading process */

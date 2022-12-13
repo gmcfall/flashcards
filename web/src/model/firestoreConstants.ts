@@ -14,6 +14,12 @@ export const CARDS = "cards";
 /** The "metadata" collection in Firestore */
 export const METADATA = "metadata";
 
+/** The "tags" collection in Firestore */
+export const TAGS = "tags";
+
+/** The "search" collection in Firestore */
+export const SEARCH = "search";
+
 /** Field names used when updating documents in the 'libraries' collection */
 export const LibraryField = {
     resources: 'resources'
@@ -34,4 +40,9 @@ export const CardField = {
 /** Field names used when updating documents in the 'metadata' collection */
 export const MetadataField = {
     name: 'name'
+}
+
+/** Field names used when updating documents in the 'search' collection */
+export const SearchField = {
+    resources: "resources"
 }

@@ -2,19 +2,22 @@
 
 import { PayloadAction } from "@reduxjs/toolkit";
 import {
-    collection, deleteField, doc, documentId, FieldPath, getFirestore, onSnapshot, query, runTransaction,
+    collection, deleteField, doc, documentId, FieldPath, Firestore, getFirestore, onSnapshot, query, runTransaction,
     setDoc, Unsubscribe, where, writeBatch
 } from "firebase/firestore";
 import deckAdded from "../store/actions/deckAdded";
 import deckModified from "../store/actions/deckModified";
 import { AppDispatch, RootState } from "../store/store";
+import porterStem from "../util/stemmer";
+import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
+import { setAlert } from "./alert";
 import { deckEditorReceiveAddedDeck, deckEditorReceiveModifiedDeck } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
-import { ACCESS, CARDS, DECKS, LIBRARIES, LibraryField, METADATA } from "./firestoreConstants";
+import { ACCESS, CARDS, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { createMetadata } from "./metadata";
-import { DECK, Deck, DeckAccess, LerniApp, ServerFlashcard, UNTITLED_DECK } from "./types";
+import { DECK, Deck, DeckAccess, INFO, JSONContent, LerniApp, Search, ServerFlashcard, Tags, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -30,7 +33,108 @@ export function createDeck() : Deck {
  * @param owner The uid of the User that owns the Deck
  */
 function createDeckAccess(owner: string) : DeckAccess {
-    return {owner}
+    return {
+        owner,
+        public: []
+    }
+}
+
+export function doDeckPublishFulfilled(lerni: LerniApp, action: PayloadAction) {
+    setAlert(lerni, {
+        severity: INFO,
+        message: "The deck has been published"
+    })
+}
+
+// TODO: move this to a Firebase function
+export async function publishDeck(lerni: LerniApp) {
+
+    const deck = lerni.deck;
+    if (deck) {
+        const tags = getDeckTags(lerni);
+        const db = getFirestore(firebaseApp);
+        const tagsRef = doc(db, TAGS, deck.id);
+        const tagsData: Tags = {tags};
+
+        await runTransaction(db, async txn => {
+            const tagsDoc = await txn.get(tagsRef);
+            if (!tagsDoc.exists()) {
+                txn.set(tagsRef, tagsData);
+            } else {
+                // TODO: Get list of obsolete words.
+                //       Get list of new words.
+                //       Delete obsolete words from `search` documents
+                //       Add new words to `search` documents
+            }
+        })
+        addSearchResources(db, tags, deck.id);
+    }
+}
+
+async function addSearchResources(db: Firestore, tags: string[], resourceId: string) {
+
+    for (const tag of tags) {
+        const docRef = doc(db, SEARCH, tag);
+        const path = new FieldPath(SearchField.resources, resourceId);
+        await runTransaction(db, async txn => {
+            const searchDoc = await txn.get(docRef);
+            if (!searchDoc.exists()) {
+                const searchData: Search = {
+                    resources: {
+                        [resourceId] : true
+                    }
+                }
+                txn.set(docRef, searchData);
+            } else {
+                txn.update(docRef, path, true);
+            }
+        })
+    }
+}
+
+
+function getDeckTags(lerni: LerniApp) {
+    const set = new Set<string>();
+    const deck = lerni.deck;
+    if (deck) {
+        addTextTags(set, deck.name);
+    }
+    const cards = lerni.cards;
+    for (const cardId in cards) {
+        const card = cards[cardId].card;
+        addTicTapContentTags(set, card.content);
+    }
+
+    return Array.from(set);
+}
+
+function addTicTapContentTags(set: Set<string>, content: JSONContent) {
+    if (content.text) {
+        addTextTags(set, content.text);
+    } if (content.content) {
+        const childContent = content.content;
+        if (Array.isArray(childContent)) {
+            const array = childContent;
+            array.forEach(e => addTicTapContentTags(set, e));
+        } else {
+            addTicTapContentTags(set, content.content);
+        }
+    }
+}
+
+function addTextTags(set: Set<string>, name: string) {
+    const parts = name.split(" ");
+    parts.forEach(word => addTag(set, word));
+}
+
+function addTag(set: Set<string>, word: string) {
+    if (word) {
+        const lower = word.toLocaleLowerCase();
+        if (!STOP_WORDS.has(lower)) {
+            const stem = porterStem(lower);
+            set.add(stem);
+        }
+    }
 }
 
 export async function saveDeck(userUid: string, deck: Deck, card: ServerFlashcard) {
