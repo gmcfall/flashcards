@@ -1,20 +1,31 @@
 import { createReducer } from "@reduxjs/toolkit";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
+import { doAlertPost, doAlertRemove } from "../../model/alert";
 import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEmailVerified, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
+import { doDeckAdded, doDeckModified, doDeckNameUpdate, doDeckPublishFulfilled } from "../../model/deck";
+import { doDeckeditorMount, doDeckeditorNewActiveCardDelete, doDeckeditorUnmount } from "../../model/deckEditor";
 import { doErrorDisplay } from "../../model/errorHandler";
+import { doFlashcardAdded, doFlashcardAddFulfilled, doFlashcardContentUpdate, doFlashcardModified, doFlashcardRemoved, doFlashcardSelect } from "../../model/flashcard";
+import { doLibraryReceive, doMetadataReceived } from "../../model/library";
+import { doResourceSearchEnd, doResourceSearchRequestPending, doResourceSearchResponsePart } from "../../model/search";
 import { LerniApp } from "../../model/types";
-import accountDeletePasswordBegin from "../actions/accountDeletePasswordBegin";
 import accountDeleteEmailChange from "../actions/accountDeleteEmailChange";
 import accountDeleteFacebook from "../actions/accountDeleteFacebook";
 import accountDeleteGoogle from "../actions/accountDeleteGoogle";
+import accountDeletePasswordBegin from "../actions/accountDeletePasswordBegin";
 import accountDeletePasswordChange from "../actions/accountDeletePasswordChange";
+import accountDeletePasswordSubmit from "../actions/accountDeletePasswordSubmit";
 import accountDeleteTwitter from "../actions/accountDeleteTwitter";
 import accountDisplayNameUpdate from "../actions/accountDisplayNameUpdate";
+import alertPost from "../actions/alertPost";
+import alertRemove from "../actions/alertRemove";
+import authSigninPasswordChangeEmail from "../actions/authinSigninPasswordChangeEmail";
 import authRegisterBegin from "../actions/authRegisterBegin";
 import authRegisterCancel from "../actions/authRegisterCancel";
 import authRegisterEmailChange from "../actions/authRegisterEmailChange";
 import authRegisterEmailFormChange from "../actions/authRegisterEmailFormChange";
 import authRegisterEmailFormSubmit from "../actions/authRegisterEmailFormSubmit";
+import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
 import authRegisterFacebook from "../actions/authRegisterFacebook";
 import authRegisterGoogle from "../actions/authRegisterGoogle";
 import authRegisterNameChange from "../actions/authRegisterNameChange";
@@ -27,41 +38,34 @@ import authSigninBegin from "../actions/authSigninBegin";
 import authSigninCancel from "../actions/authSigninCancel";
 import authSigninFacebook from "../actions/authSigninFacebook";
 import authSigninGoogle from "../actions/authSigninGoogle";
-import authSigninTwitter from "../actions/authSigninTwitter";
-import authSignout from "../actions/authSignout";
 import authSigninPasswordBegin from "../actions/authSigninPasswordBegin";
-import authSigninPasswordChangeEmail from "../actions/authinSigninPasswordChangeEmail";
 import authSigninPasswordChangePassword from "../actions/authSigninPasswordChangePassword";
 import authSigninPasswordSubmit from "../actions/authSigninPasswordSubmit";
-import alertRemove from "../actions/alertRemove";
-import { doAlertPost, doAlertRemove } from "../../model/alert";
-import accountDeletePasswordSubmit from "../actions/accountDeletePasswordSubmit";
-import alertPost from "../actions/alertPost";
-import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
-import libraryReceive from "../actions/libraryReceive";
-import { doLibraryReceive, doMetadataReceived } from "../../model/library";
+import authSigninTwitter from "../actions/authSigninTwitter";
+import authSignout from "../actions/authSignout";
 import deckAdd from "../actions/deckAdd";
 import deckAdded from "../actions/deckAdded";
-import { doDeckNameUpdate, doDeckAdded, doDeckModified, doDeckPublishFulfilled } from "../../model/deck";
-import deckNameUpdate from "../actions/deckNameUpdate";
-import deckNameSubmit from "../actions/deckNameSubmit";
 import deckDelete from "../actions/deckDelete";
+import deckeditorMount from "../actions/deckeditorMount";
+import deckeditorNewActiveCardDelete from "../actions/deckeditorNewActiveCardDelete";
+import deckeditorUnmount from "../actions/deckeditorUnmount";
+import deckModified from "../actions/deckModified";
+import deckNameSubmit from "../actions/deckNameSubmit";
+import deckNameUpdate from "../actions/deckNameUpdate";
+import deckPublish from "../actions/deckPublish";
 import flashcardAdd from "../actions/flashcardAdd";
 import flashcardAdded from "../actions/flashcardAdded";
-import { doFlashcardContentUpdate, doFlashcardAddFulfilled, doFlashcardAdded, doFlashcardSelect, doFlashcardModified, doFlashcardRemoved } from "../../model/flashcard";
-import flashcardSelect from "../actions/flashcardSelect";
-import flashcardContentUpdate from "../actions/flashcardContentUpdate";
 import flashcardContentSave from "../actions/flashcardContentSave";
-import deckeditorUnmount from "../actions/deckeditorUnmount";
-import deckeditorNewActiveCardDelete from "../actions/deckeditorNewActiveCardDelete";
+import flashcardContentUpdate from "../actions/flashcardContentUpdate";
 import flashcardDelete from "../actions/flashcardDelete";
-import { doDeckeditorMount, doDeckeditorNewActiveCardDelete, doDeckeditorUnmount } from "../../model/deckEditor";
-import deckModified from "../actions/deckModified";
 import flashcardModified from "../actions/flashcardModified";
-import deckeditorMount from "../actions/deckeditorMount";
 import flashcardRemoved from "../actions/flashcardRemoved";
+import flashcardSelect from "../actions/flashcardSelect";
+import libraryReceive from "../actions/libraryReceive";
 import metadataReceived from "../actions/metadataReceived";
-import deckPublish from "../actions/deckPublish";
+import resourceSearchEnd from "../actions/resourceSearchEnd";
+import resourceSearchRequest from "../actions/resourceSearchRequest";
+import resourceSearchResponsePart from "../actions/resourceSearchResponse";
 
 const initialState: LerniApp = {
     cards: {}
@@ -145,5 +149,8 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(flashcardSelect, doFlashcardSelect)
         .addCase(libraryReceive, doLibraryReceive)
         .addCase(metadataReceived, doMetadataReceived)
+        .addCase(resourceSearchEnd, doResourceSearchEnd)
+        .addCase(resourceSearchRequest.pending, doResourceSearchRequestPending)
+        .addCase(resourceSearchResponsePart, doResourceSearchResponsePart)
 });
 export default lerniReducer;

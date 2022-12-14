@@ -199,22 +199,77 @@ export interface FirestoreLibrary {
  */
 export interface Tags {
 
-    /** The last list tags publshed for the resource */
+    /** The last list tags publsihed for the resource */
     tags: string[];
 }
 
 /**
- * A Firestore document that stores all decks that contain a given tag.
+ * A Firestore document that provides the `id` and `name` for each resource 
+ * containing a given tag.
  * 
  * Firestore path: /search/{tag}
  */
 
-export interface Search {
+export interface ResourceSearchServerData {
     /** 
-     * A map whose key is the id of a Resource (Deck) and whose value is 
-     * the name of the resource.
+     * A Record whose key is the id of a resource and whose value is 
+     * a reference to the resource.
      */
-    resources: Record<string, string>;
+    resources: Record<string, ResourceRef>;
+}
+
+export interface ResourceSearchRequest {
+    /** The full search string typed by the user */
+    searchString: string;
+
+    /**
+     * The tags to be searched.
+     * 
+     * This value is computed by splitting the `searchString` into an array of
+     * space-separated words and then filtering to exclude stop words.
+     */
+    searchTags: string[]
+}
+
+/**
+ * Encapsulates a ServerResourceSearch document for a given tag.
+ */
+export interface ResourceSearchResponsePart {
+    /** A tag derived from the `searchString` */
+    tag: string;
+
+    /** ServerResourceSearch document for the given `tag` */
+    serverData: ResourceSearchServerData;
+}
+
+
+
+/**
+ * A client-side object encapsulating `SearchRequest` and `SearchResponse` data plus
+ * the status of the search.
+ * 
+ * The status changes according to the following rules.
+ * - `pending`: The cache does not contain results from all tags in the search string
+ * - `fulfilled`: The cache contains results from all tags in the search string
+ * - `failed`: An error occurred while performing the search
+ */
+export interface ResourceSearchClientData extends ResourceSearchRequest {
+    /**
+     * The status of the search process
+     */
+    status: LoadStatus;
+
+    /** 
+     * A cache of ServerSearch records retreived from Firestore.
+     * Each key in the Record is a tag and the value is the
+     * ServerSearch document for that tag.
+     */
+    cache: Record<string, ResourceSearchServerData>;
+
+    /**
+     * An array of Resource references sorted alphabetically.
+     */
+    resources: ResourceRef[];
 }
 
 /**
@@ -357,13 +412,16 @@ export interface DeckAccess {
 }
 
 /** The status of a loading process */
-export type LoadStatus = 'pending' | 'failed';
+export type LoadStatus = 'pending' | 'fulfilled' | 'failed';
 
 /** The 'pending' value of the LoadStatus type*/
-export const PENDING='pending';
+export const PENDING = 'pending';
+
+/** The 'fullfilled' value of the LoadStatus type*/
+export const FULFILLED ='fulfilled';
 
 /** The 'failed' value of the LoadStatus type */
-export const FAILED='failed';
+export const FAILED = 'failed';
 
 
 /**
@@ -482,6 +540,7 @@ export interface LerniApp {
     /** A map containing the cards within the current deck */
     cards: Record<string, CardInfo>,
 
+    resourceSearch?: ResourceSearchClientData;
     deckEditor?: DeckEditor
 
 }

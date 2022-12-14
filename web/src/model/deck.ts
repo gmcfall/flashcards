@@ -17,7 +17,7 @@ import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { createMetadata } from "./metadata";
-import { DECK, Deck, DeckAccess, INFO, JSONContent, LerniApp, Search, ServerFlashcard, Tags, UNTITLED_DECK } from "./types";
+import { DECK, Deck, DeckAccess, INFO, JSONContent, LerniApp, ResourceSearchServerData, ServerFlashcard, Tags, UNTITLED_DECK, ResourceRef } from "./types";
 
 export function createDeck() : Deck {
 
@@ -68,7 +68,12 @@ export async function publishDeck(lerni: LerniApp) {
                 return computeSearchDelta(oldTagsData.tags, newTagsData.tags);
             }
         })
-        addSearchResources(db, deck.id, deck.name, add);
+        const ref: ResourceRef = {
+            type: DECK,
+            id: deck.id,
+            name: deck.name
+        }
+        addSearchResources(db, ref, add);
         removeSearchResources(db, deck.id, remove);
     }
 }
@@ -109,22 +114,22 @@ function computeSearchDelta(oldTags: string[], newTags: string[]) {
 }
 
 
-async function addSearchResources(db: Firestore, resourceId: string, resourceName: string, tags: string[]) {
+async function addSearchResources(db: Firestore, resourceRef: ResourceRef, tags: string[]) {
 
     for (const tag of tags) {
         const docRef = doc(db, SEARCH, tag);
-        const path = new FieldPath(SearchField.resources, resourceId);
+        const path = new FieldPath(SearchField.resources, resourceRef.id);
         await runTransaction(db, async txn => {
             const searchDoc = await txn.get(docRef);
             if (!searchDoc.exists()) {
-                const searchData: Search = {
+                const searchData: ResourceSearchServerData = {
                     resources: {
-                        [resourceId] : resourceName
+                        [resourceRef.id]: resourceRef
                     }
                 }
                 txn.set(docRef, searchData);
             } else {
-                txn.update(docRef, path, resourceName);
+                txn.update(docRef, path, resourceRef);
             }
         })
     }

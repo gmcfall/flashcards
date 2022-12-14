@@ -1,6 +1,5 @@
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import SearchIcon from '@mui/icons-material/Search';
-import { Box, Button, FormControl, InputAdornment, Paper, TextField, Typography } from "@mui/material";
+import { Box, Button, FormControl, Paper, Typography } from "@mui/material";
 import { styled } from '@mui/material/styles';
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
@@ -9,6 +8,7 @@ import { libraryRoute } from '../model/routes';
 import { HEADER_STYLE } from './header';
 import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
+import ZResourceSearchTool from './ZResourceSearchTool';
 
 const CenteredPaper = styled(Paper)(({theme}) => ({
     ...theme.typography.body1,
@@ -19,8 +19,18 @@ const CenteredPaper = styled(Paper)(({theme}) => ({
 
 function ZHomeHeader() {
     return (
-        <Box sx={HEADER_STYLE}>
+        <Box sx={{
+            ...HEADER_STYLE,
+            height: '90px'
+        }}>
             <ZAlert/>
+            
+            <Box sx={{marginRight: "20px"}}>
+                <Button variant="contained">
+                    Create a New Deck
+                </Button>
+            </Box>
+            <ZResourceSearchTool/>
             <ZAuthTools/>
         </Box>
     )
@@ -37,26 +47,6 @@ export default function ZHome() {
                     <Typography variant="body1">
                         Use the search to find flashcard decks, or create a new deck. 
                     </Typography>
-                    <TextField
-                        id="input-with-icon-textfield"
-                        label="Search"
-                        InputProps={{
-                        startAdornment: (
-                            <InputAdornment position="start">
-                            <SearchIcon />
-                            </InputAdornment>
-                        ),
-                        }}
-                        variant="outlined"
-                        inputProps={{
-                            size: 30
-                        }}
-                    />
-                    <Box>
-                        <Button variant="contained">
-                            Create a New Deck
-                        </Button>
-                    </Box>
                     <ZLibraryLink/>
                     
                 </Box>
