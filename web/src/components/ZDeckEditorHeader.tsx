@@ -12,7 +12,7 @@ import { useAppDispatch } from "../hooks/hooks";
 import { libraryRoute } from "../model/routes";
 import deckPublish from "../store/actions/deckPublish";
 import flashcardAdd from "../store/actions/flashcardAdd";
-import { HEADER_STYLE } from "./header";
+import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from "./header";
 import ZAlert from "./ZAlert";
 import ZAuthTools from "./ZAuthTools";
 import { TiptapProps } from "./ZDeckEditor";
@@ -131,7 +131,8 @@ function ZDeckEditorBanner() {
             display: 'flex',
             paddingTop: "5px",
             borderBottomWidth: "1px",
-            paddingLeft: "2em"
+            paddingLeft: "2em",
+            height: OUTLINED_TEXT_FIELD_HEIGHT
         }}>
             <ZDeckNameInput/>
             <ZAlert/>

@@ -9,3 +9,5 @@ export const HEADER_STYLE = {
     alignItems: 'center',
     paddingLeft: "2em"
 }
+
+export const OUTLINED_TEXT_FIELD_HEIGHT = "80px";

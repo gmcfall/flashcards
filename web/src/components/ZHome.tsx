@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
 import { selectSession } from '../model/auth';
 import { libraryRoute } from '../model/routes';
-import { HEADER_STYLE } from './header';
+import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
 import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
 import ZResourceSearchTool from './ZResourceSearchTool';
@@ -21,7 +21,7 @@ function ZHomeHeader() {
     return (
         <Box sx={{
             ...HEADER_STYLE,
-            height: '90px'
+            height: OUTLINED_TEXT_FIELD_HEIGHT
         }}>
             <ZAlert/>
             

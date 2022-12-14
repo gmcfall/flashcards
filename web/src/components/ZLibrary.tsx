@@ -13,7 +13,7 @@ import { ClientLibrary, ERROR, Metadata, ResourceRef, UNKNOWN_RESOURCE_TYPE } fr
 import alertPost from '../store/actions/alertPost';
 import deckAdd from '../store/actions/deckAdd';
 import deckDelete from '../store/actions/deckDelete';
-import { HEADER_STYLE } from './header';
+import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
 import ZAccessDeniedAlert from './ZAccessDeniedAlert';
 import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
 import ZAlert from "./ZAlert";
@@ -38,7 +38,10 @@ function ZLibraryHeader() {
     }
 
     return (
-        <Box sx={HEADER_STYLE}>
+        <Box sx={{
+            ...HEADER_STYLE,
+            height: OUTLINED_TEXT_FIELD_HEIGHT
+        }}>
             <LocalLibraryIcon/>
             <Typography variant="h1" sx={{marginLeft: "1rem", marginRight: '1.5rem'}}>Library</Typography>
             <Tooltip title="Create a new deck of flashcards and add it to your library">
