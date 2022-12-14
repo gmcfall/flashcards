@@ -132,8 +132,6 @@ export function doResourceSearchRequestPending(lerni: LerniApp, action: PayloadA
 export function createResourceSearchRequest(searchString: string) {
     const rawSearchTags = searchString.split(' ').filter(s => Boolean(s));
 
-    console.log({rawSearchTags})
-
     const searchTags: string[] = [];
     rawSearchTags.forEach(rawTag => {
         const lower = rawTag.toLowerCase();

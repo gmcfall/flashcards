@@ -6,10 +6,15 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import PublishIcon from '@mui/icons-material/Publish';
-import { Box, IconButton, Tooltip } from "@mui/material";
+import { 
+    Box, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, 
+    DialogActions, TextField, Button
+} from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import { useAppDispatch } from "../hooks/hooks";
+import { useAppDispatch, useAppSelector } from "../hooks/hooks";
+import { selectDeck } from '../model/deck';
 import { libraryRoute } from "../model/routes";
+import { UNTITLED_DECK } from '../model/types';
 import deckPublish from "../store/actions/deckPublish";
 import flashcardAdd from "../store/actions/flashcardAdd";
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from "./header";
@@ -17,6 +22,9 @@ import ZAlert from "./ZAlert";
 import ZAuthTools from "./ZAuthTools";
 import { TiptapProps } from "./ZDeckEditor";
 import ZDeckNameInput from "./ZDeckNameInput";
+import { useState } from "react";
+import deckNameUpdate from '../store/actions/deckNameUpdate';
+import deckNameSubmit from '../store/actions/deckNameSubmit';
 
 function ZAddCardButton() {
     const dispatch = useAppDispatch();
@@ -107,21 +115,94 @@ function ZDeckEditorButtons(props: TiptapProps) {
     )
 }
 
+function invalidName(name: string) {
+    const lowerName = name.toLocaleLowerCase();
+    return !lowerName || lowerName===UNTITLED_DECK.toLocaleLowerCase();
+}
+
 function ZPublishButton() {
     const dispatch = useAppDispatch();
+    const [nameDialogOpen, setNameDialogOpen] = useState<boolean>(false);
+    const [nameError, setNameError] = useState<boolean>(false);
+
+    const deck = useAppSelector(selectDeck);
+
+    if (!deck) {
+        return null;
+    }
+    
     function handleClick() {
+        if (deck) {
+            if (invalidName(deck.name)) {
+                setNameDialogOpen(true);
+                return;
+            }
+        }
         dispatch(deckPublish());
     }
+
+    function handleCloseDialog() {
+        setNameDialogOpen(false);
+    }
+
+    function handleCloseDialogAndPublish() {
+        if (deck) {
+            if (invalidName(deck.name)) {
+                setNameError(true);
+            } else {
+                setNameDialogOpen(false);
+                
+                dispatch(deckNameSubmit({
+                    name: deck.name, 
+                    deckId: deck.id
+                }))
+                dispatch(deckPublish())
+            }
+            
+        }
+    }
+
+    function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
+        dispatch(deckNameUpdate(e.currentTarget.value));
+    }
+
     return (
-        <Tooltip title="Publish this deck so that anyone can search for it">
-            <IconButton
-                onClick={handleClick}
-                size="small"
-                sx={{marginLeft: "20px"}}
-            >
-                <PublishIcon/>
-            </IconButton>
-        </Tooltip>
+        <>
+            <Tooltip title="Publish this deck so that anyone can search for it">
+                <IconButton
+                    onClick={handleClick}
+                    size="small"
+                    sx={{marginLeft: "20px"}}
+                >
+                    <PublishIcon/>
+                </IconButton>
+            </Tooltip>
+
+            <Dialog open={nameDialogOpen} onClose={handleCloseDialog}>
+                <DialogTitle>Name before publishing</DialogTitle>
+                <DialogContent>
+                    <DialogContentText>
+                        Give your untitled Deck a name before it's published:
+                    </DialogContentText>
+                    <TextField
+                        autoFocus
+                        error={nameError}
+                        size="small"
+                        id="name"
+                        fullWidth
+                        variant="outlined"
+                        value={deck ? deck.name : ""}
+                        helperText={nameError ? "The name is required" : undefined}
+                        onChange={handleNameChange}
+                    />
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleCloseDialog}>Cancel</Button>
+                    <Button onClick={handleCloseDialogAndPublish}>Publish</Button>
+                </DialogActions>
+            </Dialog>
+
+        </>
     )
 }
 
