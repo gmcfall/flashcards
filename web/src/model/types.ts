@@ -199,7 +199,7 @@ export interface FirestoreLibrary {
  */
 export interface Tags {
 
-    /** The last list tags publsihed for the resource */
+    /** The last list tags published for the resource */
     tags: string[];
 }
 

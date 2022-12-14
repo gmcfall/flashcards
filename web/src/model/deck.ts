@@ -2,7 +2,7 @@
 
 import { PayloadAction } from "@reduxjs/toolkit";
 import {
-    collection, deleteField, doc, documentId, FieldPath, Firestore, getFirestore, onSnapshot, query, runTransaction,
+    collection, deleteField, doc, documentId, FieldPath, Firestore, getDoc, getFirestore, onSnapshot, query, runTransaction,
     setDoc, Unsubscribe, where, writeBatch
 } from "firebase/firestore";
 import deckAdded from "../store/actions/deckAdded";
@@ -305,9 +305,19 @@ export async function deleteDeck(deckId: string, userUid: string) {
     const metadataRef = doc(db, METADATA, deckId);
     const deckAccessRef = doc(db, ACCESS, deckId);
     const libRef = doc(db, LIBRARIES, userUid);
+    const tagsRef = doc(db, TAGS, deckId);
     const path = new FieldPath(LibraryField.resources, deckId);
 
-    return runTransaction(db, async txn => {
+    const tagsDoc = await getDoc(tagsRef);
+    const promiseList: Promise<any>[] = [];
+    if (tagsDoc.exists()) {
+        const tagsData = tagsDoc.data() as Tags;
+        const tagList = tagsData.tags;
+        const promise = removeSearchResources(db, deckId, tagList);
+        promiseList.push(promise);
+    }
+
+    const lastPromise = runTransaction(db, async txn => {
         const deckDoc = await txn.get(deckRef);
         if (deckDoc.exists()) {
             const deckData = deckDoc.data() as Deck;
@@ -322,4 +332,6 @@ export async function deleteDeck(deckId: string, userUid: string) {
             txn.update(libRef, path, deleteField())
         }
     })
+    promiseList.push(lastPromise);
+    return Promise.all(promiseList);
 }
