@@ -43,6 +43,7 @@ export default function ZResourceSearchTool() {
                 id="input-with-icon-textfield"
                 label="Search"
                 autoComplete="off"
+                size="small"
                 sx={{
                     minWidth: MIN_WIDTH
                 }}

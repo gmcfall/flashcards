@@ -207,11 +207,11 @@ function ZPublishButton() {
 }
 
 function ZDeckEditorBanner() {
-    return (        
+    return (  
+              
         <Box sx={{
-            display: 'flex',
-            paddingTop: "5px",
-            borderBottomWidth: "1px",
+            display: 'flex', 
+            alignItems: 'center',
             paddingLeft: "2em",
             height: OUTLINED_TEXT_FIELD_HEIGHT
         }}>
