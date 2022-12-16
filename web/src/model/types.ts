@@ -521,13 +521,6 @@ export interface DeckEditor {
      */
     newActiveCard?: boolean;
 
-    /** 
-     * A structure that tracks the number of cards received from Firestore during the
-     * bootstrap process. This record is added when ZDeckEditor mounts and is deleted
-     * after the Deck and all cards have been received from Firestore.
-     */
-    bootstrap?: DeckBootstrap;
-
     /**
      * State used during the process of adding a card to the deck.
      */
@@ -581,6 +574,13 @@ export interface LerniApp {
 
     /** An envelope encapsulating the access control list for the active Deck */
     deckAccess?: AccessEnvelope;
+    
+    /** 
+     * A structure that tracks the number of cards received from Firestore during the
+     * bootstrap process. This record is added when ZDeckEditor mounts and is deleted
+     * after the Deck and all cards have been received from Firestore.
+     */
+    deckBootstrap?: DeckBootstrap;
 
     /** Details about the DeckEditor currently active */
     deckEditor?: DeckEditor;

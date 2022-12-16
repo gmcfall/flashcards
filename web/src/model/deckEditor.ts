@@ -13,9 +13,9 @@ export function doDeckeditorMount(lerni: LerniApp, action: PayloadAction<string>
     if (deck && deck.id !== deckId) {
         delete lerni.deck;
     }
+    lerni.deckBootstrap = {cardCount: 0};
     lerni.deckEditor = {
-        deckId,
-        bootstrap: {cardCount: 0}
+        deckId
     };
 }
 
@@ -32,13 +32,13 @@ export function doDeckeditorNewActiveCardDelete(lerni: LerniApp, action: Payload
 }
 
 export function deckEditorReceiveAddedDeck(lerni: LerniApp, deckEditor: DeckEditor, deckId: string) {
-    const bootstrap = deckEditor.bootstrap;
+    const bootstrap = lerni.deckBootstrap;
     if (bootstrap) {
         bootstrap.deckId = deckId;
         const deck = lerni.deck;
         if (deck) {
             if (deck.cards.length === bootstrap.cardCount) {
-                endBootstrap(deck, deckEditor);
+                endBootstrap(lerni, deck, deckEditor);
             }
         }
     }
@@ -66,11 +66,11 @@ export function deckEditorReceiveAddedCard(lerni: LerniApp, card: ClientFlashcar
     const deckEditor = lerni.deckEditor;
     if (deckEditor) {
         const deck = lerni.deck;
-        const bootstrap = deckEditor.bootstrap;
+        const bootstrap = lerni.deckBootstrap;
         if (bootstrap) {
             bootstrap.cardCount++;
             if (deck && bootstrap.deckId && deck.cards.length===bootstrap.cardCount) {
-                endBootstrap(deck, deckEditor);
+                endBootstrap(lerni, deck, deckEditor);
             }
         } else {
             const cardAdd = deckEditor.cardAdd || (
@@ -90,14 +90,14 @@ function endCardAdd(deckEditor: DeckEditor, cardId: string) {
     deckEditor.newActiveCard = true;
 }
 
-function endBootstrap(deck: Deck, deckEditor: DeckEditor) {
+function endBootstrap(lerni: LerniApp, deck: Deck, deckEditor: DeckEditor) {
     const deckCards = deck.cards;
     if (deckCards.length>0) {
         const first = deckCards[0];
         deckEditor.activeCard = first.id;
         deckEditor.newActiveCard = true;
     }
-    delete deckEditor.bootstrap;
+    delete lerni.deckBootstrap;
 }
 
 export function deckEditorReceiveModifiedDeck(lerni: LerniApp, oldDeck: Deck | undefined, newDeck: Deck) {
