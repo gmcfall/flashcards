@@ -4,8 +4,17 @@ import { displayError } from "./errorHandler";
 import { ClientFlashcard, Deck, DeckEditor, LerniApp } from "./types";
 
 export function doDeckeditorMount(lerni: LerniApp, action: PayloadAction<string>) {
+    const deckId = action.payload;
+    const deckAccess = lerni.deckAccess;
+    if (deckAccess && deckAccess.resourceId !== deckId) {
+        delete lerni.deckAccess;
+    }
+    const deck = lerni.deck;
+    if (deck && deck.id !== deckId) {
+        delete lerni.deck;
+    }
     lerni.deckEditor = {
-        deckId: action.payload,
+        deckId,
         bootstrap: {cardCount: 0}
     };
 }

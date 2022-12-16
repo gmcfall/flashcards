@@ -3,7 +3,7 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import {
     collection, deleteField, doc, documentId, FieldPath, Firestore, getDoc, getFirestore, onSnapshot, query, runTransaction,
-    setDoc, Unsubscribe, where, writeBatch
+    setDoc, Unsubscribe, updateDoc, where, writeBatch
 } from "firebase/firestore";
 import deckAdded from "../store/actions/deckAdded";
 import deckModified from "../store/actions/deckModified";
@@ -11,20 +11,22 @@ import { AppDispatch, RootState } from "../store/store";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
+import { enableGeneralViewer, subscribeAccess } from "./access";
 import { setAlert } from "./alert";
 import { deckEditorReceiveAddedDeck, deckEditorReceiveModifiedDeck } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
-import { ACCESS, CARDS, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
+import { ACCESS, CARDS, DeckField, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { createMetadata } from "./metadata";
-import { DECK, Deck, DeckAccess, INFO, JSONContent, LerniApp, ResourceSearchServerData, ServerFlashcard, Tags, UNTITLED_DECK, ResourceRef } from "./types";
+import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp, LOCK_CLOSED, ResourceRef, ResourceSearchServerData, ServerFlashcard, SharingIconType, Tags, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
     return {
         id: generateUid(),
         name: UNTITLED_DECK,
-        cards: []
+        cards: [],
+        isPublished: false
     }
 }
 
@@ -32,10 +34,9 @@ export function createDeck() : Deck {
  * Create a DeckAccess object
  * @param owner The uid of the User that owns the Deck
  */
-function createDeckAccess(owner: string) : DeckAccess {
+function createDeckAccess(owner: string) : Access {
     return {
-        owner,
-        public: []
+        owner
     }
 }
 
@@ -75,7 +76,31 @@ export async function publishDeck(lerni: LerniApp) {
         }
         addSearchResources(db, ref, add);
         removeSearchResources(db, deck.id, remove);
+        updateIsPublishedFlag(db, deck.id, true);
+        enableGeneralViewer(deck.id);
+        
     }
+}
+
+export function selectSharingIcon(state: RootState): SharingIconType {
+    const lerni = state.lerni;
+    const accessEnvelope = lerni.deckAccess;
+    if (accessEnvelope) {
+        const access = accessEnvelope.payload;
+        return (
+           (Boolean(access.general) && GLOBE) ||
+           LOCK_CLOSED
+        )
+    } else {
+        return LOCK_CLOSED;
+    }
+}
+
+async function updateIsPublishedFlag(db: Firestore, deckId: string, value: boolean) {
+    const deckRef = doc(db, DECK, deckId);
+    await updateDoc(deckRef, {
+        [DeckField.isPublished]: value
+    })
 }
 
 async function removeSearchResources(db: Firestore, resourceId: string, tags: string[]) {
@@ -222,7 +247,6 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
     }
     subscribedDeck = deckId;
     const db = getFirestore(firebaseApp);
-    const deckRef = doc(db, DECKS, deckId);
     const decksRef = collection(db, DECKS);
 
     const q = query(decksRef, where(documentId(), "==", deckId));
@@ -233,6 +257,7 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
                     const data = change.doc.data() as Deck;
                     dispatch(deckAdded(data));
                     subscribeAllCards(dispatch, data);
+                    subscribeAccess(dispatch, deckId);
                     break;
                 }
                 case 'modified' : {
@@ -245,14 +270,6 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
         })
     })
 
-    
-    unsubscribe = onSnapshot(deckRef, (document) => {
-        if (document.exists()) {
-            const data = document.data() as Deck;
-            dispatch(deckAdded(data));
-            subscribeAllCards(dispatch, data);
-        }
-    })
 }
 
 function subscribeAllCards(dispatch: AppDispatch, deck: Deck) {
@@ -297,6 +314,11 @@ export function doDeckNameUpdate(lerni: LerniApp, action: PayloadAction<string>)
 export function selectDeck(state: RootState) {
     return state.lerni.deck;
 }
+
+export function selectDeckAccess(state: RootState) {
+    return state.lerni.deckAccess;
+}
+
 
 export async function deleteDeck(deckId: string, userUid: string) {
     const db = getFirestore(firebaseApp);

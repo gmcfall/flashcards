@@ -126,15 +126,17 @@ export interface MetadataEnvelope {
  */
 export interface Deck {
     /** An identifier for this Deck */
-    id: string,
+    id: string;
 
     /** A friendly name for the Deck suitable for display */
-    name: string,
+    name: string;
 
     /** 
      * A list of references to cards within this Deck.
      */
-    cards: CardRef[]
+    cards: CardRef[];
+
+    isPublished: boolean;
 }
 
 /**
@@ -398,17 +400,52 @@ export const EDITOR="editor";
 /** The 'viewer' Role */
 export const VIEWER="viewer"
 
+export const RoleName: Record<string, string> = {
+    [EDITOR] : "Editor",
+    [VIEWER] : "Viewer"
+}
+
 /**
  * A Firestore document that defines the access control rules for a given Deck
  * 
  * Firestore path: /access/{deck.id}
  */
-export interface DeckAccess {
+export interface Access {
     /** The uid of the user who owns the Deck */
     owner: string;
 
-    /** The roles for public access to the Deck */
-    public: Role[];
+    /** The roles for general access to the Deck */
+    general?: Role;
+}
+
+/**
+ * The type of icon to be rendered with the "Share" button.
+ * - `lockClosed`: Only the owner has access
+ * - `lockOpen`:   Only the owner and users in the control list have access
+ * - `globe`: Anyone with the link has access
+ */
+export type SharingIconType = 'lockClosed' | 'lockOpen' | 'globe';
+
+/** The `closedLock` element of the `SharingIcon` type */
+export const LOCK_CLOSED = 'lockClosed';
+
+/** The `openLock` element of the `SharingIcon` type */
+export const LOCK_OPEN = 'lockOpen';
+
+/** The `globe` element of the `SharingIcon` type */
+export const GLOBE = 'globe';
+
+
+/** 
+ * An envelope containing the id of a resource plus a payload
+ * consisting of an Access instance for that resource.
+ */
+export interface AccessEnvelope {
+    /** The id of the resource governed by the Access document */
+    resourceId: string;
+
+    /** The Access document from Firestore */
+    payload: Access;
 }
 
 /** The status of a loading process */
@@ -450,7 +487,7 @@ export interface CardRemove {
  * State used during the process of adding a new card to the Deck
  * after the bootstrap process ends.
  * 
- * The `cardId` field is set when the Firestore listener receives and "added" Flashcard.
+ * The `cardId` field is set when the Firestore listener receives an "added" Flashcard.
  * The `deckId` field is set when the Firestore listener receives a "modified" Deck
  * containing a reference to the added card.
  * 
@@ -541,7 +578,12 @@ export interface LerniApp {
     cards: Record<string, CardInfo>,
 
     resourceSearch?: ResourceSearchClientData;
-    deckEditor?: DeckEditor
+
+    /** An envelope encapsulating the access control list for the active Deck */
+    deckAccess?: AccessEnvelope;
+
+    /** Details about the DeckEditor currently active */
+    deckEditor?: DeckEditor;
 
 }
 

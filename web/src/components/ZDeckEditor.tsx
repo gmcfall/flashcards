@@ -171,10 +171,18 @@ function ZDeckEditorContent(props: TiptapProps) {
 
     if (!session) {
        return (
-        <Box sx={{marginTop: "2rem"}}>
-            <ZAccessDeniedAlert>
-                <ZAccessDeniedMessage title='You must be signed in to access this Deck'/>
-            </ZAccessDeniedAlert>
+        <Box sx={{
+            display: 'flex', 
+            marginTop: "2rem", 
+            justifyContent: "center", 
+            alignItems: "center", 
+            width: "100%",
+            alignSelf: "flex-start"
+        }}>
+                <ZAccessDeniedAlert>
+                    <ZAccessDeniedMessage title='You must be signed in to access this Deck'/>
+                </ZAccessDeniedAlert>
+            
         </Box>
        )
 

@@ -29,7 +29,8 @@ export const LibraryField = {
 export const DeckField = {
     resources: 'resources',
     name: 'name',
-    cards: 'cards'
+    cards: 'cards',
+    isPublished: "isPublished"
 }
 
 /** Field names used when updating documents in the 'cards' collection */
@@ -45,4 +46,8 @@ export const MetadataField = {
 /** Field names used when updating documents in the 'search' collection */
 export const SearchField = {
     resources: "resources"
+}
+
+export const AccessField = {
+    general: "general"
 }

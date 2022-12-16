@@ -1,4 +1,5 @@
 import { createReducer } from "@reduxjs/toolkit";
+import { doDeckAccessLoaded } from "../../model/access";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
 import { doAlertPost, doAlertRemove } from "../../model/alert";
 import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEmailVerified, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
@@ -9,6 +10,7 @@ import { doFlashcardAdded, doFlashcardAddFulfilled, doFlashcardContentUpdate, do
 import { doLibraryReceive, doMetadataReceived } from "../../model/library";
 import { doResourceSearchEnd, doResourceSearchRequestPending, doResourceSearchResponsePart } from "../../model/search";
 import { LerniApp } from "../../model/types";
+import accessGeneralChange from "../actions/accessGeneralChange";
 import accountDeleteEmailChange from "../actions/accountDeleteEmailChange";
 import accountDeleteFacebook from "../actions/accountDeleteFacebook";
 import accountDeleteGoogle from "../actions/accountDeleteGoogle";
@@ -43,6 +45,7 @@ import authSigninPasswordChangePassword from "../actions/authSigninPasswordChang
 import authSigninPasswordSubmit from "../actions/authSigninPasswordSubmit";
 import authSigninTwitter from "../actions/authSigninTwitter";
 import authSignout from "../actions/authSignout";
+import deckAccessLoaded from "../actions/deckAccessLoaded";
 import deckAdd from "../actions/deckAdd";
 import deckAdded from "../actions/deckAdded";
 import deckDelete from "../actions/deckDelete";
@@ -73,6 +76,7 @@ const initialState: LerniApp = {
 
 const lerniReducer = createReducer(initialState, builder => {
     builder
+        .addCase(accessGeneralChange.rejected, doErrorDisplay)
         .addCase(accountDeleteEmailChange, doAccountDeleteEmailChange)
         .addCase(accountDeleteFacebook.fulfilled, doAccountDeleteEnd)
         .addCase(accountDeleteFacebook.rejected, doErrorDisplay)
@@ -130,6 +134,7 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(deckDelete.rejected, doErrorDisplay)
         .addCase(deckAdd.rejected, doErrorDisplay)
         .addCase(deckNameUpdate, doDeckNameUpdate)
+        .addCase(deckAccessLoaded, doDeckAccessLoaded)
         .addCase(deckAdded, doDeckAdded)
         .addCase(deckModified, doDeckModified)
         .addCase(deckPublish.fulfilled, doDeckPublishFulfilled)

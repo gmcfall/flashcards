@@ -6,15 +6,18 @@ import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import PublishIcon from '@mui/icons-material/Publish';
+import PublicIcon from '@mui/icons-material/Public';
+import LockIcon from '@mui/icons-material/Lock';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import { 
     Box, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, 
     DialogActions, TextField, Button
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectDeck } from '../model/deck';
+import { selectDeck, selectSharingIcon } from '../model/deck';
 import { libraryRoute } from "../model/routes";
-import { UNTITLED_DECK } from '../model/types';
+import { GLOBE, LOCK_OPEN, SharingIconType, UNTITLED_DECK } from '../model/types';
 import deckPublish from "../store/actions/deckPublish";
 import flashcardAdd from "../store/actions/flashcardAdd";
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from "./header";
@@ -25,6 +28,7 @@ import ZDeckNameInput from "./ZDeckNameInput";
 import { useState } from "react";
 import deckNameUpdate from '../store/actions/deckNameUpdate';
 import deckNameSubmit from '../store/actions/deckNameSubmit';
+import { ZSharingDialog } from './ZSharingDialog';
 
 function ZAddCardButton() {
     const dispatch = useAppDispatch();
@@ -115,7 +119,7 @@ function ZDeckEditorButtons(props: TiptapProps) {
     )
 }
 
-function invalidName(name: string) {
+export function invalidDeckName(name: string) {
     const lowerName = name.toLocaleLowerCase();
     return !lowerName || lowerName===UNTITLED_DECK.toLocaleLowerCase();
 }
@@ -133,7 +137,7 @@ function ZPublishButton() {
     
     function handleClick() {
         if (deck) {
-            if (invalidName(deck.name)) {
+            if (invalidDeckName(deck.name)) {
                 setNameDialogOpen(true);
                 return;
             }
@@ -147,7 +151,7 @@ function ZPublishButton() {
 
     function handleCloseDialogAndPublish() {
         if (deck) {
-            if (invalidName(deck.name)) {
+            if (invalidDeckName(deck.name)) {
                 setNameError(true);
             } else {
                 setNameDialogOpen(false);
@@ -206,6 +210,59 @@ function ZPublishButton() {
     )
 }
 
+
+function shareIcon(shareIconType: SharingIconType) {
+    switch (shareIconType) {
+        case GLOBE:
+            return <PublicIcon/>
+
+        case LOCK_OPEN: 
+            return <LockOpenIcon/>
+
+        default:
+            return <LockIcon/>
+    }
+}
+
+function ZShareButton() {
+
+    const [open, setOpen] = useState<boolean>(false);
+    const shareIconType = useAppSelector(selectSharingIcon);
+    
+    function handleClick() {
+        setOpen(true);
+    }
+
+    function handleClose() {
+        setOpen(false);
+    }
+
+    return (
+        <>
+            <Button
+                variant='contained'
+                startIcon={shareIcon(shareIconType)}
+                onClick={handleClick}
+                color="warning"
+                sx={{
+                    marginRight: "20px"
+                }}
+            >
+                Share
+            </Button>
+            {
+                open ? (
+                    <ZSharingDialog
+                        open={open}
+                        onClose={handleClose}
+                    />
+                ) : undefined
+            }
+        </>
+    )
+
+}
+
 function ZDeckEditorBanner() {
     return (  
               
@@ -219,6 +276,7 @@ function ZDeckEditorBanner() {
             <ZAlert/>
             <ZAuthTools>
                 <ZLibraryButton/>
+                <ZShareButton/>
             </ZAuthTools>
         </Box>
     )
