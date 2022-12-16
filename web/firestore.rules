@@ -7,43 +7,50 @@ service cloud.firestore {
       allow create: if request.auth != null;
     }
     match /access/{deckId} {
-      allow read, update, delete: if request.auth.uid == resource.data.owner;
+      function grantAccessRead(deckId) {
+        let access = resource.data;
+        let isOwner = request.auth.uid == access.owner;
+        let hasGeneralRole = access.general is string;
+        return isOwner || hasGeneralRole;
+      }
+      allow read: if grantAccessRead(deckId);
+      allow update, delete: if request.auth.uid == resource.data.owner;
       allow create: if request.auth.uid == request.resource.data.owner;
     }
     match /decks/{deckId} {
-      function hasDeckReadAccess(deckId) {
+      function grantDeckRead(deckId) {
         let access = get(/databases/$(database)/documents/access/$(deckId)).data;
         let isOwner = request.auth.uid == access.owner;
         let generalCanView = access.general is string && access.general == "viewer";
         return isOwner || generalCanView;
       }
-      function hasDeckWriteAccess(deckId) {
+      function grantDeckWrite(deckId) {
         let access = get(/databases/$(database)/documents/access/$(deckId)).data;
         return request.auth.uid == access.owner;
       }
 
-    	allow read: if hasDeckReadAccess(deckId);
-      allow update, delete: if hasDeckWriteAccess(deckId);
+    	allow read: if grantDeckRead(deckId);
+      allow update, delete: if grantDeckWrite(deckId);
       allow create: if request.auth != null
     }
     match /cards/{cardId} {
-      function hasCardReadAccess() {
+      function grantCardRead() {
         let access= get(/databases/$(database)/documents/access/$(resource.data.access)).data;
         let isOwner = request.auth.uid == access.owner;
         let generalCanView = access.general is string && access.general == "viewer";
         return isOwner || generalCanView;
       }
-      function hasCardWriteAccess() {
+      function grantCardWrite() {
         let access = get(/databases/$(database)/documents/access/$(resource.data.access)).data;
         return request.auth.uid == access.owner;
       }
-      function hasCardCreateAccess() {
+      function grantCardCreate() {
         let access = get(/databases/$(database)/documents/access/$(request.resource.data.access)).data;
         return request.auth.uid == access.owner;
       }
-    	allow read: if hasCardReadAccess();
-      allow update, delete: if hasCardWriteAccess();
-      allow create: if hasCardCreateAccess();
+    	allow read: if grantCardRead();
+      allow update, delete: if grantCardWrite();
+      allow create: if grantCardCreate();
     }    
     match /metadata/{resourceId} {
       allow read, update, delete: if request.auth.uid == resource.data.owner;
