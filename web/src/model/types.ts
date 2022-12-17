@@ -330,6 +330,8 @@ export const SIGNIN_PASSWORD = 'SIGNIN_PASSWORD';
 
 /**
  * A representation of a User stored in the client-side Session.
+ * This reduces our reliance on the Firebase API should we need to
+ * switch later.
  */
 export interface SessionUser extends NamedUser {
 
@@ -351,7 +353,8 @@ export interface SessionUser extends NamedUser {
     requiresVerification?: boolean
 }
 export interface Session {
-    user: SessionUser
+    /** The current user, or undefined if the user is not signed in */
+    user?: SessionUser
 }
 /**
  * The default `displayName` for users
@@ -392,15 +395,20 @@ export interface AlertData {
 
 
 /** A role that determines permissions for accessing a Deck */
-export type Role = 'editor' | 'viewer';
+export type Role = 'owner' | 'editor' | 'viewer';
+export type GeneralRole = 'editor' | 'viewer';
+
+/** The 'owner' Role */
+export const OWNER: Role = "owner";
 
 /** The 'editor' Role */
-export const EDITOR="editor";
+export const EDITOR: Role ="editor";
 
 /** The 'viewer' Role */
-export const VIEWER="viewer"
+export const VIEWER: Role ="viewer"
 
-export const RoleName: Record<string, string> = {
+export const RoleName: Record<Role, string> = {
+    [OWNER] : "Owner",
     [EDITOR] : "Editor",
     [VIEWER] : "Viewer"
 }
@@ -415,8 +423,9 @@ export interface Access {
     owner: string;
 
     /** The roles for general access to the Deck */
-    general?: Role;
+    general?: GeneralRole;
 }
+
 
 /**
  * The type of icon to be rendered with the "Share" button.
@@ -435,17 +444,58 @@ export const LOCK_OPEN = 'lockOpen';
 /** The `globe` element of the `SharingIcon` type */
 export const GLOBE = 'globe';
 
+/** An error code that may occur when trying to access a resource */
+export type ResourceError = 'notFound' | 'accessDenied' | 'unknownError';
+
+/** The "notFound" member of the `ResourceError` type */
+export const NOT_FOUND = 'notFound';
+/** The "accessDenied" member of the `ResourceError` type */
+export const ACCESS_DENIED = 'accessDenied';
+/** The "unknownError" member of the `ResourceError` type */
+export const UNKNOWN_ERROR = 'unknownError';
+
+/** A Permission that can be granted to a user for access to some resource */
+export type Permission = 'edit' | 'view';
+
+/** The "edit" Permission */
+export const EDIT: Permission = 'edit';
+
+/** The "view" Permission */
+export const VIEW: Permission ='view';
+
 
 /** 
- * An envelope containing the id of a resource plus a payload
- * consisting of an Access instance for that resource.
+ * Encapsulates information about an Access document from Firestore.
+ * 
+ * We derive the following load status values from this information: 
+ * - *pending*: `!payload && (!error || !withUser || error==="accessDenied")`
+ * - *fulfilled*: `!!payload`
+ * - *failed* : `!payload && withUser`
  */
 export interface AccessEnvelope {
     /** The id of the resource governed by the Access document */
     resourceId: string;
+    
 
-    /** The Access document from Firestore */
-    payload: Access;
+    /**
+     * The uid of the user who was signed in at the time of the
+     * last get request, or undefined if no user was signed in.
+     */
+    withUser?: string;
+
+
+    /** 
+     * The reason why the latest attempt to get the Access document
+     * failed. If the reason is "notFound", there will be no further
+     * attempts.
+     */
+    error?: ResourceError;
+
+    /**
+     * The Access document that was received for the specified
+     * `resourceId`, if any
+     */
+    payload?: Access;
 }
 
 /** The status of a loading process */

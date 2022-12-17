@@ -1,5 +1,5 @@
 import { createReducer } from "@reduxjs/toolkit";
-import { doDeckAccessLoaded } from "../../model/access";
+import { doAccessSet, doDeckAccessLoaded } from "../../model/access";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
 import { doAlertPost, doAlertRemove } from "../../model/alert";
 import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEmailVerified, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
@@ -11,6 +11,7 @@ import { doLibraryReceive, doMetadataReceived } from "../../model/library";
 import { doResourceSearchEnd, doResourceSearchRequestPending, doResourceSearchResponsePart } from "../../model/search";
 import { LerniApp } from "../../model/types";
 import accessGeneralChange from "../actions/accessGeneralChange";
+import accessSet from "../actions/accessSet";
 import accountDeleteEmailChange from "../actions/accountDeleteEmailChange";
 import accountDeleteFacebook from "../actions/accountDeleteFacebook";
 import accountDeleteGoogle from "../actions/accountDeleteGoogle";
@@ -77,6 +78,7 @@ const initialState: LerniApp = {
 const lerniReducer = createReducer(initialState, builder => {
     builder
         .addCase(accessGeneralChange.rejected, doErrorDisplay)
+        .addCase(accessSet, doAccessSet)
         .addCase(accountDeleteEmailChange, doAccountDeleteEmailChange)
         .addCase(accountDeleteFacebook.fulfilled, doAccountDeleteEnd)
         .addCase(accountDeleteFacebook.rejected, doErrorDisplay)

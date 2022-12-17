@@ -4,8 +4,9 @@ import { LerniApp } from "./types";
 
 
 export function doAccountDisplayNameUpdate(lerni: LerniApp, action: PayloadAction<string>) {
-    if (lerni.session) {
-        lerni.session.user.displayName=action.payload;
+    const user = lerni.session?.user;
+    if (user) {
+        user.displayName=action.payload;
     }
 }
 

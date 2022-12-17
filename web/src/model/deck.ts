@@ -88,7 +88,7 @@ export function selectSharingIcon(state: RootState): SharingIconType {
     if (accessEnvelope) {
         const access = accessEnvelope.payload;
         return (
-           (Boolean(access.general) && GLOBE) ||
+           (Boolean(access?.general) && GLOBE) ||
            LOCK_CLOSED
         )
     } else {
@@ -248,10 +248,12 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
     subscribedDeck = deckId;
     const db = getFirestore(firebaseApp);
     const decksRef = collection(db, DECKS);
+    console.log("deckSubscribe", deckId);
 
     const q = query(decksRef, where(documentId(), "==", deckId));
     unsubscribe = onSnapshot(q, snapshot => {
         snapshot.docChanges().forEach(change => {
+            console.log({change});
             switch (change.type) {
                 case 'added' : {
                     const data = change.doc.data() as Deck;
@@ -313,10 +315,6 @@ export function doDeckNameUpdate(lerni: LerniApp, action: PayloadAction<string>)
 /** Select the current deck being edited or viewed */
 export function selectDeck(state: RootState) {
     return state.lerni.deck;
-}
-
-export function selectDeckAccess(state: RootState) {
-    return state.lerni.deckAccess;
 }
 
 

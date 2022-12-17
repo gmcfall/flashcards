@@ -1,13 +1,13 @@
-import { useState } from 'react';
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectSession } from "../model/auth";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import IconButton from '@mui/material/IconButton';
-import authSignout from "../store/actions/authSignout";
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import ZAccountSettings from './ZAccountSettings';
+import { useState } from 'react';
+import { useAppDispatch, useAppSelector } from "../hooks/hooks";
+import { selectCurrentUser } from "../model/auth";
+import authSignout from "../store/actions/authSignout";
 import ZAccountDeleteConfirm from './ZAccountDeleteConfirm';
+import ZAccountSettings from './ZAccountSettings';
 
 export default function ZUserTools() {
 
@@ -16,9 +16,9 @@ export default function ZUserTools() {
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState<boolean>(false);
 
     const dispatch = useAppDispatch();
-    const session = useAppSelector(selectSession);
+    const user = useAppSelector(selectCurrentUser);
 
-    if (!session) {
+    if (!user) {
         return null;
     }
 
@@ -46,7 +46,6 @@ export default function ZUserTools() {
         setConfirmDeleteOpen(true);
     }
 
-    const user = session.user;
     const displayName = user.displayName;
 
     return (

@@ -1,10 +1,9 @@
 import { getAuth, onAuthStateChanged, Unsubscribe } from "firebase/auth";
-import { createSession, getRequiresVerification } from "../../model/auth";
+import { createEmptySession, createSession, getRequiresVerification } from "../../model/auth";
 import firebaseApp from "../../model/firebaseApp";
 import { ANONYMOUS } from "../../model/types";
 import { AppDispatch } from "../store";
 import authSessionBegin from "./authSessionBegin";
-import authSessionEnd from "./authSessionEnd";
 
 let unsubscribe: Unsubscribe | null = null;
 
@@ -21,7 +20,7 @@ export default function authListen() {
                     const session = createSession(uid, providers, displayName, requiresVerification);
                     dispatch(authSessionBegin(session));
                 } else {
-                    dispatch(authSessionEnd());
+                    dispatch(authSessionBegin(createEmptySession()));
                 }
             })
         }

@@ -1,13 +1,16 @@
 import { Box, Button, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
+import { useAccessControl } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
+import { checkPrivilege } from "../model/access";
+import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectNewActiveCard } from "../model/deckEditor";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
+import { EDIT, NOT_FOUND } from "../model/types";
 import deckeditorMount from "../store/actions/deckeditorMount";
 import deckeditorNewActiveCardDelete from "../store/actions/deckeditorNewActiveCardDelete";
 import deckeditorUnmount from "../store/actions/deckeditorUnmount";
@@ -22,6 +25,8 @@ import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
 import ZDeckEditorHeader from "./ZDeckEditorHeader";
 import ZFlashcard from "./ZFlashcard";
+import ZNeedAccess from "./ZNeedAccess";
+import ZNotFound from "./ZNotFound";
 
 const HEIGHT_WIDTH_RATIO = 0.6;
 const MAX_FONT_SIZE = 200; // %
@@ -143,13 +148,13 @@ function ZDeckEditorContent(props: TiptapProps) {
     const {editor} = props;
     
     const dispatch = useAppDispatch();
-    const session = useAppSelector(selectSession);
+    const user = useAppSelector(selectCurrentUser);
     const registrationState = useAppSelector(selectRegistrationState);
     const signInState = useAppSelector(selectSigninState);
     const deck = useAppSelector(selectDeck);
     const activeCard = useAppSelector(selectActiveCard);
 
-    const userUid = session?.user.uid;
+    const userUid = user?.uid;
 
     useEffect(() => {
         const ok = Boolean(userUid && activeCard);
@@ -169,13 +174,13 @@ function ZDeckEditorContent(props: TiptapProps) {
         return null;
     }
 
-    if (!session) {
+    if (!user) {
        return (
         <Box sx={{
             display: 'flex', 
             marginTop: "2rem", 
             justifyContent: "center", 
-            alignItems: "center", 
+            alignItems: "center",
             width: "100%",
             alignSelf: "flex-start"
         }}>
@@ -283,14 +288,18 @@ function ZDeckBody(props: TiptapProps) {
     )
 }
 
-export default function ZDeckEditor() {
-    const dispatch = useAppDispatch();
-    const newActiveCard = useSelector(selectNewActiveCard);
-    
-    const {deckId} = useParams();
-    const session = useAppSelector(selectSession);
-    const userUid = session?.user.uid;
-    
+
+interface UseTipTapProps {
+    setEditor: (editor: Editor | null) => void;
+}
+
+/**
+ * A renderless component that initializes the TipTapEditor.
+ * It is designed to be used conditionally so the TipTap Editor is created
+ * only if needed.
+ */
+function ZUseTipTap(props: UseTipTapProps) {
+    const {setEditor} = props;
     const editor = useEditor({        
         editorProps: {
             attributes: {
@@ -300,6 +309,26 @@ export default function ZDeckEditor() {
         extensions: TIP_TAP_EXTENSIONS,
         content: '',
     })
+    useEffect(()=> {
+        setEditor(editor);
+    }, [editor, setEditor])
+
+    return null;
+}
+
+export default function ZDeckEditor() {
+    const dispatch = useAppDispatch();
+    const {deckId} = useParams();
+    const newActiveCard = useSelector(selectNewActiveCard);
+    const user = useAppSelector(selectCurrentUser);
+    const deckAccess = useAccessControl(deckId);
+    const session = useSelector(selectSession);
+    const [editor, setEditor] = useState<Editor | null>(null);
+
+    const userUid = user?.uid;
+    
+    const canEdit = checkPrivilege(EDIT, deckAccess, deckId, userUid);
+
 
     useEffect(() => {
         function handleKeyup(event: KeyboardEvent) {
@@ -377,9 +406,16 @@ export default function ZDeckEditor() {
     
 
     return (
-        <Box id="deck-editor" sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%"}}>
-            <ZDeckEditorHeader editor={editor}/>
-            <ZDeckBody editor={editor}/>
-        </Box>
+        (!session && <Box/>) ||
+        ((deckAccess?.error === NOT_FOUND) && <ZNotFound message="The deck you are trying to access was not found."/>) ||
+        ((!canEdit) && <ZNeedAccess/>) ||
+        (
+            <Box id="deck-editor" sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%"}}>
+                {canEdit && <ZUseTipTap setEditor={setEditor}/>}
+                <ZDeckEditorHeader editor={editor}/>
+                <ZDeckBody editor={editor}/>
+            </Box>
+        )
+
     )
 }

@@ -132,6 +132,11 @@ export function selectSession(state: RootState) {
     return state.lerni.session;
 }
 
+/** Select the currently signed in user or undefined if no user is signed in */
+export function selectCurrentUser(state: RootState) {
+    return state.lerni?.session?.user;
+}
+
 export function selectRegistrationState(state: RootState) {
     return state.lerni.authRegisterState;
 }
@@ -147,6 +152,11 @@ export function getRequiresVerification(user: User) {
             !user.emailVerified
         )
     )
+}
+
+export function createEmptySession() {
+    const result: Session = {};
+    return result;
 }
 
 export function createSession(uid: string, providers: string[], displayName: string, requiresVerification: boolean) : Session {

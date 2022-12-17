@@ -1,10 +1,58 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, deleteField, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where } from "firebase/firestore";
+import { collection, deleteField, doc, documentId, getDoc, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where } from "firebase/firestore";
 import deckAccessLoaded from "../store/actions/deckAccessLoaded";
-import { AppDispatch } from "../store/store";
+import { AppDispatch, RootState } from "../store/store";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, AccessField } from "./firestoreConstants";
-import { Access, AccessEnvelope, LerniApp, Role, VIEWER } from "./types";
+import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, LerniApp, NOT_FOUND, OWNER, Permission, Role, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
+
+/**
+ * A mapping from roles to permissions granted to the role
+ */
+const PRIVILEGES: Record<Role, Set<Permission>> = {
+    editor: new Set<Permission>([EDIT, VIEW]),
+    owner:  new Set<Permission>([EDIT, VIEW]),
+    viewer: new Set<Permission>([VIEW])
+}
+
+/**
+ * Check whether a given user is granted a particular privilege for a specified resource
+ * @param accessEnvelope An envelope containing the access control list
+ * @param permission The permission being checked
+ * @param resourceId The `id` of the resource being accessed
+ * @param userUid The unique identifier of the user
+ * @returns true if the user is granted the requested permission
+ */
+export function checkPrivilege(
+    permission: Permission,
+    accessEnvelope: AccessEnvelope | undefined,
+    resourceId: string | undefined, 
+    userUid: string | undefined
+) {
+    // console.log("checkPrivilege", {
+    //     permission,
+    //     accessEnvelope,
+    //     resourceId,
+    //     userUid
+    // })
+    if (
+        !accessEnvelope ||
+        accessEnvelope.resourceId !== resourceId || 
+        !accessEnvelope.payload ||
+        !userUid
+    ) {
+        return false;
+    }
+
+    const role = getRole(accessEnvelope, resourceId, userUid);
+    if (!role) {
+        return false;
+    }
+
+    return PRIVILEGES[role].has(permission);
+
+}
+
 
 export function doDeckAccessLoaded(lerni: LerniApp, action: PayloadAction<AccessEnvelope>) {
     lerni.deckAccess = action.payload;
@@ -47,6 +95,74 @@ export function subscribeAccess(dispatch: AppDispatch, resourceId: string)  {
         resourceId,
         unsubscribe
     }
+}
+
+
+export function getRole(accessEnvelope: AccessEnvelope, resourceId: string | undefined, userUid: string | undefined) : Role | undefined {
+    const access = accessEnvelope.payload;
+    if (
+        !access ||
+        !resourceId ||
+        !userUid ||
+        resourceId !== accessEnvelope.resourceId
+    ) {
+        return undefined;
+    }
+    if (userUid === access.owner) {
+        return OWNER;
+    }
+
+    const generalRole = access.general;
+    if (generalRole) {
+        return generalRole;
+    }
+
+    return undefined;
+}
+
+export async function getAccess(dispatch: AppDispatch, resourceId: string, withUser?: string) {
+    const db = getFirestore(firebaseApp);
+    const ref = doc(db, ACCESS, resourceId);
+    const envelope = createAccessEnvelope(resourceId);
+    try {
+        const accessDoc = await getDoc(ref);
+    
+        if (accessDoc.exists()) {
+            envelope.payload = accessDoc.data() as Access;
+            subscribeAccess(dispatch, resourceId);
+        } else {
+            envelope.error = NOT_FOUND;
+        }
+
+    } catch (error) {
+        
+        if (error instanceof Error) {
+            const message = error.message;
+            if (message.indexOf("insufficient permissions") >=0) {
+                envelope.error = ACCESS_DENIED;
+            }
+        } else {
+            envelope.error = UNKNOWN_ERROR;
+        }
+    }
+    if (envelope.error && withUser) {
+        envelope.withUser = withUser;
+    }
+    return envelope;
+
+}
+
+export function createAccessEnvelope(resourceId: string) {
+    const result: AccessEnvelope = {resourceId};
+    return result;
+}
+
+export function doAccessSet(lerni: LerniApp, action: PayloadAction<AccessEnvelope>) {
+    lerni.deckAccess = action.payload;
+}
+
+export function selectDeckAccessEnvelope(state: RootState) {
+    return state.lerni.deckAccess;
 }
 
 export function unsubscribeAccess() {

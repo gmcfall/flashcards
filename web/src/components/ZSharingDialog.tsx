@@ -7,7 +7,8 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectDeck, selectDeckAccess } from "../model/deck";
+import { selectDeckAccessEnvelope } from '../model/access';
+import { selectDeck } from "../model/deck";
 import { EDITOR, Role, RoleName, VIEWER } from "../model/types";
 import accessGeneralChange from "../store/actions/accessGeneralChange";
 import deckNameUpdate from "../store/actions/deckNameUpdate";
@@ -296,7 +297,7 @@ export function ZSharingDialog(props: SharingDialogProps) {
 
 
     const deck = useAppSelector(selectDeck);
-    const accessEnvelope = useAppSelector(selectDeckAccess);
+    const accessEnvelope = useAppSelector(selectDeckAccessEnvelope);
     
     useEffect(() => {
 
@@ -343,7 +344,7 @@ export function ZSharingDialog(props: SharingDialogProps) {
             dialogStage===SharingDialogStage.ShareForm && (
                 <ZSharingDialogMain
                     resourceId={deck.id}
-                    general={accessEnvelope.payload.general}
+                    general={accessEnvelope?.payload?.general}
                     onClose={onClose}
                 />
             )

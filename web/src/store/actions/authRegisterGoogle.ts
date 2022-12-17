@@ -27,7 +27,9 @@ export async function providerRegister(provider: AuthProvider) {
     const session = await providerSignIn(provider);
     
     const lib = createFirestoreLibrary();
-    await saveLibrary(session.user.uid, lib);
+    if (session.user) {
+        await saveLibrary(session.user.uid, lib);
+    }
 
     return session;
 }

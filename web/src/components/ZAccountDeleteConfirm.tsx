@@ -4,8 +4,8 @@ import { EmailAuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAut
 import { useEffect } from 'react';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectDeleteAccountForm } from "../model/account";
-import { selectSession } from "../model/auth";
-import { Session } from "../model/types";
+import { selectCurrentUser } from "../model/auth";
+import { SessionUser } from "../model/types";
 import accountDeleteEmailChange from "../store/actions/accountDeleteEmailChange";
 import accountDeleteFacebook from "../store/actions/accountDeleteFacebook";
 import accountDeleteGoogle from "../store/actions/accountDeleteGoogle";
@@ -28,7 +28,7 @@ interface SetOpenProps {
 }
 
 interface SignInOptionsProps {
-    session: Session,
+    user: SessionUser,
     setOpen: (value: boolean) => void;
 }
 
@@ -128,16 +128,16 @@ function ZReauthenticateEmail() {
     )
 }
 
-function chooseProvider(session: Session) {
+function chooseProvider(user: SessionUser) {
     
-    const providers = session.user.providers;
+    const providers = user ? user.providers : [];
     return providers.length>0 ? providers[0] : EmailAuthProvider.PROVIDER_ID;
 }
 
 function ZSignInOptions(props: SignInOptionsProps) {
-    const {session, setOpen} = props;
+    const {user, setOpen} = props;
 
-    const providerId = chooseProvider(session);
+    const providerId = chooseProvider(user);
 
     switch (providerId) {
         case GoogleAuthProvider.PROVIDER_ID:
@@ -159,18 +159,18 @@ function ZSignInOptions(props: SignInOptionsProps) {
 }
 
 interface AccountDeleteActionsProps {
-    session: Session,
+    user: SessionUser,
     setOpen: (value: boolean) => void
 }
 
 function ZAccountDeleteActions(props: AccountDeleteActionsProps) {
 
-    const {session, setOpen} = props;
+    const {user, setOpen} = props;
 
     const dispatch = useAppDispatch();
     const form = useAppSelector(selectDeleteAccountForm);
 
-    const providerId = chooseProvider(session);
+    const providerId = chooseProvider(user);
 
     if (providerId !== EmailAuthProvider.PROVIDER_ID) {
         return null;
@@ -199,11 +199,11 @@ function ZAccountDeleteActions(props: AccountDeleteActionsProps) {
 export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) {
     const {open, setOpen} = props;
 
-    const session = useAppSelector(selectSession);
-    if (!session) {
+    const user = useAppSelector(selectCurrentUser);
+    if (!user) {
         return null;
     }
-    const actions = <ZAccountDeleteActions session={session} setOpen={setOpen}/>
+    const actions = <ZAccountDeleteActions user={user} setOpen={setOpen}/>
 
     if (!open) {
         return null;
@@ -219,7 +219,7 @@ export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) 
             <Typography gutterBottom>
                 For security reasons, please sign in again before we delete your account.
             </Typography>
-            <ZSignInOptions session={session} setOpen={setOpen}/>
+            <ZSignInOptions user={user} setOpen={setOpen}/>
         </ZDialogWithTitle>
     )
      

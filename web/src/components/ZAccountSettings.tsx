@@ -3,7 +3,7 @@ import DialogContentText from '@mui/material/DialogContentText';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectSession } from "../model/auth";
+import { selectCurrentUser } from "../model/auth";
 import React, { useState } from 'react';
 import accountDisplayNameUpdate from "../store/actions/accountDisplayNameUpdate";
 
@@ -16,10 +16,10 @@ export default function ZAccountSettings(props: AccountSettingsProps) {
     const {open, setOpen} = props;
 
     const dispatch = useAppDispatch();
-    const session = useAppSelector(selectSession);
+    const user = useAppSelector(selectCurrentUser);
 
     const [displayName, setDisplayName] = useState<string>(
-        session?.user.displayName || 'Anonymous'
+        user?.displayName || 'Anonymous'
     )
 
     function handleSaveChanges() {

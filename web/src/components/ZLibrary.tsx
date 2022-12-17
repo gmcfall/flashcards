@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
+import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
 import { libraryUnsubscribe, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import { ClientLibrary, ERROR, Metadata, ResourceRef, UNKNOWN_RESOURCE_TYPE } from '../model/types';
@@ -67,13 +67,13 @@ function ZLibResource(props: LibResourceProps) {
     const {resource} = props;
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const session = useSelector(selectSession);
+    const user = useSelector(selectCurrentUser);
 
-    if (!session) {
+    if (!user) {
         return null;
     }
     const deckId = resource.id;
-    const userUid = session.user.uid;
+    const userUid = user.uid;
 
     function handleNavigate() {
         navigate(deckEditRoute(resource.id));
@@ -140,14 +140,14 @@ function ZLibraryResourceList(props: LibraryContentProps) {
 
 function ZLibraryContent() {
     const dispatch = useAppDispatch();
-    const session = useAppSelector(selectSession);
+    const user = useAppSelector(selectCurrentUser);
     const registrationState = useAppSelector(selectRegistrationState);
     const signInState = useAppSelector(selectSigninState);
     const navigate = useNavigate();
 
     const lib = useAppSelector(selectLibrary);
 
-    const userUid = session?.user.uid;
+    const userUid = user?.uid;
 
     useEffect(() => {
         if (userUid) {
@@ -164,7 +164,7 @@ function ZLibraryContent() {
         return null;
     }
 
-    if (!session) {
+    if (!user) {
        return (
         <Box sx={{marginTop: "2rem"}}>
             <ZAccessDeniedAlert>

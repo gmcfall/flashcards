@@ -1,14 +1,14 @@
 import { Button } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectSession } from "../model/auth";
+import { selectCurrentUser } from "../model/auth";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
 
 export default function ZRegisterButton() {
     const dispatch = useAppDispatch();
 
-    const session = useAppSelector(selectSession);
+    const user = useAppSelector(selectCurrentUser);
     // Don't display the register button if the user is signed in.
-    if (session) {
+    if (user) {
         return null;
     }
 
