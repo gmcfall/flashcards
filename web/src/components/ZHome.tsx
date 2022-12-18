@@ -1,27 +1,22 @@
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import { Box, Button, FormControl, Paper, Typography } from "@mui/material";
-import { styled } from '@mui/material/styles';
+import { Box, Button, Typography, Link as Anchor } from "@mui/material";
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
 import { selectSession } from '../model/auth';
 import { libraryRoute } from '../model/routes';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
+import LerniTheme from './lerniTheme';
 import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
 import ZResourceSearchTool from './ZResourceSearchTool';
 
-const CenteredPaper = styled(Paper)(({theme}) => ({
-    ...theme.typography.body1,
-    textAlign: 'center',
-    height: '100%'
-}))
-
 
 function ZHomeHeader() {
     return (
-        <Box sx={{
+        <Box id="homeHeader" sx={{
             ...HEADER_STYLE,
-            height: OUTLINED_TEXT_FIELD_HEIGHT
+            height: OUTLINED_TEXT_FIELD_HEIGHT,
+            alignSelf: "stretch"
         }}>
             <ZAlert/>
             
@@ -36,22 +31,37 @@ function ZHomeHeader() {
     )
 }
 
+function ZHomeFooter() {
+    return (
+        <Box id="homeFooter" sx={{
+            marginTop: "auto",
+            borderTopWidth: "1px",
+            borderTopStyle: "solid",
+            borderTopColor: LerniTheme.dividerColor,
+            width: "100%"
+        }}>
+            <Box sx={{padding: "10px"}}>
+                <Anchor underline='hover' href='attributions.html'>
+                    <Typography variant="body2">Attributions</Typography>
+                </Anchor>
+            </Box>
+        </Box>
+    )
+}
+
 export default function ZHome() {
    
     return (
-        <CenteredPaper elevation={0}>
+        <Box id="homepage" sx={{display: "flex", flexDirection: "column", alignItems: "center", height: "100%"}}>
             <ZHomeHeader/>
-            <FormControl variant="standard" sx={{marginTop: '2em'}}>
-                <Box sx={{display: 'flex', flexDirection: 'column', gap: '2em', alignItems: "center"}}>
-
-                    <Typography variant="body1">
-                        Use the search to find flashcard decks, or create a new deck. 
-                    </Typography>
-                    <ZLibraryLink/>
-                    
-                </Box>
-            </FormControl>
-        </CenteredPaper>
+            <Box id="homeContent" sx={{display: "flex", flexDirection: "column", marginTop: '2em'}}>
+                <Typography variant="body1">
+                    Use the search to find flashcard decks, or create a new deck. 
+                </Typography>
+                <ZLibraryLink/>
+            </Box>
+            <ZHomeFooter/>
+        </Box>
     )
 }
 

@@ -26,7 +26,7 @@ export default function ZDeckShare() {
             }
         }
 
-    }, [deckId, session, accessControl, dispatch])
+    }, [deckId, session, accessControl, dispatch, navigate])
 
     return (
         <Box sx={{display: "flex", justifyContent: "center", marginTop: "50px"}}>
