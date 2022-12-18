@@ -2,6 +2,7 @@ import { Button } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectCurrentUser } from "../model/auth";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
+import { REGISTER_BUTTON_LABEL } from "./lerniConstants";
 
 export default function ZRegisterButton() {
     const dispatch = useAppDispatch();
@@ -18,7 +19,7 @@ export default function ZRegisterButton() {
 
     return (
         <Button onClick={handleClick}>
-            Register
+            {REGISTER_BUTTON_LABEL}
         </Button>
     )
 }

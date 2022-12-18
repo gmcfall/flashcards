@@ -11,3 +11,5 @@ export const DECK_NAME_INPUT = "deck-name-input";
  * with the class name "deck-editor-tiptap".
  */
 export const CARD_CONTAINER = 'card-container';
+
+export const REGISTER_BUTTON_LABEL = "Create an account";

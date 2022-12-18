@@ -3,6 +3,7 @@ import { Box, Typography, Button, Divider } from "@mui/material";
 import { useAppDispatch } from "../hooks/hooks";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
 import authSigninBegin from "../store/actions/authSigninBegin";
+import { REGISTER_BUTTON_LABEL } from "./lerniConstants";
 interface AccessDeniedMessage {
     title: string
 }
@@ -39,9 +40,8 @@ export function ZAccessDeniedMessage(props: AccessDeniedMessage) {
                     variant="text"
                     onClick={handleRegisterClick}
                 >
-                    Register
+                    {REGISTER_BUTTON_LABEL}
                 </Button>
-                <Typography display="inline">to create an account.</Typography>
             </Box>
 
        </Box>
