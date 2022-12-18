@@ -2,6 +2,7 @@ import { Button } from "@mui/material";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectCurrentUser } from "../model/auth";
 import authSigninBegin from "../store/actions/authSigninBegin";
+import { SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
 
 export default function ZSignInButton() {
     const dispatch = useAppDispatch();
@@ -19,7 +20,7 @@ export default function ZSignInButton() {
         <Button
             onClick={handleClick}
         >
-            Sign in
+            {SIGN_IN_BUTTON_LABEL}
         </Button>
     )
 }

@@ -3,7 +3,7 @@ import { Box, Typography, Button, Divider } from "@mui/material";
 import { useAppDispatch } from "../hooks/hooks";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
 import authSigninBegin from "../store/actions/authSigninBegin";
-import { REGISTER_BUTTON_LABEL } from "./lerniConstants";
+import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
 interface AccessDeniedMessage {
     title: string
 }
@@ -30,7 +30,7 @@ export function ZAccessDeniedMessage(props: AccessDeniedMessage) {
                     variant="text"
                     onClick={handleSignInClick}
                 >
-                    Sign in
+                    {SIGN_IN_BUTTON_LABEL}
                 </Button>
                 <Typography display="inline">.</Typography>
             </Box>

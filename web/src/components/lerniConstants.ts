@@ -13,3 +13,4 @@ export const DECK_NAME_INPUT = "deck-name-input";
 export const CARD_CONTAINER = 'card-container';
 
 export const REGISTER_BUTTON_LABEL = "Create an account";
+export const SIGN_IN_BUTTON_LABEL = "Sign in";
