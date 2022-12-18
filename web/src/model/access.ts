@@ -4,14 +4,14 @@ import deckAccessLoaded from "../store/actions/deckAccessLoaded";
 import { AppDispatch, RootState } from "../store/store";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, AccessField } from "./firestoreConstants";
-import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, LerniApp, NOT_FOUND, OWNER, Permission, Role, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
+import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, LerniApp, NOT_FOUND, OWNER, Permission, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
 
 /**
  * A mapping from roles to permissions granted to the role
  */
 const PRIVILEGES: Record<Role, Set<Permission>> = {
+    owner:  new Set<Permission>([EDIT, VIEW, SHARE]),
     editor: new Set<Permission>([EDIT, VIEW]),
-    owner:  new Set<Permission>([EDIT, VIEW]),
     viewer: new Set<Permission>([VIEW])
 }
 

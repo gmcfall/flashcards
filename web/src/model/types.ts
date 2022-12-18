@@ -455,13 +455,11 @@ export const ACCESS_DENIED = 'accessDenied';
 export const UNKNOWN_ERROR = 'unknownError';
 
 /** A Permission that can be granted to a user for access to some resource */
-export type Permission = 'edit' | 'view';
+export type Permission = 'edit' | 'view' | 'share';
 
-/** The "edit" Permission */
 export const EDIT: Permission = 'edit';
-
-/** The "view" Permission */
 export const VIEW: Permission ='view';
+export const SHARE: Permission = 'share';
 
 
 /** 

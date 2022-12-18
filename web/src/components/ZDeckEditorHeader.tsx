@@ -5,19 +5,23 @@ import FormatItalicIcon from '@mui/icons-material/FormatItalic';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import PublishIcon from '@mui/icons-material/Publish';
-import PublicIcon from '@mui/icons-material/Public';
 import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
-import { 
-    Box, IconButton, Tooltip, Dialog, DialogTitle, DialogContent, DialogContentText, 
-    DialogActions, TextField, Button
+import PublicIcon from '@mui/icons-material/Public';
+import PublishIcon from '@mui/icons-material/Publish';
+import {
+    Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, TextField, Tooltip
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
+import { checkPrivilege, selectDeckAccessEnvelope } from '../model/access';
+import { selectCurrentUser } from '../model/auth';
 import { selectDeck, selectSharingIcon } from '../model/deck';
 import { libraryRoute } from "../model/routes";
-import { GLOBE, LOCK_OPEN, SharingIconType, UNTITLED_DECK } from '../model/types';
+import { GLOBE, LOCK_OPEN, SHARE, SharingIconType, UNTITLED_DECK } from '../model/types';
+import deckNameSubmit from '../store/actions/deckNameSubmit';
+import deckNameUpdate from '../store/actions/deckNameUpdate';
 import deckPublish from "../store/actions/deckPublish";
 import flashcardAdd from "../store/actions/flashcardAdd";
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from "./header";
@@ -25,9 +29,6 @@ import ZAlert from "./ZAlert";
 import ZAuthTools from "./ZAuthTools";
 import { TiptapProps } from "./ZDeckEditor";
 import ZDeckNameInput from "./ZDeckNameInput";
-import { useState } from "react";
-import deckNameUpdate from '../store/actions/deckNameUpdate';
-import deckNameSubmit from '../store/actions/deckNameSubmit';
 import { ZSharingDialog } from './ZSharingDialog';
 
 function ZAddCardButton() {
@@ -224,10 +225,22 @@ function shareIcon(shareIconType: SharingIconType) {
     }
 }
 
+
 function ZShareButton() {
 
+    const {deckId} = useParams();
     const [open, setOpen] = useState<boolean>(false);
     const shareIconType = useAppSelector(selectSharingIcon);
+    const deckAccess = useAppSelector(selectDeckAccessEnvelope);
+    const user = useAppSelector(selectCurrentUser);
+
+    const userUid = user?.uid;
+    const canShare = checkPrivilege(SHARE, deckAccess, deckId, userUid);
+
+    if (!canShare) {
+        return null;
+    }
+
     
     function handleClick() {
         setOpen(true);
