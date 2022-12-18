@@ -6,6 +6,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import ZAuth from './components/ZAuth';
 import ZDeckEditor from './components/ZDeckEditor';
 import ZDeckPlayer from './components/ZDeckPlayer';
+import ZDeckShare from './components/ZDeckShare';
 import ZHome from './components/ZHome';
 import ZLibrary from './components/ZLibrary';
 import './index.css';
@@ -43,6 +44,7 @@ root.render(
           <Route path="/library" element={<ZLibrary/>}/>
           <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
           <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
+          <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
         </Routes>
       </BrowserRouter>
     </ThemeProvider>
