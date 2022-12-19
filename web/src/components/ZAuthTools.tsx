@@ -1,11 +1,8 @@
-import ZRegisterButton from "./ZRegisterButton";
-import ZUserTools from "./ZUserTools";
 import { Box } from "@mui/material";
+import ZRegisterButton from "./ZRegisterButton";
 import ZSignInButton from "./ZSignInButton";
-import { useAppDispatch } from "../hooks/hooks";
-import authRegisterCancel from "../store/actions/authRegisterCancel";
-import ZRegisterDialog from "./ZRegisterDialog";
 import ZSigninDialog from "./ZSigninDialog";
+import ZUserTools from "./ZUserTools";
 
 interface AuthToolsProps {
     /**
@@ -23,23 +20,13 @@ interface AuthToolsProps {
 }
 
 export default function ZAuthTools(props: AuthToolsProps) {
-    const {disableRegisterCancel, onCloseSignInDialog, children} = props;
-    const dispatch = useAppDispatch();
-    function handleSetRegisterDialogOpen(isOpen: boolean) {
-        if (!isOpen) {
-            dispatch(authRegisterCancel())
-        }
-    }
+    const {onCloseSignInDialog, children} = props;
     return (
         <Box sx={{display: 'inline', marginLeft: 'auto'}}>
             {children}
             <ZRegisterButton/>
             <ZSignInButton/>
             <ZUserTools/>
-            <ZRegisterDialog 
-                setOpen={handleSetRegisterDialogOpen}
-                disableCancel={disableRegisterCancel}
-            />
             <ZSigninDialog onClose={onCloseSignInDialog}/>
         </Box>
     )

@@ -2,7 +2,11 @@ import { createReducer } from "@reduxjs/toolkit";
 import { doAccessSet, doDeckAccessLoaded } from "../../model/access";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
 import { doAlertPost, doAlertRemove } from "../../model/alert";
-import { doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailChange, doAuthRegisterEmailFormChange, doAuthRegisterEmailFormSubmitFulfilled, doAuthRegisterEmailVerified, doAuthRegisterEnd, doAuthRegisterNameChange, doAuthRegisterPasswordChange, doAuthRegisterStateUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSigninBegin, doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword, doAuthSignout } from "../../model/auth";
+import {
+    doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailVerified, doAuthRegisterStageUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSessionNameUpdate, doAuthSigninBegin,
+    doAuthSigninCancel, doAuthSigninPasswordBegin, doAuthSigninPasswordChangeEmail, doAuthSigninPasswordChangePassword,
+    doAuthSignout
+} from "../../model/auth";
 import { doDeckAdded, doDeckModified, doDeckNameUpdate, doDeckPublishFulfilled } from "../../model/deck";
 import { doDeckeditorMount, doDeckeditorNewActiveCardDelete, doDeckeditorUnmount } from "../../model/deckEditor";
 import { doErrorDisplay } from "../../model/errorHandler";
@@ -25,18 +29,14 @@ import alertRemove from "../actions/alertRemove";
 import authSigninPasswordChangeEmail from "../actions/authinSigninPasswordChangeEmail";
 import authRegisterBegin from "../actions/authRegisterBegin";
 import authRegisterCancel from "../actions/authRegisterCancel";
-import authRegisterEmailChange from "../actions/authRegisterEmailChange";
-import authRegisterEmailFormChange from "../actions/authRegisterEmailFormChange";
-import authRegisterEmailFormSubmit from "../actions/authRegisterEmailFormSubmit";
 import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
 import authRegisterFacebook from "../actions/authRegisterFacebook";
 import authRegisterGoogle from "../actions/authRegisterGoogle";
-import authRegisterNameChange from "../actions/authRegisterNameChange";
-import authRegisterPasswordChange from "../actions/authRegisterPasswordChange";
-import authRegisterStateUpdate from "../actions/authRegisterStateUpdate";
+import authRegisterStageUpdate from "../actions/authRegisterStageUpdate";
 import authRegisterTwitter from "../actions/authRegisterTwitter";
 import authSessionBegin from "../actions/authSessionBegin";
 import authSessionEnd from "../actions/authSessionEnd";
+import authSessionNameUpdate from "../actions/authSessionNameUpdate";
 import authSigninBegin from "../actions/authSigninBegin";
 import authSigninCancel from "../actions/authSigninCancel";
 import authSigninFacebook from "../actions/authSigninFacebook";
@@ -96,25 +96,14 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(alertPost, doAlertPost)
         .addCase(authRegisterBegin, doAuthRegisterBegin)
         .addCase(authRegisterCancel, doAuthRegisterCancel)
-        .addCase(authRegisterEmailChange, doAuthRegisterEmailChange)
-        .addCase(authRegisterEmailFormChange, doAuthRegisterEmailFormChange)
-        .addCase(authRegisterEmailFormSubmit.fulfilled, doAuthRegisterEmailFormSubmitFulfilled)
-        .addCase(authRegisterEmailFormSubmit.rejected, doErrorDisplay)
         .addCase(authRegisterEmailVerified, doAuthRegisterEmailVerified)
-        .addCase(authRegisterFacebook.fulfilled, doAuthRegisterEnd)
-        .addCase(authRegisterFacebook.pending, doAuthRegisterCancel)
         .addCase(authRegisterFacebook.rejected, doErrorDisplay)
-        .addCase(authRegisterGoogle.fulfilled, doAuthRegisterEnd)
-        .addCase(authRegisterGoogle.pending, doAuthRegisterCancel)
         .addCase(authRegisterGoogle.rejected, doErrorDisplay)
-        .addCase(authRegisterNameChange, doAuthRegisterNameChange)
-        .addCase(authRegisterPasswordChange, doAuthRegisterPasswordChange)
-        .addCase(authRegisterStateUpdate, doAuthRegisterStateUpdate)
-        .addCase(authRegisterTwitter.fulfilled, doAuthRegisterEnd)
-        .addCase(authRegisterTwitter.pending, doAuthRegisterCancel)
+        .addCase(authRegisterStageUpdate, doAuthRegisterStageUpdate)
         .addCase(authRegisterTwitter.rejected, doErrorDisplay)
         .addCase(authSessionBegin, doAuthSessionBegin)
         .addCase(authSessionEnd, doAuthSessionEnd)
+        .addCase(authSessionNameUpdate, doAuthSessionNameUpdate)
         .addCase(authSigninBegin, doAuthSigninBegin)
         .addCase(authSigninCancel, doAuthSigninCancel)
         .addCase(authSigninFacebook.fulfilled, doAuthSessionBegin)

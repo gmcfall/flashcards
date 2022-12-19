@@ -2,7 +2,7 @@
 
 import { PayloadAction } from "@reduxjs/toolkit";
 import {
-    collection, deleteField, doc, documentId, FieldPath, Firestore, getDoc, getFirestore, onSnapshot, query, runTransaction,
+    collection, deleteField, doc, documentId, FieldPath, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, runTransaction,
     setDoc, Unsubscribe, updateDoc, where, writeBatch
 } from "firebase/firestore";
 import deckAdded from "../store/actions/deckAdded";
@@ -18,7 +18,7 @@ import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DeckField, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { createMetadata } from "./metadata";
-import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp, LOCK_CLOSED, ResourceRef, ResourceSearchServerData, ServerFlashcard, SharingIconType, Tags, UNTITLED_DECK } from "./types";
+import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp, LOCK_CLOSED, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SharingIconType, Tags, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -210,7 +210,7 @@ export async function saveDeck(userUid: string, deck: Deck, card: ServerFlashcar
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deck.id);
 
-    const metadata = createMetadata(DECK, userUid, deck.name);
+    const metadata = createMetadata(deck.id, DECK, userUid, deck.name);
     const metadataRef = doc(db, METADATA, deck.id);
 
     const deckAccess = createDeckAccess(userUid);
@@ -317,8 +317,25 @@ export function selectDeck(state: RootState) {
     return state.lerni.deck;
 }
 
+export async function deleteOwnedDecks(userUid: string) {
+    const db = getFirestore(firebaseApp);
+    const metaRef = collection(db, METADATA);
+    const q = query(metaRef, where("owner", "==", userUid));
+    const snapshot = await getDocs(q);
+    const promiseList: Promise<any>[] = [];
+    snapshot.forEach(doc => {
+        const metadata = doc.data() as Metadata;
+        const deckId = metadata.id;
 
-export async function deleteDeck(deckId: string, userUid: string) {
+        const promise = deleteDeck(deckId, userUid, false);
+        promiseList.push(promise);
+    })
+
+    return Promise.all(promiseList);
+}
+
+
+export async function deleteDeck(deckId: string, userUid: string, updateLibrary: boolean) {
     const db = getFirestore(firebaseApp);
 
     const deckRef = doc(db, DECKS, deckId);
@@ -349,7 +366,9 @@ export async function deleteDeck(deckId: string, userUid: string) {
             txn.delete(deckRef);
             txn.delete(deckAccessRef);
             txn.delete(metadataRef);
-            txn.update(libRef, path, deleteField())
+            if (updateLibrary) {
+                txn.update(libRef, path, deleteField())
+            }
         }
     })
     promiseList.push(lastPromise);

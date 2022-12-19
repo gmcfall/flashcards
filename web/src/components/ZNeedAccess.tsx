@@ -29,7 +29,7 @@ function ZRequestAccess() {
 function ZMustSignIn() {
     
     const dispatch = useAppDispatch();
-    const [registerOpen, setRegisterOpen] = useState<boolean>(false);
+    const [, setRegisterOpen] = useState<boolean>(false);
 
     function handleSignInClick() {
         dispatch(authSigninBegin())

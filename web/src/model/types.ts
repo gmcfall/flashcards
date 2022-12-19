@@ -1,5 +1,6 @@
 
 import {JSONContent} from "@tiptap/core";
+import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 
 export type {JSONContent} from "@tiptap/core";
 
@@ -67,20 +68,21 @@ export interface NamedUser {
      * or an alias.
      */
     displayName: string;
+
+    /** The person's `username` without the leading "@" */
+    username?: string;
+}
+
+export interface UserNames {
+    displayName: string;
+    username: string;
 }
 
 /**
  * A ClientFlashcard plus additional information related to the card.
  */
 export interface CardInfo {
-    card: ClientFlashcard,
-
-    /**
-     * The user who is currently editing the card. For now, only one person
-     * can edit a card at a time. If we support collaborative editing in the
-     * future, this will change to an array of NamedUsers.
-     */
-    currentEditor?: NamedUser
+    card: ClientFlashcard
 }
 
 /**
@@ -99,6 +101,9 @@ export interface CardRef {
  * Metadata about a given resource
  */
 export interface Metadata {
+
+    /** The `id` of the resource */
+    id: string;
 
     /** The type of resource */
     type: ResourceType,
@@ -292,29 +297,56 @@ export interface ErrorInfo {
     cause?: string
 }
 
-
-export type RegisterState =  'REGISTER_BEGIN' | 'REGISTER_EMAIL' | 'REGISTER_EMAIL_VERIFY';
+export type RegisterStage =  (
+    'REGISTER_BEGIN' | 
+    'REGISTER_EMAIL' |
+    'REGISTER_EMAIL_USERNAME_RETRY' |
+    'REGISTER_EMAIL_VERIFY' | 
+    'REGISTER_PROVIDER_USERNAME' |
+    'REGISTER_PROVIDER_END'
+);
 /**
- * The state at the beginning of the registration workflow.
+ * The stage at the beginning of the registration workflow.
  * This is where the user must choose an identity provider.
  */
-export const REGISTER_BEGIN = 'REGISTER_BEGIN';
+export const REGISTER_BEGIN: RegisterStage = 'REGISTER_BEGIN';
 
 /**
- * The state immediately after the user chooses to use the "password" identity
+ * The stage immediately after the user chooses to use the "password" identity
  * provider. At this point the form for entering the `email`, `password` and
  * `displayName` is rendered.
  */
-export const REGISTER_EMAIL = 'REGISTER_EMAIL';
+export const REGISTER_EMAIL: RegisterStage = 'REGISTER_EMAIL';
 
 /**
- * The state immediately after the user submits the `email`, `password` and
- * `displayName`. At this point, the user is presented with a notice that
- * the verification email was sent.
+ * The stage immediately after the user submits the email/password credentials
+ * and the local `Identity` document has been persisted. At this point, the user 
+ * is presented with a notice that the verification email was sent.
  */
-export const REGISTER_EMAIL_VERIFY = 'REGISTER_EMAIL_VERIFY';
+export const REGISTER_EMAIL_VERIFY: RegisterStage = 'REGISTER_EMAIL_VERIFY';
 
-export type SigninState = 'SIGNIN_BEGIN' | 'SIGNIN_PASSWORD';
+
+/**
+ * The stage immediately after registering via an identity provider (Google, Facebook, or Twitter).
+ * At this stage, the user must enter a `username` and optionally update the `displayName`
+ */
+export const REGISTER_PROVIDER_USERNAME: RegisterStage = 'REGISTER_PROVIDER_USERNAME';
+
+/**
+ * This stage occurs after the entire workflow for registering via an identity provider
+ * (Google, Facebook, or Twitter) is complete. The user is presented with an
+ * Alert announcing that the account is ready for use.
+ */
+export const REGISTER_PROVIDER_END: RegisterStage = 'REGISTER_PROVIDER_END';
+
+/**
+ * This stage occurs if an account was created but the requested `username`
+ * is not availabe. The user is presented with a form to request a different
+ * `username`
+ */
+export const REGISTER_EMAIL_USERNAME_RETRY: RegisterStage = 'REGISTER_EMAIL_USERNAME_RETRY';
+
+export type SigninStage = 'SIGNIN_BEGIN' | 'SIGNIN_PASSWORD';
 
 /**
  * State indicating that the sign-in wizard should be displayed 
@@ -350,31 +382,48 @@ export interface SessionUser extends NamedUser {
      * with (email, password) credentials but has not yet verified
      * his or her email. 
      */
-    requiresVerification?: boolean
+    requiresEmailVerification?: boolean
 }
+
+export const ProviderNames: Record<string, string> = {
+    [GoogleAuthProvider.PROVIDER_ID]: "Google",
+    [FacebookAuthProvider.PROVIDER_ID]: "Facebook",
+    [TwitterAuthProvider.PROVIDER_ID]: "Twitter"
+}
+
 export interface Session {
     /** The current user, or undefined if the user is not signed in */
     user?: SessionUser
 }
+
+/** 
+ * A Firestore document that stores information about a person's identity 
+ * 
+ * Firestore Path: `/identities/{user.uid}`
+ */
+export interface Identity {
+
+    /** The unique, immutable identifier assigned by Firebase Authentication */
+    uid: string;
+
+    /**
+     * The person's username, without the leading `@`
+     */
+    username: string;
+
+    /** 
+     * The person's display name. This can be the person's real name or
+     * an alias.
+     */
+    displayName: string;
+}
+
+
 /**
  * The default `displayName` for users
  */
 export const ANONYMOUS = "Anonymous";
 
-export interface RegisterEmailForm {
-    email: string,
-    password: string,
-    displayName: string,
-    invalidEmail: boolean,
-    invalidPassword: boolean,
-    invalidDisplayName: boolean
-}
-
-export interface RegisterEmailData {
-    email: string,
-    password: string,
-    displayName: string
-}
 
 export interface PasswordCredentials {
     email: string,
@@ -587,10 +636,7 @@ export interface LerniApp {
     session?: Session,
 
     /** The state of the Registration dialog */
-    authRegisterState?: RegisterState,
-
-    /** The registration form for the email/password option */
-    registerEmailForm?: RegisterEmailForm,
+    authRegisterState?: RegisterStage,
 
     /** 
      * The form used to reauthenticate during the `Delete Account`
@@ -599,7 +645,7 @@ export interface LerniApp {
     deleteAccountForm?: PasswordCredentials,
 
     /** The state of the SignIn dialog */
-    signInState?: SigninState,
+    signInState?: SigninStage,
 
     passwordSigninForm?: PasswordCredentials,
 

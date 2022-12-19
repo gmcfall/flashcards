@@ -14,7 +14,7 @@ const deckDelete = createAppAsyncThunk(
         const {deckId, userUid} = props;
         try {
 
-            await deleteDeck(deckId, userUid);
+            await deleteDeck(deckId, userUid, true);
 
             return true;
 

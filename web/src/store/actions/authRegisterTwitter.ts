@@ -1,14 +1,14 @@
 import { TwitterAuthProvider } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { providerRegister } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
-import { providerRegister } from "./authRegisterGoogle";
 
 
 const authRegisterTwitter = createAppAsyncThunk(
     "auth/register/twitter",
     async (_, thunkApi) => {
         try {
-            const session = await providerRegister(new TwitterAuthProvider());
+            const session = await providerRegister(thunkApi.dispatch, new TwitterAuthProvider());
             return session;
         } catch (error) {
             

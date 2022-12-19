@@ -20,6 +20,9 @@ export const TAGS = "tags";
 /** The "search" collection in Firestore */
 export const SEARCH = "search";
 
+/** The "identities" collection in Firestore */
+export const IDENTITIES = "identities";
+
 /** Field names used when updating documents in the 'libraries' collection */
 export const LibraryField = {
     resources: 'resources'

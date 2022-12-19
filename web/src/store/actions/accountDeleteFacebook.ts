@@ -1,14 +1,14 @@
 import { FacebookAuthProvider } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
 import { createErrorInfo } from "../../model/errorHandler";
-import { reauthenticateWithProvider } from "./accountDeleteGoogle";
+import { deleteAccountViaIdentityProvider } from "./accountDeleteGoogle";
 
 
 const accountDeleteFacebook = createAppAsyncThunk(
     "account/delete/facebook",
     async (_, thunkApi) => {
         try {
-           await reauthenticateWithProvider(new FacebookAuthProvider());
+           await deleteAccountViaIdentityProvider(new FacebookAuthProvider());
            return true;
 
         } catch (error) {

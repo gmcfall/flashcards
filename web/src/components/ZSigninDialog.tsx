@@ -8,7 +8,7 @@ import ZGoogleIcon from "./ZGoogleIcon";
 import ZFacebookIcon from "./ZFacebookIcon";
 import ZTwitterIcon from "./ZTwitterIcon";
 import EmailIcon from '@mui/icons-material/Email';
-import { SigninState, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "../model/types";
+import { SigninStage, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "../model/types";
 import { dialogContentStyle } from "./ZRegisterDialog";
 import authSigninFacebook from "../store/actions/authSigninFacebook";
 import authSigninTwitter from "../store/actions/authSigninTwitter";
@@ -77,7 +77,7 @@ function ZSigninStart() {
 }
 
 interface SigninContentProps {
-    state: SigninState
+    state: SigninStage
 }
 
 function ZSigninPasswordForm() {
@@ -160,7 +160,7 @@ function ZSigninPasswordActions(props: SigninPasswordActionsProps) {
 }
 
 interface SigninActionsProps {
-    state: SigninState,
+    state: SigninStage,
     setOpen: (value: boolean) => void
 }
 

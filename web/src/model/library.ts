@@ -175,7 +175,7 @@ export async function deleteLibrary(userUid: string) {
     if (libDoc.exists()) {
         const lib = libDoc.data() as FirestoreLibrary;
         for (const resourceId in lib.resources) {
-            deleteDeck(resourceId, userUid);
+            deleteDeck(resourceId, userUid, false);
         }
     }
     await deleteDoc(libRef);

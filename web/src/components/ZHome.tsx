@@ -1,5 +1,5 @@
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import { Box, Button, Typography, Link as Anchor } from "@mui/material";
+import { Box, Button, Link as Anchor, Typography } from "@mui/material";
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
 import { selectSession } from '../model/auth';
@@ -18,7 +18,6 @@ function ZHomeHeader() {
             height: OUTLINED_TEXT_FIELD_HEIGHT,
             alignSelf: "stretch"
         }}>
-            <ZAlert/>
             
             <Box sx={{marginRight: "20px"}}>
                 <Button variant="contained">
@@ -26,6 +25,7 @@ function ZHomeHeader() {
                 </Button>
             </Box>
             <ZResourceSearchTool/>
+            <ZAlert/>
             <ZAuthTools/>
         </Box>
     )
