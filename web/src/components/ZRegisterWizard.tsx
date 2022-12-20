@@ -10,18 +10,38 @@ import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { providerRegister, selectCurrentUser, selectRegistrationState, submitEmailRegistrationForm, submitIdentityCleanup } from '../model/auth';
 import firebaseApp from '../model/firebaseApp';
-import { checkUsernameAvailability, createIdentity, saveNewIdentity } from '../model/identity';
-import { ProviderNames, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_END, REGISTER_PROVIDER_USERNAME } from '../model/types';
+import { checkUsernameAvailability, replaceAnonymousUsername } from '../model/identity';
+import { ANONYMOUS, ProviderNames, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_END, REGISTER_PROVIDER_USERNAME } from '../model/types';
 import authRegisterCancel from '../store/actions/authRegisterCancel';
 import authRegisterStageUpdate from '../store/actions/authRegisterStageUpdate';
 import { AppDispatch } from '../store/store';
 import { toUsername } from './lerniCommon';
-import { dialogContentStyle, DISPLAY_NAME_HELP, USERNAME_HELPER_TEXT, USERNAME_NOT_AVAILABLE, USERNAME_TIP } from './lerniConstants';
+import { dialogContentStyle } from './lerniConstants';
 import LerniTheme from './lerniTheme';
 import ZFacebookIcon from './ZFacebookIcon';
 import ZGoogleIcon from './ZGoogleIcon';
 import ZTwitterIcon from './ZTwitterIcon';
 
+const USERNAME_HELPER_TEXT = "Maximum of 15 characters. Letters, numbers and underscores only.";
+const DISPLAY_NAME_HELP = (
+    "Typically, this is your full name so that people will know who you are " + 
+    "in real life. Use an alias if you want to remain anonymous."
+)
+
+const USERNAME_TIP = (
+    "A short handle that uniquely identifies you in the Lerni app. " +
+    "People reference each other with usernames. For example, the owner of " +
+    "a deck may invite you to collaborate by submitting your username. " +
+    "Usernames always start with the '@' symbol."
+)
+
+function usernameNotAvailable(username: string) {
+    return `The username "@${username}" is not available`
+}
+
+function usernameIsAvailable(username: string) {
+    return `The username "@${username}" is available`
+}
 
 interface RegisterTitleProps extends RegisterWizardCloser {
     omitCloseButton: boolean;
@@ -186,7 +206,10 @@ function ZUsernameField(props: UsernameFieldProps) {
     function handleUsernameChange(event: React.ChangeEvent<HTMLInputElement>) {
         const value = event.currentTarget.value;
         const validated = toUsername(value);
-        if (usernameError && validated.length>0) {
+
+        if (validated === ANONYMOUS) {
+            setUsernameError(usernameNotAvailable(validated));
+        } else if (usernameError && validated.length>0) {
             setUsernameError("");
         }       
         setUsername(validated);
@@ -196,6 +219,8 @@ function ZUsernameField(props: UsernameFieldProps) {
     function handleCheckUsernameAvailability() {
         if (username.length===0) {
             setUsernameError("The username must be defined")
+        } else if (username === ANONYMOUS) {
+            setUsernameError(usernameNotAvailable(username));
         } else {
             checkUsernameAvailability(username).then(result => {
                 setUsernameAvailable(result ? "true" : "false");
@@ -221,10 +246,11 @@ function ZUsernameField(props: UsernameFieldProps) {
                 color={usernameAvailable ? "success": undefined}
                 error={Boolean(usernameError || usernameAvailable==="false")}
                 variant="outlined"
+                autoComplete='off'
                 helperText={
                     usernameError || 
-                    (usernameAvailable === "true" && "This username is available") ||
-                    (usernameAvailable === "false" && USERNAME_NOT_AVAILABLE) ||
+                    (usernameAvailable === "true" && usernameIsAvailable(username)) ||
+                    (usernameAvailable === "false" && usernameNotAvailable(username)) ||
                     USERNAME_HELPER_TEXT
                 }
                 value={username}
@@ -250,6 +276,9 @@ function validateUsername(username: string, setUsernameError: (value: string) =>
         setUsernameError("The username is required")
         return false;
     }
+    if (usernameValue===ANONYMOUS) {
+        setUsernameError(usernameNotAvailable(username));
+    }
 
     return true;
 }
@@ -265,10 +294,9 @@ function ZEmailUsernameRetry()  {
         const ok = validateUsername(username, setUsernameError);
         if (ok) {
             if (user) {
-                const identity = createIdentity(user.uid, username, user.displayName);
-                saveNewIdentity(identity).then((saveOk)=>{
+                replaceAnonymousUsername(user.uid, username).then((saveOk)=>{
                     if (!saveOk) {
-                        setUsernameError(USERNAME_NOT_AVAILABLE);
+                        setUsernameError(usernameNotAvailable(username));
                     } else {
                         dispatch(authRegisterStageUpdate(REGISTER_EMAIL_VERIFY));
                     }
@@ -375,11 +403,12 @@ function ZRegisterWithEmail() {
         if (!hasError) {
             setSubmitDisabled(true);
             submitEmailRegistrationForm(dispatch, email, password, displayName, username).then(
-                usernameOk => {
-                    if (usernameOk) {
-                        dispatch(authRegisterStageUpdate(REGISTER_EMAIL_VERIFY))
-                    } else {
+                stage => {
+                    if (stage === REGISTER_EMAIL) {
                         setSubmitDisabled(false);
+                        setUsernameError(usernameNotAvailable(username));
+                    } else {
+                        dispatch(authRegisterStageUpdate(stage))
                     }
                 }
             ).catch(
@@ -537,6 +566,7 @@ function ZDisplayNameField(props: DisplayNameFieldProps) {
             <TextField
                 label="Display Name"
                 error={Boolean(displayNameError)}
+                autoComplete='off'
                 variant="outlined"
                 helperText={displayNameError || "Your real name or an alias. At least 4 characters and at most 50."}
                 value={displayName}
@@ -593,7 +623,7 @@ function ZProviderUsername() {
                             dispatch(authRegisterStageUpdate(REGISTER_PROVIDER_END))
                         } else {
                             setSubmitDisabled(false);
-                            setUsernameError(USERNAME_NOT_AVAILABLE);
+                            setUsernameError(usernameNotAvailable(username));
                         }
                     }
                 ).catch(

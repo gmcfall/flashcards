@@ -1,16 +1,17 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { AuthProvider, createUserWithEmailAndPassword, EmailAuthProvider, getAuth, sendEmailVerification, signInWithPopup, updateProfile, User } from "firebase/auth";
+import { AuthProvider, createUserWithEmailAndPassword, EmailAuthProvider, getAuth, sendEmailVerification, signInWithPopup, signOut, updateProfile, User } from "firebase/auth";
 import { batch } from "react-redux";
 import { Action } from "redux";
 import authRegisterStageUpdate from "../store/actions/authRegisterStageUpdate";
 import authSessionBegin from "../store/actions/authSessionBegin";
 import authSessionNameUpdate from "../store/actions/authSessionNameUpdate";
 import { AppDispatch, RootState } from "../store/store";
+import { logError } from "../util/common";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
-import { createIdentity, deleteIdentity, saveNewIdentity } from "./identity";
+import { checkUsernameAvailability, createIdentity, deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName, setAnonymousIdentity, setNewIdentity } from "./identity";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, Identity, INFO, LerniApp, RegisterStage, REGISTER_BEGIN, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_USERNAME, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD, UserNames } from "./types";
+import { ANONYMOUS, INFO, LerniApp, RegisterStage, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_USERNAME, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD, UserNames } from "./types";
 
 export function doAuthRegisterBegin(lerni: LerniApp, action: Action<string>) {
     lerni.authRegisterState = REGISTER_BEGIN;
@@ -74,20 +75,18 @@ export async function submitIdentityCleanup(
     username: string,
     displayName: string
 ) {
-    const auth = getAuth(firebaseApp);
-    const user = auth.currentUser;
-    if (!user) {
-        throw new Error("submitIdentityCleanup failed: user is not signed in");
+    const usernameOk = await replaceAnonymousUsernameAndDisplayName(userUid, username, displayName);
+    if (usernameOk) { 
+        const auth = getAuth(firebaseApp);
+        const user = auth.currentUser;
+        if (!user) {
+            throw new Error("submitIdentityCleanup failed: user is not signed in");
+        }
+        if (displayName && displayName !== user.displayName) {
+            await updateProfile(auth.currentUser, {displayName});
+        }
+        dispatch(authSessionNameUpdate({username, displayName}));
     }
-    
-    if (displayName && displayName !== user.displayName) {
-        await updateProfile(auth.currentUser, {displayName});
-    }
-
-    const identity = createIdentity(userUid, username, displayName);
-    const usernameOk = saveNewIdentity(identity);
-    
-    dispatch(authSessionNameUpdate({username, displayName}));
 
     return usernameOk;
 }
@@ -99,37 +98,33 @@ export async function submitEmailRegistrationForm(
     displayName: string, 
     username: string
 ) {
+
+    const checkOk = await checkUsernameAvailability(username);
+    if (!checkOk) {
+        return REGISTER_EMAIL;
+    }
+
     const auth = getAuth(firebaseApp);
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
     await sendEmailVerification(user);
-    await updateProfile(user, {displayName});
+    if (displayName !== user.displayName) {
+        await updateProfile(user, {displayName});
+    }
 
     const requiresVerification = getRequiresVerification(user);
     const providers = getProviders(user);
-    const session = createSession(user.uid, providers, displayName, requiresVerification);
+    const session = createSession(user.uid, providers, username, displayName, requiresVerification);
     const identity = createIdentity(user.uid, username, displayName);
-    const usernameOk = await persistUserData(identity);
-    if (usernameOk) {
-        const sessionUser = session.user;
-        if (sessionUser) {
-            sessionUser.username = username;
-        }
-    }
+    const usernameOk = await setNewIdentity(identity);
+    const lib = createFirestoreLibrary();
+    await saveLibrary(user.uid, lib);
     dispatch(authSessionBegin(session));
 
-    return usernameOk;
+    return usernameOk ? REGISTER_EMAIL_VERIFY : REGISTER_EMAIL_USERNAME_RETRY;
 }
 
-async function persistUserData(identity: Identity) {
-
-    const lib = createFirestoreLibrary();
-    await saveLibrary(identity.uid, lib);
-    const usernameOk = await saveNewIdentity(identity);
-
-    return usernameOk;
-}
 
 export async function deleteUserData(userUid: string) {
 
@@ -210,10 +205,17 @@ export function createEmptySession() {
     return result;
 }
 
-export function createSession(uid: string, providers: string[], displayName: string, requiresEmailVerification: boolean) : Session {
+export function createSession(
+    uid: string, 
+    providers: string[],
+    username: string,
+    displayName: string, 
+    requiresEmailVerification: boolean
+) : Session {
     return {
         user: {
             uid,
+            username,
             displayName,
             providers,
             requiresEmailVerification
@@ -229,45 +231,6 @@ export function getProviders(user: User) {
     return user.providerData.map(data => data.providerId);
 }
 
-export async function createAccountWithEmailAndPassword(
-    dispatch: AppDispatch,
-    email: string,
-    password: string,
-    displayName: string,
-    username: string
-) {
-
-    const auth = getAuth(firebaseApp);
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    await updateProfile(user, {displayName});
-    await sendEmailVerification(user);
-
-    const requiresVerification = getRequiresVerification(user);
-    const providers = getProviders(user);
-    const session = createSession(user.uid, providers, displayName, requiresVerification);
-    const identity = createIdentity(user.uid, username, displayName);
-    const identityOk = await saveNewIdentity(identity);
-
-    const sessionUser = session.user;
-
-    if (identityOk && sessionUser) {
-        sessionUser.username = username;
-    }
-
-    const lib = createFirestoreLibrary();
-    await saveLibrary(user.uid, lib);
-
-    batch(() => {
-        dispatch(authSessionBegin(session));
-        const nextStage = identityOk ? 
-            authRegisterStageUpdate(REGISTER_EMAIL_VERIFY) :
-            authRegisterStageUpdate(REGISTER_EMAIL_USERNAME_RETRY);
-
-        dispatch(nextStage);
-    });
-}
 
 export async function providerRegister(dispatch: AppDispatch, provider: AuthProvider) {
     
@@ -278,16 +241,18 @@ export async function providerRegister(dispatch: AppDispatch, provider: AuthProv
     const user = result.user;
     const uid = user.uid;
     const displayName = user.displayName || ANONYMOUS;
+    const username = ANONYMOUS;
     const providers = getProviders(user);
     const requiresVerification = getRequiresVerification(user);
 
-    const session = createSession(uid, providers, displayName, requiresVerification);
-    
+    const session = createSession(uid, providers, username, displayName, requiresVerification);
+   
     const lib = createFirestoreLibrary();
-    if (session.user) {
-        await saveLibrary(session.user.uid, lib);
-    }
-
+    await Promise.all([
+        saveLibrary(uid, lib),
+        setAnonymousIdentity(uid, displayName)
+    ])
+    
     batch(()=> {
         dispatch(authSessionBegin(session));
         dispatch(authRegisterStageUpdate(REGISTER_PROVIDER_USERNAME));
@@ -306,5 +271,27 @@ export async function providerSignIn(provider: AuthProvider) {
     const providers = getProviders(user);
     const requiresVerification = getRequiresVerification(user);
 
-    return createSession(uid, providers, displayName, requiresVerification);
+    const identity = await getIdentity(uid);
+
+    return identity ?
+        createSession(uid, providers, identity.username, displayName, requiresVerification) :
+        null;
+}
+
+export async function handleAuthStateChanged(user: User) {
+
+        const identity = await getIdentity(user.uid);
+        if (identity) {
+            const providers = getProviders(user);
+            const requiresVerification = getRequiresVerification(user);
+            const uid = user.uid;
+            const displayName = identity.displayName;
+            const username = identity.username;
+            const session = createSession(uid, providers, username, displayName, requiresVerification);
+            return session;
+        } else {  
+            const auth = getAuth(firebaseApp);
+            signOut(auth).catch(error => logError(error));
+            throw new Error(`User identity not found: uid=${user.uid}, displayName=${user.displayName}`);
+        }
 }

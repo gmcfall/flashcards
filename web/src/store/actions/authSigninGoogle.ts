@@ -9,6 +9,13 @@ const authSigninGoogle = createAppAsyncThunk(
     async (_, thunkApi) => {
         try {
             const session = await providerSignIn(new GoogleAuthProvider());
+            
+            if (!session) {
+                return thunkApi.rejectWithValue(createErrorInfo(
+                    "Sign-in failed",
+                    null
+                ))
+            }
             return session;
         } catch (error) {
             

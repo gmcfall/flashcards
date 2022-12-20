@@ -305,6 +305,7 @@ export type RegisterStage =  (
     'REGISTER_PROVIDER_USERNAME' |
     'REGISTER_PROVIDER_END'
 );
+
 /**
  * The stage at the beginning of the registration workflow.
  * This is where the user must choose an identity provider.
@@ -345,6 +346,7 @@ export const REGISTER_PROVIDER_END: RegisterStage = 'REGISTER_PROVIDER_END';
  * `username`
  */
 export const REGISTER_EMAIL_USERNAME_RETRY: RegisterStage = 'REGISTER_EMAIL_USERNAME_RETRY';
+
 
 export type SigninStage = 'SIGNIN_BEGIN' | 'SIGNIN_PASSWORD';
 

@@ -43,6 +43,7 @@ import authSigninPasswordChangePassword from "../actions/authSigninPasswordChang
 import authSigninPasswordSubmit from "../actions/authSigninPasswordSubmit";
 import authSigninTwitter from "../actions/authSigninTwitter";
 import authSignout from "../actions/authSignout";
+import authStateChanged from "../actions/authStateChanged";
 import deckAccessLoaded from "../actions/deckAccessLoaded";
 import deckAdd from "../actions/deckAdd";
 import deckAdded from "../actions/deckAdded";
@@ -116,6 +117,7 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(authSigninTwitter.pending, doAuthSigninCancel)
         .addCase(authSigninTwitter.rejected, doErrorDisplay)
         .addCase(authSignout.pending, doAuthSignout)
+        .addCase(authStateChanged.rejected, doErrorDisplay)
         .addCase(deckDelete.rejected, doErrorDisplay)
         .addCase(deckAdd.rejected, doErrorDisplay)
         .addCase(deckNameUpdate, doDeckNameUpdate)
