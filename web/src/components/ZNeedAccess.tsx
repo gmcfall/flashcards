@@ -1,11 +1,11 @@
-import { Box, Typography, TextareaAutosize, Button } from "@mui/material";
+import { Box, Button, TextareaAutosize, Typography } from "@mui/material";
+import { useState } from "react";
 import { useSession } from "../hooks/customHooks";
 import { useAppDispatch } from "../hooks/hooks";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
 import authSigninBegin from "../store/actions/authSigninBegin";
 import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
-import ZRegisterDialog from "./ZRegisterDialog";
-import { useState } from "react";
+import { ZRegisterWizard } from "./ZRegisterWizard";
 import ZSigninDialog from "./ZSigninDialog";
 
 
@@ -57,7 +57,7 @@ function ZMustSignIn() {
                 </Typography>
                 <Button onClick={handleRegisterClick}>{REGISTER_BUTTON_LABEL}</Button>
             </Box>
-            <ZRegisterDialog setOpen={setRegisterOpen} disableCancel={true}/>
+            <ZRegisterWizard/>
             <ZSigninDialog/>
             
         </>

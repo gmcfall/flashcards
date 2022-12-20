@@ -16,18 +16,12 @@ import authRegisterCancel from '../store/actions/authRegisterCancel';
 import authRegisterStageUpdate from '../store/actions/authRegisterStageUpdate';
 import { AppDispatch } from '../store/store';
 import { toUsername } from './lerniCommon';
-import { DISPLAY_NAME_HELP, USERNAME_HELPER_TEXT, USERNAME_NOT_AVAILABLE, USERNAME_TIP } from './lerniConstants';
+import { dialogContentStyle, DISPLAY_NAME_HELP, USERNAME_HELPER_TEXT, USERNAME_NOT_AVAILABLE, USERNAME_TIP } from './lerniConstants';
 import LerniTheme from './lerniTheme';
 import ZFacebookIcon from './ZFacebookIcon';
 import ZGoogleIcon from './ZGoogleIcon';
 import ZTwitterIcon from './ZTwitterIcon';
 
-export const dialogContentStyle = {
-    display: 'flex',
-    flexDirection: 'column',
-    rowGap: '1em',
-    padding: '2em',
-}
 
 interface RegisterTitleProps extends RegisterWizardCloser {
     omitCloseButton: boolean;

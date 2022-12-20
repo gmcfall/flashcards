@@ -30,10 +30,7 @@ import authSigninPasswordChangeEmail from "../actions/authinSigninPasswordChange
 import authRegisterBegin from "../actions/authRegisterBegin";
 import authRegisterCancel from "../actions/authRegisterCancel";
 import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
-import authRegisterFacebook from "../actions/authRegisterFacebook";
-import authRegisterGoogle from "../actions/authRegisterGoogle";
 import authRegisterStageUpdate from "../actions/authRegisterStageUpdate";
-import authRegisterTwitter from "../actions/authRegisterTwitter";
 import authSessionBegin from "../actions/authSessionBegin";
 import authSessionEnd from "../actions/authSessionEnd";
 import authSessionNameUpdate from "../actions/authSessionNameUpdate";
@@ -97,10 +94,7 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(authRegisterBegin, doAuthRegisterBegin)
         .addCase(authRegisterCancel, doAuthRegisterCancel)
         .addCase(authRegisterEmailVerified, doAuthRegisterEmailVerified)
-        .addCase(authRegisterFacebook.rejected, doErrorDisplay)
-        .addCase(authRegisterGoogle.rejected, doErrorDisplay)
         .addCase(authRegisterStageUpdate, doAuthRegisterStageUpdate)
-        .addCase(authRegisterTwitter.rejected, doErrorDisplay)
         .addCase(authSessionBegin, doAuthSessionBegin)
         .addCase(authSessionEnd, doAuthSessionEnd)
         .addCase(authSessionNameUpdate, doAuthSessionNameUpdate)

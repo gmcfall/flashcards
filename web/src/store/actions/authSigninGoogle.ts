@@ -1,7 +1,7 @@
 import { GoogleAuthProvider } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
+import { providerSignIn } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
-import { providerSignIn } from "./authRegisterGoogle";
 
 
 const authSigninGoogle = createAppAsyncThunk(

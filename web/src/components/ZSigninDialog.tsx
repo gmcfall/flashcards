@@ -9,7 +9,6 @@ import ZFacebookIcon from "./ZFacebookIcon";
 import ZTwitterIcon from "./ZTwitterIcon";
 import EmailIcon from '@mui/icons-material/Email';
 import { SigninStage, SIGNIN_BEGIN, SIGNIN_PASSWORD } from "../model/types";
-import { dialogContentStyle } from "./ZRegisterDialog";
 import authSigninFacebook from "../store/actions/authSigninFacebook";
 import authSigninTwitter from "../store/actions/authSigninTwitter";
 import authSigninPasswordBegin from "../store/actions/authSigninPasswordBegin";
@@ -17,6 +16,7 @@ import React from "react";
 import authSigninPasswordChangeEmail from "../store/actions/authinSigninPasswordChangeEmail";
 import authSigninPasswordChangePassword from "../store/actions/authSigninPasswordChangePassword";
 import authSigninPasswordSubmit from "../store/actions/authSigninPasswordSubmit";
+import { dialogContentStyle } from "./lerniConstants";
 
 
 

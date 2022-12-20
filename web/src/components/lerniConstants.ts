@@ -27,5 +27,12 @@ export const USERNAME_TIP = (
     "Usernames always start with the '@' symbol."
 )
 
+export const dialogContentStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    rowGap: '1em',
+    padding: '2em',
+}
+
 export const USERNAME_HELPER_TEXT = "Maximum of 15 characters. Letters, numbers and underscores only.";
 export const USERNAME_NOT_AVAILABLE = "This username is not available";

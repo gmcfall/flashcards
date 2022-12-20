@@ -293,3 +293,18 @@ export async function providerRegister(dispatch: AppDispatch, provider: AuthProv
         dispatch(authRegisterStageUpdate(REGISTER_PROVIDER_USERNAME));
     })
 }
+
+export async function providerSignIn(provider: AuthProvider) {
+    
+    const auth = getAuth(firebaseApp);
+
+    // `signInWithPopup` throws an exception if sign-in fails.
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const uid = user.uid;
+    const displayName = user.displayName || ANONYMOUS;
+    const providers = getProviders(user);
+    const requiresVerification = getRequiresVerification(user);
+
+    return createSession(uid, providers, displayName, requiresVerification);
+}
