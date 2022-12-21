@@ -2,6 +2,7 @@ import { PayloadAction } from "@reduxjs/toolkit";
 import { AuthProvider, createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { batch } from "react-redux";
 import { Action } from "redux";
+import authEmailVerified from "../store/actions/authEmailVerified";
 import authRegisterStageUpdate from "../store/actions/authRegisterStageUpdate";
 import authSessionBegin from "../store/actions/authSessionBegin";
 import authSessionNameUpdate from "../store/actions/authSessionNameUpdate";
@@ -11,7 +12,7 @@ import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { checkUsernameAvailability, createIdentity, deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName, setAnonymousIdentity, setNewIdentity } from "./identity";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, INFO, LerniApp, RegisterStage, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_USERNAME, Session, SIGNIN_FAILED, UserNames } from "./types";
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, INFO, LerniApp, RegisterStage, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_USERNAME, Session, SessionUser, SIGNIN_FAILED, UserNames } from "./types";
 
 export function doAuthRegisterBegin(lerni: LerniApp, action: Action<string>) {
     lerni.authRegisterStage = REGISTER_BEGIN;
@@ -23,6 +24,13 @@ export function doAuthRegisterCancel(lerni: LerniApp, action: Action<string>) {
 
 function endRegistration(lerni: LerniApp) {
     delete lerni.authRegisterStage;
+}
+
+export function doAuthEmailVerified(lerni: LerniApp, action: PayloadAction) {
+    const user = lerni.session?.user;
+    if (user) {
+        delete user.requiresEmailVerification;
+    }
 }
 
 export function doAccountDeleteEnd(lerni: LerniApp, action: PayloadAction<boolean>) {
@@ -88,6 +96,14 @@ export async function submitIdentityCleanup(
     }
 
     return usernameOk;
+}
+
+export async function resendEmailVerification() {
+    const auth = getAuth(firebaseApp);
+    const user = auth.currentUser;
+    if (user) {
+        await sendEmailVerification(user);
+    }
 }
 
 export async function submitEmailRegistrationForm(
@@ -165,6 +181,27 @@ export function selectSigninActive(state: RootState) {
     return Boolean(state.lerni.signinActive);
 }
 
+export function selectAccountIsIncomplete(state: RootState) {
+    const lerni = state.lerni;
+    const user = lerni.session?.user;
+    return Boolean(
+        !lerni.authRegisterStage &&
+        !lerni.signinActive &&
+        user &&
+        (
+            userProfileIsIncomplete(user) ||
+            user.requiresEmailVerification
+        )
+    )
+}
+
+export function userProfileIsIncomplete(user: SessionUser) {
+    return (
+        user.username === ANONYMOUS ||
+        !user.displayName
+    )
+}
+
 export function getRequiresVerification(user: User) {
     return Boolean(
         !user.providerData || (
@@ -186,15 +223,17 @@ export function createSession(
     displayName: string, 
     requiresEmailVerification: boolean
 ) : Session {
-    return {
-        user: {
-            uid,
-            username,
-            displayName,
-            providers,
-            requiresEmailVerification
-        }
+
+    const user: SessionUser = {
+        uid,
+        username,
+        displayName,
+        providers
     }
+    if (requiresEmailVerification) {
+        user.requiresEmailVerification = true;
+    }
+    return {user}
 }
 
 export function doAuthSessionBegin(lerni: LerniApp, action: PayloadAction<Session>) {
@@ -314,4 +353,42 @@ export async function handleAuthStateChanged(user: User) {
             signOut(auth).catch(error => logError(error));
             throw new Error(`User identity not found: uid=${user.uid}, displayName=${user.displayName}`);
         }
+}
+
+let verificationIntervalToken: ReturnType<typeof setInterval> | null = null;
+export function startEmailVerificationListener(dispatch: AppDispatch) {
+    if (!verificationIntervalToken) {
+
+        const a = getAuth(firebaseApp);
+        const u = a.currentUser;
+        if (u) {
+            if (getRequiresVerification(u)) {
+                verificationIntervalToken = setInterval(() => {
+                    const auth = getAuth(firebaseApp);
+                    const user = auth.currentUser;
+                    if (user) {
+                        user.reload().then(
+                            () => {
+                                const newAuth = getAuth(firebaseApp);
+                                const newUser = newAuth.currentUser;
+                                if (newUser?.emailVerified) {
+                                    stopEmailVerificationListener();
+                                    dispatch(authEmailVerified());
+                                }
+                            }
+                        )
+                    }
+                }, 10000);
+            }
+
+        }
+
+    }
+}
+
+export function stopEmailVerificationListener() {
+    if (verificationIntervalToken) {
+        clearInterval(verificationIntervalToken);
+        verificationIntervalToken = null;
+    }
 }

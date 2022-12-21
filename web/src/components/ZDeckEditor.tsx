@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom";
 import { useAccessControl } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { checkPrivilege } from "../model/access";
-import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
+import { selectAccountIsIncomplete, selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectNewActiveCard } from "../model/deckEditor";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
@@ -23,6 +23,7 @@ import { CARD_CONTAINER, DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniCons
 import LerniTheme from "./lerniTheme";
 import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
 import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
+import ZAccountIncomplete from "./ZAccountIncomplete";
 import ZDeckEditorHeader from "./ZDeckEditorHeader";
 import ZFlashcard from "./ZFlashcard";
 import ZNeedAccess from "./ZNeedAccess";
@@ -320,6 +321,7 @@ export default function ZDeckEditor() {
     const dispatch = useAppDispatch();
     const {deckId} = useParams();
     const newActiveCard = useSelector(selectNewActiveCard);
+    const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
     const user = useAppSelector(selectCurrentUser);
     const deckAccess = useAccessControl(deckId);
     const session = useSelector(selectSession);
@@ -404,6 +406,13 @@ export default function ZDeckEditor() {
         }
     }, [newActiveCard, editor, dispatch])
     
+    if (!session) {
+        return null;
+    }
+    
+    if (accountIsIncomplete) {
+        return <ZAccountIncomplete/>
+    }
 
     return (
         (!session && <Box/>) ||

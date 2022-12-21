@@ -3,7 +3,7 @@ import { doAccessSet, doDeckAccessLoaded } from "../../model/access";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
 import { doAlertPost, doAlertRemove } from "../../model/alert";
 import {
-    doAccountDeleteEnd, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailVerified, doAuthRegisterStageUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSessionNameUpdate, doAuthSignin, doAuthSignout
+    doAccountDeleteEnd, doAuthEmailVerified, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailVerified, doAuthRegisterStageUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSessionNameUpdate, doAuthSignin, doAuthSignout
 } from "../../model/auth";
 import { doDeckAdded, doDeckModified, doDeckNameUpdate, doDeckPublishFulfilled } from "../../model/deck";
 import { doDeckeditorMount, doDeckeditorNewActiveCardDelete, doDeckeditorUnmount } from "../../model/deckEditor";
@@ -24,6 +24,7 @@ import accountDeleteTwitter from "../actions/accountDeleteTwitter";
 import accountDisplayNameUpdate from "../actions/accountDisplayNameUpdate";
 import alertPost from "../actions/alertPost";
 import alertRemove from "../actions/alertRemove";
+import authEmailVerified from "../actions/authEmailVerified";
 import authRegisterBegin from "../actions/authRegisterBegin";
 import authRegisterCancel from "../actions/authRegisterCancel";
 import authRegisterEmailVerified from "../actions/authRegisterEmailVerified";
@@ -82,6 +83,7 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(accountDisplayNameUpdate.rejected, doErrorDisplay)
         .addCase(alertRemove, doAlertRemove)
         .addCase(alertPost, doAlertPost)
+        .addCase(authEmailVerified, doAuthEmailVerified)
         .addCase(authRegisterBegin, doAuthRegisterBegin)
         .addCase(authRegisterCancel, doAuthRegisterCancel)
         .addCase(authRegisterEmailVerified, doAuthRegisterEmailVerified)

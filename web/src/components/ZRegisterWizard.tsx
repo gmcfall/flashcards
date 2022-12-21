@@ -1,47 +1,28 @@
 import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
-import HelpIcon from '@mui/icons-material/Help';
 import {
     Alert,
-    Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, TextField, Tooltip, Typography
+    Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, TextField, Typography
 } from '@mui/material';
 import { AuthProvider, FacebookAuthProvider, getAuth, GoogleAuthProvider, TwitterAuthProvider } from 'firebase/auth';
 import { useEffect, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
 import { providerRegister, selectCurrentUser, selectRegistrationState, submitEmailRegistrationForm, submitIdentityCleanup } from '../model/auth';
 import firebaseApp from '../model/firebaseApp';
-import { checkUsernameAvailability, replaceAnonymousUsername } from '../model/identity';
-import { ANONYMOUS, ProviderNames, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_END, REGISTER_PROVIDER_USERNAME } from '../model/types';
+import { replaceAnonymousUsername } from '../model/identity';
+import { ProviderNames, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_END, REGISTER_PROVIDER_USERNAME } from '../model/types';
 import authRegisterCancel from '../store/actions/authRegisterCancel';
 import authRegisterStageUpdate from '../store/actions/authRegisterStageUpdate';
 import { AppDispatch } from '../store/store';
-import { toUsername } from './lerniCommon';
 import { dialogContentStyle } from './lerniConstants';
 import LerniTheme from './lerniTheme';
+import ZDisplayNameField, { validateDisplayName } from './ZDisplayNameField';
 import ZFacebookIcon from './ZFacebookIcon';
 import ZGoogleIcon from './ZGoogleIcon';
 import ZTwitterIcon from './ZTwitterIcon';
+import ZUsernameField, { usernameNotAvailable, validateUsername } from './ZUsernameField';
 
-const USERNAME_HELPER_TEXT = "Maximum of 15 characters. Letters, numbers and underscores only.";
-const DISPLAY_NAME_HELP = (
-    "Typically, this is your full name so that people will know who you are " + 
-    "in real life. Use an alias if you want to remain anonymous."
-)
 
-const USERNAME_TIP = (
-    "A short handle that uniquely identifies you in the Lerni app. " +
-    "People reference each other with usernames. For example, the owner of " +
-    "a deck may invite you to collaborate by submitting your username. " +
-    "Usernames always start with the '@' symbol."
-)
-
-function usernameNotAvailable(username: string) {
-    return `The username "@${username}" is not available`
-}
-
-function usernameIsAvailable(username: string) {
-    return `The username "@${username}" is available`
-}
 
 interface RegisterTitleProps extends RegisterWizardCloser {
     omitCloseButton: boolean;
@@ -190,98 +171,7 @@ function ZRegisterBegin(props: RegisterWizardCloser) {
     )
 }
 
-interface UsernameFieldProps {
-    username: string,
-    setUsername: (value: string) => void;
-    usernameError: string;
-    setUsernameError: (value: string) => void;
-    
-}
 
-function ZUsernameField(props: UsernameFieldProps) {
-    const {username, setUsername, usernameError, setUsernameError} = props;
-    const [usernameAvailable, setUsernameAvailable] = useState<string>("");
-    
-
-    function handleUsernameChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const value = event.currentTarget.value;
-        const validated = toUsername(value);
-
-        if (validated === ANONYMOUS) {
-            setUsernameError(usernameNotAvailable(validated));
-        } else if (usernameError && validated.length>0) {
-            setUsernameError("");
-        }       
-        setUsername(validated);
-        setUsernameAvailable("");
-    }
-
-    function handleCheckUsernameAvailability() {
-        if (username.length===0) {
-            setUsernameError("The username must be defined")
-        } else if (username === ANONYMOUS) {
-            setUsernameError(usernameNotAvailable(username));
-        } else {
-            checkUsernameAvailability(username).then(result => {
-                setUsernameAvailable(result ? "true" : "false");
-            }).catch(error => {
-                setUsernameError("An error occurred while checking availability");
-                if (error instanceof Error) {
-                    console.error(error.message);
-                }
-            })
-        }
-    }
-    return (
-        
-        <Box sx={{display: "flex", position: "relative"}}>
-            <Typography 
-                component="span"
-                sx={{position: "relative", top: "15px", marginRight: "5px"}}
-            >
-                @
-            </Typography>
-            <TextField
-                label="Username"
-                color={usernameAvailable ? "success": undefined}
-                error={Boolean(usernameError || usernameAvailable==="false")}
-                variant="outlined"
-                autoComplete='off'
-                helperText={
-                    usernameError || 
-                    (usernameAvailable === "true" && usernameIsAvailable(username)) ||
-                    (usernameAvailable === "false" && usernameNotAvailable(username)) ||
-                    USERNAME_HELPER_TEXT
-                }
-                value={username}
-                onChange={handleUsernameChange}
-                sx={{flexGrow: 1}}
-            />
-            <Tooltip title={USERNAME_TIP}>
-                <HelpIcon color="primary" sx={{marginLeft: "5px"}}/>
-            </Tooltip>
-            <Button
-                onClick={handleCheckUsernameAvailability}
-                sx={{alignSelf: "flex-start"}}>
-                    Check availability
-            </Button>
-        </Box>
-    )
-}
-
-function validateUsername(username: string, setUsernameError: (value: string) => void) {
-
-    const usernameValue = username.trim();
-    if (usernameValue.length===0) {
-        setUsernameError("The username is required")
-        return false;
-    }
-    if (usernameValue===ANONYMOUS) {
-        setUsernameError(usernameNotAvailable(username));
-    }
-
-    return true;
-}
 
 function ZEmailUsernameRetry()  {
     
@@ -521,64 +411,7 @@ function ZEmailVerify(props: RegisterWizardCloser) {
     )
 }
 
-function validateDisplayName(displayName: string, setDisplayNameError: (value: string) => void) {
-    
-    const displayNameValue = displayName.trim();
-    if (displayNameValue.length===0) {
-        setDisplayNameError("The display name is required");
-        return false;
-    }
-    if (displayNameValue.length<4) {
-        setDisplayNameError("The display name must contain at least 4 characters")
-        return false;
-    }
-    return true;
-}
 
-interface DisplayNameFieldProps {
-    displayName: string;
-    setDisplayName: (value: string) => void;
-    displayNameError: string;
-    setDisplayNameError: (value: string) => void;
-
-}
-
-function ZDisplayNameField(props: DisplayNameFieldProps) {
-    const {displayName, setDisplayName, displayNameError, setDisplayNameError} = props;
-
-    function handleDisplayNameChange(event: React.ChangeEvent<HTMLInputElement>) {
-        const value = event.currentTarget.value;
-        const trimmed = value.trim();
-        if (displayNameError) {
-            if (trimmed.length>0) {
-                setDisplayNameError("");
-            }
-        }
-        if (trimmed.length>50) {
-            const fragment = trimmed.substring(0, 50);
-            setDisplayName(fragment);
-            return;
-        }
-        setDisplayName(value);
-    }
-    return (
-        <Box sx={{display: "flex"}}>
-            <TextField
-                label="Display Name"
-                error={Boolean(displayNameError)}
-                autoComplete='off'
-                variant="outlined"
-                helperText={displayNameError || "Your real name or an alias. At least 4 characters and at most 50."}
-                value={displayName}
-                onChange={handleDisplayNameChange}
-                sx={{flexGrow: 1}}
-            />
-            <Tooltip title={DISPLAY_NAME_HELP}>
-                <HelpIcon color="primary" sx={{marginLeft: "5px"}}/>
-            </Tooltip>
-        </Box>
-    )
-}
 
 function ZProviderUsername() {
     const dispatch = useAppDispatch();

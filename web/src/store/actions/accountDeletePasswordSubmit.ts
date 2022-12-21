@@ -24,14 +24,10 @@ const accountDeletePasswordSubmit = createAppAsyncThunk(
 
             // TODO: add error handlers for deleteUserData
 
-            const promises: Promise<any>[] = [
-                deleteUser(freshUser),
-                deleteUserData(freshUser.uid)
-            ]
-            
+            await deleteUserData(freshUser.uid);
+            await deleteUser(freshUser);
+           
             unsubscribeLerni();
-
-            await Promise.all(promises);
            
            return true;
 

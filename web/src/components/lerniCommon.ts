@@ -1,3 +1,4 @@
+import { SessionUser } from "../model/types";
 
 function isValidUsernameChar(c: string) {
     const code = c.charCodeAt(0);
@@ -27,4 +28,8 @@ export function toUsername(value: string) {
         buffer = buffer.substring(0, 15);
     }
     return buffer;
+}
+
+export interface HasUser {
+    user: SessionUser;
 }

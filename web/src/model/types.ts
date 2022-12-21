@@ -70,7 +70,7 @@ export interface NamedUser {
     displayName: string;
 
     /** The person's `username` without the leading "@" */
-    username?: string;
+    username: string;
 }
 
 export interface UserNames {

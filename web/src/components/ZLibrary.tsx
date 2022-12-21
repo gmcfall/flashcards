@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
+import { selectAccountIsIncomplete, selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
 import { libraryUnsubscribe, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import { ClientLibrary, ERROR, Metadata, ResourceRef, UNKNOWN_RESOURCE_TYPE } from '../model/types';
@@ -16,6 +16,7 @@ import deckDelete from '../store/actions/deckDelete';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
 import ZAccessDeniedAlert from './ZAccessDeniedAlert';
 import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
+import ZAccountIncomplete from './ZAccountIncomplete';
 import ZAlert from "./ZAlert";
 import ZAuthTools from './ZAuthTools';
 
@@ -141,8 +142,10 @@ function ZLibraryResourceList(props: LibraryContentProps) {
 function ZLibraryContent() {
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectCurrentUser);
+    const session = useAppSelector(selectSession);
     const registrationState = useAppSelector(selectRegistrationState);
     const signinActive = useAppSelector(selectSigninActive);
+    const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
     const navigate = useNavigate();
 
     const lib = useAppSelector(selectLibrary);
@@ -150,7 +153,7 @@ function ZLibraryContent() {
     const userUid = user?.uid;
 
     useEffect(() => {
-        if (userUid) {
+        if (userUid && !accountIsIncomplete) {
             subscribeLibrary(dispatch, userUid);
         }
 
@@ -158,10 +161,14 @@ function ZLibraryContent() {
             libraryUnsubscribe();
         }
 
-    }, [dispatch, userUid])
+    }, [dispatch, userUid, accountIsIncomplete])
 
-    if (registrationState || signinActive) {
+    if (registrationState || signinActive || !session) {
         return null;
+    }
+    
+    if (accountIsIncomplete) {
+        return <ZAccountIncomplete/>
     }
 
     if (!user) {

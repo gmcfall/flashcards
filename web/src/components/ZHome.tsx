@@ -2,10 +2,11 @@ import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import { Box, Button, Link as Anchor, Typography } from "@mui/material";
 import { Link } from 'react-router-dom';
 import { useAppSelector } from '../hooks/hooks';
-import { selectSession } from '../model/auth';
+import { selectAccountIsIncomplete, selectSession } from '../model/auth';
 import { libraryRoute } from '../model/routes';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
 import LerniTheme from './lerniTheme';
+import ZAccountIncomplete from './ZAccountIncomplete';
 import ZAlert from './ZAlert';
 import ZAuthTools from './ZAuthTools';
 import ZResourceSearchTool from './ZResourceSearchTool';
@@ -50,6 +51,10 @@ function ZHomeFooter() {
 }
 
 export default function ZHome() {
+    const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
+    if (accountIsIncomplete) {
+        return <ZAccountIncomplete/>
+    }
    
     return (
         <Box id="homepage" sx={{display: "flex", flexDirection: "column", alignItems: "center", height: "100%"}}>
