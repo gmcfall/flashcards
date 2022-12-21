@@ -6,7 +6,7 @@ import { useParams } from "react-router-dom";
 import { useAccessControl } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { checkPrivilege } from "../model/access";
-import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
+import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectNewActiveCard } from "../model/deckEditor";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
@@ -150,7 +150,7 @@ function ZDeckEditorContent(props: TiptapProps) {
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectCurrentUser);
     const registrationState = useAppSelector(selectRegistrationState);
-    const signInState = useAppSelector(selectSigninState);
+    const signinActive = useAppSelector(selectSigninActive);
     const deck = useAppSelector(selectDeck);
     const activeCard = useAppSelector(selectActiveCard);
 
@@ -170,7 +170,7 @@ function ZDeckEditorContent(props: TiptapProps) {
     }, [userUid, activeCard]);
 
     
-    if (registrationState || signInState || !editor) {
+    if (registrationState || signinActive || !editor) {
         return null;
     }
 

@@ -1,5 +1,5 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { AuthProvider, createUserWithEmailAndPassword, EmailAuthProvider, getAuth, sendEmailVerification, signInWithPopup, signOut, updateProfile, User } from "firebase/auth";
+import { AuthProvider, createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { batch } from "react-redux";
 import { Action } from "redux";
 import authRegisterStageUpdate from "../store/actions/authRegisterStageUpdate";
@@ -11,10 +11,10 @@ import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { checkUsernameAvailability, createIdentity, deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName, setAnonymousIdentity, setNewIdentity } from "./identity";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, INFO, LerniApp, RegisterStage, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_USERNAME, Session, SIGNIN_BEGIN, SIGNIN_PASSWORD, UserNames } from "./types";
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, INFO, LerniApp, RegisterStage, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_USERNAME, Session, SIGNIN_FAILED, UserNames } from "./types";
 
 export function doAuthRegisterBegin(lerni: LerniApp, action: Action<string>) {
-    lerni.authRegisterState = REGISTER_BEGIN;
+    lerni.authRegisterStage = REGISTER_BEGIN;
 }
 
 export function doAuthRegisterCancel(lerni: LerniApp, action: Action<string>) {
@@ -22,12 +22,7 @@ export function doAuthRegisterCancel(lerni: LerniApp, action: Action<string>) {
 }
 
 function endRegistration(lerni: LerniApp) {
-    delete lerni.authRegisterState;
-}
-
-export function doAuthSigninBegin(lerni: LerniApp, action: Action) {
-    lerni.signInState = SIGNIN_BEGIN;
-    delete lerni.authRegisterState;
+    delete lerni.authRegisterStage;
 }
 
 export function doAccountDeleteEnd(lerni: LerniApp, action: PayloadAction<boolean>) {
@@ -38,9 +33,13 @@ export function doAccountDeleteEnd(lerni: LerniApp, action: PayloadAction<boolea
     }
 }
 
-export function doAuthSigninCancel(lerni: LerniApp, action: Action) {
-    delete lerni.signInState;
-    delete lerni.passwordSigninForm;
+export function doAuthSignin(lerni: LerniApp, action: PayloadAction<boolean>) {
+
+    if (action.payload) {
+        lerni.signinActive = true;
+    } else {
+        delete lerni.signinActive;
+    }
 }
 
 export function doAuthSignout(lerni: LerniApp, action: PayloadAction) {
@@ -53,7 +52,7 @@ export function doAuthSessionEnd(lerni: LerniApp, action: Action) {
 
 
 export function doAuthRegisterStageUpdate(lerni: LerniApp, action: PayloadAction<RegisterStage>) {
-    lerni.authRegisterState = action.payload;
+    lerni.authRegisterStage = action.payload;
 }
 
 export function doAuthSessionNameUpdate(lerni: LerniApp, action: PayloadAction<UserNames>) {
@@ -137,27 +136,6 @@ export async function deleteUserData(userUid: string) {
     return Promise.all(promises);
 }
 
-export function doAuthSigninPasswordBegin(lerni: LerniApp, action: PayloadAction) {
-    lerni.signInState = SIGNIN_PASSWORD;
-    lerni.passwordSigninForm = {
-        email: '',
-        password: ''
-    }
-}
-
-export function doAuthSigninPasswordChangeEmail(lerni: LerniApp, action: PayloadAction<string>) {
-    const form = lerni.passwordSigninForm;
-    if (form) {
-        form.email = action.payload;
-    }
-}
-
-export function doAuthSigninPasswordChangePassword(lerni: LerniApp, action: PayloadAction<string>) {
-    const form = lerni.passwordSigninForm;
-    if (form) {
-        form.password = action.payload;
-    }
-}
 
 
 
@@ -167,10 +145,6 @@ export function doAuthRegisterEmailVerified(lerni: LerniApp, action: PayloadActi
         severity: INFO,
         message: "Your email has been verified"
     }
-}
-
-export function selectPasswordSigninForm(state: RootState) {
-    return state.lerni.passwordSigninForm;
 }
 
 
@@ -184,11 +158,11 @@ export function selectCurrentUser(state: RootState) {
 }
 
 export function selectRegistrationState(state: RootState) {
-    return state.lerni.authRegisterState;
+    return state.lerni.authRegisterStage;
 }
 
-export function selectSigninState(state: RootState) {
-    return state.lerni.signInState;
+export function selectSigninActive(state: RootState) {
+    return Boolean(state.lerni.signinActive);
 }
 
 export function getRequiresVerification(user: User) {
@@ -259,23 +233,69 @@ export async function providerRegister(dispatch: AppDispatch, provider: AuthProv
     })
 }
 
+export async function emailPasswordSignIn(email: string, password: string) {
+    
+    const auth = getAuth(firebaseApp);
+    let credential: UserCredential | null = null;
+    try {
+        credential = await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+        throw new Error(SIGNIN_FAILED, {cause: error})
+    }
+    const user = credential.user;
+
+    let identity: Identity | null = null;
+    try {
+        identity = await getIdentity(user.uid);
+    } catch (error) {
+        throw new Error(GET_IDENTITY_FAILED, {cause: error});
+    }
+    debugger
+    if (!identity) {
+        await deleteUser(user).catch(
+            error => console.error(error)
+        )
+        throw new Error(IDENTITY_NOT_FOUND);
+    }
+    const providers = getProviders(user);
+    const requiresVerification = getRequiresVerification(user);
+    return createSession(user.uid, providers, identity.username, identity.displayName, requiresVerification);
+}
+
 export async function providerSignIn(provider: AuthProvider) {
     
     const auth = getAuth(firebaseApp);
 
-    // `signInWithPopup` throws an exception if sign-in fails.
-    const result = await signInWithPopup(auth, provider);
+    let result: UserCredential | null = null;
+    try {
+        result = await signInWithPopup(auth, provider);
+    } catch (error) {
+        throw new Error(SIGNIN_FAILED, {cause: error});
+    }
     const user = result.user;
     const uid = user.uid;
     const displayName = user.displayName || ANONYMOUS;
     const providers = getProviders(user);
     const requiresVerification = getRequiresVerification(user);
 
-    const identity = await getIdentity(uid);
+    let identity: Identity | null = null;
+    try {
+        identity = await getIdentity(uid);
+    } catch (error) {
+        await deleteUser(user).catch(
+            error => console.error(error)
+        );
+        throw new Error(GET_IDENTITY_FAILED, {cause: error});
+    }
 
-    return identity ?
-        createSession(uid, providers, identity.username, displayName, requiresVerification) :
-        null;
+    if (identity === null) {
+        await deleteUser(user).catch(
+            error => console.error(error)
+        );
+        throw new Error(IDENTITY_NOT_FOUND);
+    }
+
+    return createSession(uid, providers, identity.username, displayName, requiresVerification);
 }
 
 export async function handleAuthStateChanged(user: User) {

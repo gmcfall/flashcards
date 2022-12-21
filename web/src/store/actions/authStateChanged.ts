@@ -1,6 +1,6 @@
 import { User } from "firebase/auth";
 import { createAppAsyncThunk } from "../../hooks/hooks";
-import { handleAuthStateChanged, selectRegistrationState } from "../../model/auth";
+import { handleAuthStateChanged, selectRegistrationState, selectSigninActive } from "../../model/auth";
 import { createErrorInfo } from "../../model/errorHandler";
 import { REGISTER_BEGIN, REGISTER_EMAIL } from "../../model/types";
 import authSessionBegin from "./authSessionBegin";
@@ -11,6 +11,10 @@ const authStateChanged = createAppAsyncThunk(
     async (user: User, thunkApi) => {
         try {
             const state = thunkApi.getState();
+            const signinActive = selectSigninActive(state);
+            if (signinActive) {
+                return;
+            }
             const registerStage = selectRegistrationState(state);
 
             switch (registerStage) {

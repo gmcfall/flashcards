@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
+import { selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
 import { libraryUnsubscribe, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import { ClientLibrary, ERROR, Metadata, ResourceRef, UNKNOWN_RESOURCE_TYPE } from '../model/types';
@@ -142,7 +142,7 @@ function ZLibraryContent() {
     const dispatch = useAppDispatch();
     const user = useAppSelector(selectCurrentUser);
     const registrationState = useAppSelector(selectRegistrationState);
-    const signInState = useAppSelector(selectSigninState);
+    const signinActive = useAppSelector(selectSigninActive);
     const navigate = useNavigate();
 
     const lib = useAppSelector(selectLibrary);
@@ -160,7 +160,7 @@ function ZLibraryContent() {
 
     }, [dispatch, userUid])
 
-    if (registrationState || signInState) {
+    if (registrationState || signinActive) {
         return null;
     }
 

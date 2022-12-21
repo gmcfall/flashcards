@@ -1,7 +1,7 @@
 
 import { Alert } from "@mui/material";
 import { useAppSelector } from "../hooks/hooks";
-import { selectRegistrationState, selectSession, selectSigninState } from "../model/auth";
+import { selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
 interface AccessDeniedAlertProps {
     children?: React.ReactNode
 }
@@ -11,9 +11,9 @@ export default function ZAccessDeniedAlert(props: AccessDeniedAlertProps) {
 
     const session = useAppSelector(selectSession);
     const registrationState = useAppSelector(selectRegistrationState);
-    const signinState = useAppSelector(selectSigninState);
+    const signinActive = useAppSelector(selectSigninActive);
 
-    if (session || registrationState || signinState) {
+    if (session || registrationState || signinActive) {
         return null;
     }
 

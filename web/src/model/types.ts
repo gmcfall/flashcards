@@ -347,20 +347,31 @@ export const REGISTER_PROVIDER_END: RegisterStage = 'REGISTER_PROVIDER_END';
  */
 export const REGISTER_EMAIL_USERNAME_RETRY: RegisterStage = 'REGISTER_EMAIL_USERNAME_RETRY';
 
-
-export type SigninStage = 'SIGNIN_BEGIN' | 'SIGNIN_PASSWORD';
+/** 
+ * A message indicating that sign-in via an external AuthProvider 
+ * (Google, Facebook, Twitter) failed.
+ * 
+ * This message is encapsulated in an Error thrown by `providerSignIn`
+ */
+export const SIGNIN_FAILED ='SIGNIN_FAILED';
 
 /**
- * State indicating that the sign-in wizard should be displayed 
- * at the page which allows the user to choose an identity provider.
+ * A message indicating that an error occurred while getting
+ * the Identity document from Firestore after a successful signin
+ * from an external AuthProvider (Google, Facebook, Twitter).
+ * 
+ * This message is encapsulated in an Error thrown by `providerSignIn`
  */
-export const SIGNIN_BEGIN = 'SIGNIN_BEGIN';
+export const GET_IDENTITY_FAILED = 'GET_IDENTITY_FAILED';
 
 /**
- * State indicating the that the sign-in wizard should display
- * the form for collecting `email`, `password` and `displayName`.
+ * A message indicating that the Identity document from Firestore
+ * was not found after a successful signin from an exernal 
+ * AuthProvider (Google, Facebook, Twitter).
+ * 
+ * This message is encapsulated in an Error thrown by `providerSignIn`
  */
-export const SIGNIN_PASSWORD = 'SIGNIN_PASSWORD';
+export const IDENTITY_NOT_FOUND = 'IDENTITY_NOT_FOUND';
 
 /**
  * A representation of a User stored in the client-side Session.
@@ -638,7 +649,7 @@ export interface LerniApp {
     session?: Session,
 
     /** The state of the Registration dialog */
-    authRegisterState?: RegisterStage,
+    authRegisterStage?: RegisterStage,
 
     /** 
      * The form used to reauthenticate during the `Delete Account`
@@ -646,10 +657,12 @@ export interface LerniApp {
      */
     deleteAccountForm?: PasswordCredentials,
 
-    /** The state of the SignIn dialog */
-    signInState?: SigninStage,
 
-    passwordSigninForm?: PasswordCredentials,
+    /**
+     * A flag which specifies whether the user is actively signing in.
+     * When true, the ZSigninWizard is open.
+     */
+    signinActive?: boolean;
 
     /** Data used to display a transient Alert */
     alertData?: AlertData,

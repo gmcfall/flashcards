@@ -3,10 +3,10 @@ import { useState } from "react";
 import { useSession } from "../hooks/customHooks";
 import { useAppDispatch } from "../hooks/hooks";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
-import authSigninBegin from "../store/actions/authSigninBegin";
+import authSignin from "../store/actions/authSignin";
 import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
 import { ZRegisterWizard } from "./ZRegisterWizard";
-import ZSigninDialog from "./ZSigninDialog";
+import { ZSigninWizard } from "./ZSigninWizard";
 
 
 function ZRequestAccess() {
@@ -32,7 +32,7 @@ function ZMustSignIn() {
     const [, setRegisterOpen] = useState<boolean>(false);
 
     function handleSignInClick() {
-        dispatch(authSigninBegin())
+        dispatch(authSignin(true))
     }
 
     function handleRegisterClick() {
@@ -58,7 +58,7 @@ function ZMustSignIn() {
                 <Button onClick={handleRegisterClick}>{REGISTER_BUTTON_LABEL}</Button>
             </Box>
             <ZRegisterWizard/>
-            <ZSigninDialog/>
+            <ZSigninWizard/>
             
         </>
     )
