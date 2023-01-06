@@ -9,3 +9,11 @@ export function logError(error: unknown) {
         console.error(error);
     }
 }
+
+export function isEmpty(object: Object) {
+
+    for (const key in object) {
+        return false;
+    }
+    return true;
+}

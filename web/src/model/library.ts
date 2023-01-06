@@ -71,7 +71,7 @@ function toClientLibrary(lib: FirestoreLibrary) : ClientLibrary {
     const resources = Object.keys(lib.resources);
     
     return {
-        resources: resources,
+        resources,
         metadata: {}
     }
 }

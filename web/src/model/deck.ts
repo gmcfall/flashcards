@@ -36,7 +36,8 @@ export function createDeck() : Deck {
  */
 function createDeckAccess(owner: string) : Access {
     return {
-        owner
+        owner,
+        collaborators: {}
     }
 }
 
@@ -248,12 +249,10 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
     subscribedDeck = deckId;
     const db = getFirestore(firebaseApp);
     const decksRef = collection(db, DECKS);
-    console.log("deckSubscribe", deckId);
 
     const q = query(decksRef, where(documentId(), "==", deckId));
     unsubscribe = onSnapshot(q, snapshot => {
         snapshot.docChanges().forEach(change => {
-            console.log({change});
             switch (change.type) {
                 case 'added' : {
                     const data = change.doc.data() as Deck;

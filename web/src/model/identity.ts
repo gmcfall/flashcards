@@ -119,6 +119,21 @@ export async function replaceAnonymousUsernameAndDisplayName(uid: string, userna
     return ok;
 }
 
+export async function getIdentityByUsername(username: string) {
+    username = trimAtSign(username);
+    
+    const db = getFirestore(firebaseApp);
+    const identitiesRef = collection(db, IDENTITIES);
+    const q = query(identitiesRef, where("username", "==", username), limit(1));
+
+    const snapshot = await getDocs(q);
+    let result: Identity | null = null;
+    snapshot.forEach( document => {
+        result = document.data() as Identity;
+    })
+    return result;
+}
+
 export async function getIdentity(userUid: string) {
     
     const db = getFirestore(firebaseApp);
@@ -135,4 +150,11 @@ export async function deleteIdentity(userUid: string) {
     const db = getFirestore(firebaseApp);
     const identityRef = doc(db, IDENTITIES, userUid);
     await deleteDoc(identityRef);
+}
+
+function trimAtSign(username: string) {
+    while (username.startsWith("@")) {
+        username = username.substring(1);
+    }
+    return username;
 }

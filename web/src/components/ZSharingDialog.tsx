@@ -1,34 +1,208 @@
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CloseIcon from '@mui/icons-material/Close';
 import LinkIcon from '@mui/icons-material/Link';
 import LockIcon from '@mui/icons-material/Lock';
+import PersonIcon from '@mui/icons-material/Person';
 import PublicIcon from '@mui/icons-material/Public';
 import {
-    Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Fade, FormControl,
-    FormHelperText, MenuItem, Select, SelectChangeEvent, TextField
+    Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, Fade, FormControl,
+    FormHelperText, IconButton, InputBase, Menu, MenuItem, Select, SelectChangeEvent, TextField, Tooltip, Typography
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectDeckAccessEnvelope } from '../model/access';
+import { changeCollaboratorRole, createIdentityRole, injectCollaborators, removeAcess, selectDeckAccessEnvelope } from '../model/access';
+import { selectCurrentUser } from '../model/auth';
 import { selectDeck } from "../model/deck";
-import { EDITOR, Role, RoleName, VIEWER } from "../model/types";
+import { createIdentity, getIdentity, getIdentityByUsername } from '../model/identity';
+import { Access, AccessEnvelope, ANONYMOUS, Deck, EDITOR, Identity, IdentityRole, NOT_FOUND, Role, RoleName, SessionUser, VIEWER } from "../model/types";
 import accessGeneralChange from "../store/actions/accessGeneralChange";
 import deckNameUpdate from "../store/actions/deckNameUpdate";
+import { toUsername } from './lerniCommon';
+import LerniTheme from './lerniTheme';
 import { invalidDeckName } from "./ZDeckEditorHeader";
 
-interface SharingDialogProps {
-    open: boolean;
-    onClose: () => void;
+
+const SectionHeadingStyle = {
+    marginTop: "1rem",
+    marginBottom: "0.5rem"
 }
 
 enum SharingDialogStage {
     Begin,
     NameForm,
-    ShareForm
+    ShareForm,
+    Collaborators
 }
 
 
 interface SharingDialogNameProps {
     oldName: string;
     onNextState: () => void;
+}
+
+interface ShareCollaboratorProps {
+    identity: Identity;
+    removeCollaborator: (uid: string) => void;
+}
+function ZShareCollaborator(props: ShareCollaboratorProps) {
+    const {identity, removeCollaborator} = props;
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                alignItems: "center",
+                borderStyle: "solid",
+                borderColor: "rgb(235,235,235)",
+                borderWidth: "1px",
+                borderRadius: "10px",
+                paddingLeft: "8px",
+                "&:hover": {
+                    backgroundColor: "rgb(235,235,235)"
+                }
+            }}
+        >
+            <Tooltip title={"@" + identity.username}>
+                <Box
+                    component="span"
+                    sx={{
+                        whiteSpace: "nowrap",
+                        textOverflow: "ellipsis"
+                    }}
+                
+                >{identity.displayName}</Box>
+            </Tooltip>
+            <IconButton 
+                size="small"
+                onClick={() => removeCollaborator(identity.uid)}
+            >
+                <CloseIcon fontSize='small'/>
+            </IconButton>
+        </Box>
+    )
+}
+
+
+
+function distinctCollaborators(array: Identity[]) {
+    const set = new Set<string>();
+    const result: Identity[] = [];
+    array.forEach(identity => {
+        if (!set.has(identity.uid)) {
+            set.add(identity.uid);
+            result.push(identity);
+        }
+    })
+
+    return result;
+}
+interface CollaboratorsFieldProps {
+    newCollaborators: Identity[];
+    setNewCollaborators: (value: Identity[]) => void
+}
+function ZCollaboratorsField(props: CollaboratorsFieldProps) {
+    const {newCollaborators, setNewCollaborators} = props;
+    const [username, setUsername] = useState<string>('');
+    const [identity, setIdentity] = useState<null | Identity>(null);
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+
+    function removeCollaborator(uid: string) {
+        const newCollab = newCollaborators.filter(identity => identity.uid !== uid);
+        setNewCollaborators(newCollab);
+    }
+
+    function handleIdentityMenuClose() {
+        setIdentity(null);
+    }
+
+    function handleIdentityClick() {
+        if (identity) {
+            setNewCollaborators(distinctCollaborators([
+                ...newCollaborators,
+                identity
+            ]));
+            
+        }
+        setUsername("");
+        handleIdentityMenuClose();
+    }
+
+    function handleUsernameChange(event: React.ChangeEvent<HTMLInputElement>) {
+        setAnchorEl(event.currentTarget);
+        const v = event.currentTarget.value;
+        if (v === '') {
+            setUsername(v);
+        } else {
+            const value = '@' + toUsername(v);
+            setUsername(value);
+            getIdentityByUsername(value).then(
+                identity => {
+                    if (identity) {
+                        setIdentity(identity);
+                    }
+                }
+            ).catch(
+                error => console.error(error)
+            )
+        }
+    }
+    
+    const identityMenuOpen = Boolean(identity);
+
+    return (
+        <Box
+            component="form"
+            sx={{ 
+                paddingLeft: "8px",
+                display: 'flex', 
+                alignItems: 'center', 
+                flexGrow: 1,
+                borderColor: LerniTheme.dividerColor,
+                borderStyle: "solid",
+                borderWidth: "1px",
+                borderRadius: "4px"
+            }}
+        >
+            <Box
+                sx={{
+                    display: "flex",
+                    gap: "8px"
+                }}
+            >
+                {newCollaborators.map(identity => (
+                    <ZShareCollaborator
+                        key={identity.uid}
+                        identity={identity}
+                        removeCollaborator={removeCollaborator}
+                    />
+                ))}
+            </Box>
+            <InputBase
+                value={username}
+                onChange={handleUsernameChange}
+                sx={{
+                    flexGrow: 1,
+                    marginLeft: 1
+                }}
+                inputProps={{
+                    "aria-label" : "add collaborator"
+                }}
+            />
+            <Menu
+                open={identityMenuOpen}
+                onClose={handleIdentityMenuClose}
+                anchorEl={anchorEl}
+            >
+                <MenuItem onClick={handleIdentityClick}>
+                    <Box display="flex">
+                        <PersonIcon color="primary" sx={{marginRight: "0.5rem"}}/>
+                        <Typography>{identity?.displayName}</Typography>                        
+                    </Box>
+                </MenuItem>
+            </Menu>
+        </Box>
+
+    )
+
 }
 
 export function ZSharingDialogName(props: SharingDialogNameProps) {
@@ -145,18 +319,314 @@ function ZCopyLinkButton(props: CopyLinkButtonProps) {
     )
 }
 
-interface SharingDialogMainProps {
-    resourceId: string;
-    general?: Role;
-    onClose: () => void;
+interface ShareTitleProps {
+    resourceName: string;
+}
+function ZShareTitle(props: ShareTitleProps) {
+    const {resourceName} = props;
+    return (
+        <Box sx={{display: "flex", flexWrap: "nowrap", width: "100%"}}>
+            <span>Share&nbsp;</span> 
+            <span style={{flexGrow: 1, textOverflow: "ellipsis"}}>"{resourceName}"</span>
+        </Box>
+    )
 }
 
+interface CollaboratorsWithRoleProps {
+    newCollaborators: Identity[];
+    setNewCollaborators: (value: Identity[]) => void;
+    role: Role;
+    setRole: (value: Role) => void;
+}
+function ZCollaboratorsWithRole(props: CollaboratorsWithRoleProps) {
+    const {newCollaborators, setNewCollaborators, role, setRole} = props;
+
+    function handleRoleChange(event: SelectChangeEvent) {
+        setRole(event.target.value as Role)
+    }
+
+    return (
+        <Box
+            sx={{
+                display: "flex",
+                gap: "1rem",
+                width: "30rem"
+            }}
+        >
+            <ZCollaboratorsField 
+                newCollaborators={newCollaborators}
+                setNewCollaborators={setNewCollaborators}
+            />
+            <Select
+                value={role}
+                onChange={handleRoleChange}
+            >
+                <MenuItem value={EDITOR}>{RoleName[EDITOR]}</MenuItem>
+                <MenuItem value={VIEWER}>{RoleName[VIEWER]}</MenuItem>
+            </Select>
+        </Box>
+    )
+}
+
+interface AddCollaboratorsProps {
+    newCollaborators: Identity[];
+    setNewCollaborators: (value: Identity[]) => void;
+    setStage: (value: SharingDialogStage) => void;
+    resourceId: string;
+    resourceName: string;
+    onClose: () => void;
+
+}
+
+
+
+function ZAddCollaborators(props: AddCollaboratorsProps) {
+    const {resourceId, resourceName, newCollaborators, setNewCollaborators, setStage, onClose} = props;
+    
+    const [role, setRole] = useState<Role>(EDITOR);
+    const [submitDisabled, setSubmitDisabled] = useState<boolean>(false);
+    const [errorMessage, setErrorMessage] = useState<string>("");
+
+    function handleSubmit() {
+        setSubmitDisabled(true);
+        const data = newCollaborators.map(identity => createIdentityRole(identity, role));
+        injectCollaborators(resourceId, data).then(
+            (failures) => {
+
+                if (failures.length > 0) {
+
+                    let message = "Failed to share with ";
+                    failures.forEach( (identity, index) => {
+                        if (index > 0 && index < failures.length-1) {
+                            message += ', ';
+                        } if (index > 0 && index === failures.length-1) {
+                            message += " and ";
+                        }
+                        message += '@' + identity.username;
+                    })
+
+                    console.log(message);
+                    setErrorMessage(message);
+                    setSubmitDisabled(false);
+                } else {
+                    setNewCollaborators([]);
+                    setStage(SharingDialogStage.ShareForm);
+                }
+            }
+        ).catch(
+            error => {
+                console.error("ZAddCollaborators failed to inject collaborators", error);
+                setErrorMessage(
+                    "An error occurred while saving the collaborators"
+                )
+                setSubmitDisabled(false);
+            }
+        )
+    }
+
+    return (
+        <>
+        <DialogTitle sx={{paddingLeft: "0px"}}>
+            <Box sx={{display: "flex", alignItems: "center"}}>
+                <IconButton
+                    onClick={()=>setStage(SharingDialogStage.ShareForm)}
+                >
+                    <ArrowBackIcon/>
+                </IconButton>
+                <ZShareTitle resourceName={resourceName}/>
+            </Box>
+            
+        </DialogTitle>
+        <DialogContent>
+            {errorMessage && (
+                <Alert severity="error">
+                    {errorMessage}
+                </Alert>
+            )}
+            <ZCollaboratorsWithRole
+                role={role}
+                setRole={setRole}
+                newCollaborators={newCollaborators}
+                setNewCollaborators={setNewCollaborators}
+            />
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={onClose}>Cancel</Button>
+            <Button 
+                variant="contained" 
+                onClick={handleSubmit}
+                disabled={submitDisabled}
+            >
+                Submit
+            </Button>
+        </DialogActions>
+        </>
+    )
+}
+
+interface EmphasisProps {
+    children: React.ReactNode;
+}
+function ZEmphasis(props: EmphasisProps) {
+    const {children} = props;
+    return (
+        <Box component="b" sx={{color: "rgba(0, 0, 0, 0.6)"}}>
+            {children}
+        </Box>
+    )
+}
+
+interface FullIdentityProps {
+    identity: Identity;
+}
+function ZFullIdentity(props: FullIdentityProps) {
+    const {identity} = props;
+
+    return (
+        <Box
+            sx={{
+                display: "flex"
+            }}
+        >
+            <PersonIcon color="primary"/>
+            <Box
+                sx={{
+                    display: "flex",
+                    flexDirection: "column",
+                    marginLeft: "8px"
+                }}
+            >
+                <ZEmphasis>{identity.displayName}</ZEmphasis>
+                <Box component="span" sx={{fontSize: "80%"}}>
+                    {"@" + identity.username}
+                </Box>
+            </Box>
+        </Box>
+    )
+}
+
+const REMOVE_ACCESS = "removeAccess";
+
+interface IdentityRoleProps {
+    resourceId: string;
+    identityRole: IdentityRole;
+}
+function ZIdentityRole(props: IdentityRoleProps) {
+    const {resourceId, identityRole} = props;
+    const [role, setRole] = useState<Role>(identityRole.role);
+    const [errorMessage, setErrorMessage] = useState<string>("");
+    const identity = identityRole.identity;
+
+    async function handleRoleChange(event: SelectChangeEvent) {
+        const value = event.target.value;
+        if (value===EDITOR || value===VIEWER) {
+            try {
+                await changeCollaboratorRole(resourceId, identityRole);
+                setRole(value);
+            } catch (error) {
+                console.log("changeCollaboratorRole faile", error);
+                const message = "Failed to change the role of @" + identityRole.identity.username;
+                setErrorMessage(message);
+                setTimeout(() => {
+                    setErrorMessage("");
+                }, 2000)
+            }
+        } else if (value===REMOVE_ACCESS) {
+             try {
+                await removeAcess(resourceId, identityRole);
+             } catch (error) {
+                console.log(error);
+                const message = 'Failed to remove access for @' + identityRole.identity.username;
+                setErrorMessage(message);
+                setTimeout(() => {
+                    setErrorMessage("");
+                }, 2000)
+                
+             }
+        }
+        // TODO: dispatch the change to Firestore
+    }
+
+    return (
+        <Box
+            id={"identityRole-" + identity.username}
+            sx={{
+                display: "flex",
+                width: "100%",
+                padding: "5px",
+                borderTopLeftRadius: "30px",
+                borderBottomLeftRadius: "30px",
+                "&:hover" : {
+                    backgroundColor: LerniTheme.hoverBackgroundColor
+                },
+                "& div:first-of-type" : {
+                    flexGrow: 1
+                }
+            }}
+        >
+            <ZFullIdentity identity={identity}/>
+            <Select 
+                size="small"
+                value={role}
+                onChange={handleRoleChange}
+                sx={{alignLeft: "auto"}}
+            >
+                <MenuItem value={VIEWER}>{RoleName[VIEWER]}</MenuItem>
+                <MenuItem value={EDITOR}>{RoleName[EDITOR]}</MenuItem>
+                <Divider/>
+                <MenuItem value={REMOVE_ACCESS}>Remove Access</MenuItem>
+            </Select>
+            {errorMessage && (
+                <Box>
+                    <Alert severity='error'>
+                        {errorMessage}
+                    </Alert>
+                </Box>
+            )}
+        </Box>
+    )
+}
+
+function listCollaborators(access: Access) {
+    const list = Object.values(access.collaborators);
+    list.sort( (a, b) => {
+        const aName = a.identity.displayName;
+        const bName = b.identity.displayName;
+        return aName.localeCompare(bName);
+    })
+
+    return list;
+}
+
+function nonNullIdentity(identity: null | Identity) {
+    return identity || createIdentity(
+        ANONYMOUS,
+        ANONYMOUS,
+        ANONYMOUS
+    )
+}
+
+interface SharingDialogMainProps {
+    resourceId: string;
+    access: Access;
+    owner: null | Identity;
+    onClose: () => void;
+    setDialogStage: (value: SharingDialogStage) => void
+    setNewCollaborators: (value: Identity[]) => void
+}
 export function ZSharingDialogMain(props: SharingDialogMainProps) {
-    const {resourceId, general, onClose} = props;
+    const {resourceId, access, owner, onClose, setDialogStage, setNewCollaborators} = props;
+
+    const ownerIdentity = nonNullIdentity(owner);
+    const general = access.general;
 
     const dispatch = useAppDispatch();
+    const deck = useAppSelector(selectDeck);
     const [message, setMessage] = useState<string>('');
     const [messageVisible, setMessageVisible] = useState<boolean>(false);
+    const [username, setUsername] = useState<string>('');
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const [identity, setIdentity] = useState<null | Identity>(null);
     const generalAccessEnabled = Boolean(general);
     const generalAccessValue = generalAccessEnabled ? ANYONE : RESTRICTED;
 
@@ -192,21 +662,119 @@ export function ZSharingDialogMain(props: SharingDialogMainProps) {
     function handleDoneClick() {
         onClose();
     }
+    
+    function handleUsernameChange(event: React.ChangeEvent<HTMLInputElement>) {
+        setAnchorEl(event.currentTarget);
+        const v = event.currentTarget.value;
+        if (v === '') {
+            setUsername(v);
+        } else {
+            const value = '@' + toUsername(v);
+            setUsername(value);
+            getIdentityByUsername(value).then(
+                identity => {
+                    if (identity) {
+                        setIdentity(identity);
+                    }
+                }
+            ).catch(
+                error => console.error(error)
+            )
+        }
+    }
+
+    function handleIdentityMenuClose() {
+        setIdentity(null);
+    }
+
+    function handleIdentityClick() {
+        if (identity) {
+            setNewCollaborators([identity]);
+            setDialogStage(SharingDialogStage.Collaborators);
+        }
+        handleIdentityMenuClose();
+    }
+
+    const identityMenuOpen = Boolean(identity);
 
     const generalAccessIcon = (
         (general===undefined && <LockIcon/>) ||
         <PublicIcon/>
     )
 
+    if (!deck) {
+        return null;
+    }
+
+    const collaborators = listCollaborators(access);
+
     const messageDisplay = message ? "flex" : "none";
         
     return (
         <>
             <DialogTitle>
-                Share this deck
+                <ZShareTitle resourceName={deck.name}/>
             </DialogTitle>
             <DialogContent sx={{minWidth: "400px"}}>
-                <DialogContentText variant="subtitle1">
+                <TextField
+                    size="small"
+                    placeholder='Add People'
+                    value={username}
+                    onChange={handleUsernameChange}
+                    autoComplete="off"
+                    sx={{
+                        marginBottom: "1rem",
+                        width: "100%"
+                    }}
+                />
+                <Menu
+                    open={identityMenuOpen}
+                    onClose={handleIdentityMenuClose}
+                    anchorEl={anchorEl}
+                >
+                    <MenuItem onClick={handleIdentityClick}>
+                        <Box display="flex">
+                            <PersonIcon color="primary" sx={{marginRight: "0.5rem"}}/>
+                            <Typography>{identity?.displayName}</Typography>
+                        </Box>
+                    </MenuItem>
+                </Menu>
+                <DialogContentText variant="subtitle1" sx={SectionHeadingStyle}>
+                    People with access
+                </DialogContentText>
+                <Box sx={{
+                    display: "flex",
+                    padding: "5px",
+                    borderTopLeftRadius: "30px",
+                    borderBottomLeftRadius: "30px",
+                    "&:hover" : {
+                        backgroundColor: LerniTheme.hoverBackgroundColor
+                    },
+                    "& b:last-child": {
+                        marginLeft: "auto"
+                    }
+                }}>
+                    <ZFullIdentity identity={ownerIdentity}/>
+                    <ZEmphasis>
+                        Owner
+                    </ZEmphasis>
+                </Box>
+                <Box
+                    sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        border: "1p solid red"
+                    }}
+                >
+                    {collaborators.map(e => (
+                        <ZIdentityRole
+                            key={e.identity.uid}
+                            resourceId={resourceId}
+                            identityRole={e}
+                        />
+                    ))}
+                </Box>
+                <DialogContentText variant="subtitle1" sx={SectionHeadingStyle}>
                     General access
                 </DialogContentText>
                 <Box sx={{
@@ -291,11 +859,35 @@ export function ZSharingDialogMain(props: SharingDialogMainProps) {
     )
 }
  
+
+
+async function getOwnerIdentity(currentUser: SessionUser, accessEnvelope: AccessEnvelope) {
+    const access = accessEnvelope.payload;
+    if (access) {
+        const ownerUid = access.owner;
+        if (ownerUid === currentUser.uid) {
+            return createIdentity(currentUser.uid, currentUser.username, currentUser.displayName);
+        }
+        return getIdentity(ownerUid);
+    } else {
+        throw new Error(NOT_FOUND);
+    }
+
+    
+}
+
+interface SharingDialogProps {
+    open: boolean;
+    onClose: () => void;
+}
 export function ZSharingDialog(props: SharingDialogProps) {
     const {open, onClose} = props;
     const [dialogStage, setDialogStage] = useState<SharingDialogStage>(SharingDialogStage.Begin);
+    const [newCollaborators, setNewCollaborators] = useState<Identity[]>([]);
+    const [owner, setOwner] = useState<null | Identity>(null);
 
 
+    const user = useAppSelector(selectCurrentUser);
     const deck = useAppSelector(selectDeck);
     const accessEnvelope = useAppSelector(selectDeckAccessEnvelope);
     
@@ -304,7 +896,9 @@ export function ZSharingDialog(props: SharingDialogProps) {
         const ready = (
             dialogStage === SharingDialogStage.Begin &&
             deck &&
-            accessEnvelope
+            user &&
+            accessEnvelope &&
+            accessEnvelope.payload
         );
 
         if (ready) {
@@ -312,18 +906,63 @@ export function ZSharingDialog(props: SharingDialogProps) {
                 SharingDialogStage.NameForm :
                 SharingDialogStage.ShareForm;
 
+            getOwnerIdentity(user, accessEnvelope).then(
+                (identity) => {
+                    setOwner(identity)
+                }
+            ).catch(
+                error => {
+                    console.error("Failed to get owner Identity", error);
+                }
+            )
+
             setDialogStage(nextState);
         }
 
         
-    }, [dialogStage, deck, accessEnvelope])
+    }, [dialogStage, deck, accessEnvelope, user])
 
-    if (!deck || !accessEnvelope) {
+    const access = accessEnvelope?.payload;
+
+    if (!deck || !access) {
         return null;
     }
 
     function handleNextState() {
         setDialogStage(SharingDialogStage.ShareForm);
+    }
+
+    function dialogBody(deck: Deck, access: Access) {
+        switch (dialogStage) {
+            case SharingDialogStage.NameForm:
+                return <ZSharingDialogName
+                    oldName={deck.name}
+                    onNextState={handleNextState}
+                />
+
+            case SharingDialogStage.ShareForm:
+                return <ZSharingDialogMain
+                    owner={owner}
+                    resourceId={deck.id}
+                    access={access}
+                    onClose={onClose}
+                    setDialogStage={setDialogStage}
+                    setNewCollaborators={setNewCollaborators}
+                />
+
+            case SharingDialogStage.Collaborators:
+                return <ZAddCollaborators 
+                    newCollaborators={newCollaborators}
+                    setNewCollaborators={setNewCollaborators}
+                    setStage={setDialogStage}
+                    resourceId={deck.id}
+                    resourceName={deck.name}
+                    onClose={onClose}
+                />
+
+            default: 
+                return null;
+        }
     }
 
     return (
@@ -332,24 +971,8 @@ export function ZSharingDialog(props: SharingDialogProps) {
             onClose={onClose}
         >
         
-        {
-            dialogStage===SharingDialogStage.NameForm && (
-                <ZSharingDialogName
-                    oldName={deck.name}
-                    onNextState={handleNextState}
-                />
-            )
-        }
-        {
-            dialogStage===SharingDialogStage.ShareForm && (
-                <ZSharingDialogMain
-                    resourceId={deck.id}
-                    general={accessEnvelope?.payload?.general}
-                    onClose={onClose}
-                />
-            )
-        }
-
+        { dialogBody(deck, access) }
+        
         </Dialog>
 
     )

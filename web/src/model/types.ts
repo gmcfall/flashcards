@@ -194,6 +194,7 @@ export interface FirestoreLibrary {
      * to add and remove resources from the library.
      */
     resources: Record<string, boolean>;
+
 }
 
 /**
@@ -475,6 +476,11 @@ export const RoleName: Record<Role, string> = {
     [VIEWER] : "Viewer"
 }
 
+export interface IdentityRole {
+    identity: Identity;
+    role: Role;
+}
+
 /**
  * A Firestore document that defines the access control rules for a given Deck
  * 
@@ -483,6 +489,13 @@ export const RoleName: Record<Role, string> = {
 export interface Access {
     /** The uid of the user who owns the Deck */
     owner: string;
+
+    /**
+     * A record of the collaborators who may access the Deck.
+     * The key is the users `uid`.
+     * The value encapsulates the collaborator's identity and a Role.
+     */
+    collaborators: Record<string, IdentityRole>;
 
     /** The roles for general access to the Deck */
     general?: GeneralRole;

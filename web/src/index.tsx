@@ -23,7 +23,8 @@ const theme = createTheme({
       fontSize: "2rem"
     },
     subtitle1: {
-      fontWeight: "bold"
+      fontWeight: "500",
+      fontSize: "110%"
     },
     body2: {
       fontSize: "0.8rem"

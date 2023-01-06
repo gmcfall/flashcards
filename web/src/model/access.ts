@@ -1,10 +1,11 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, deleteField, doc, documentId, getDoc, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where } from "firebase/firestore";
+import { collection, deleteField, doc, documentId, FieldPath, getDoc, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where, writeBatch } from "firebase/firestore";
 import deckAccessLoaded from "../store/actions/deckAccessLoaded";
 import { AppDispatch, RootState } from "../store/store";
+import { isEmpty } from "../util/common";
 import firebaseApp from "./firebaseApp";
-import { ACCESS, AccessField } from "./firestoreConstants";
-import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, LerniApp, NOT_FOUND, OWNER, Permission, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
+import { ACCESS, AccessField, LIBRARIES } from "./firestoreConstants";
+import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, Identity, IdentityRole, LerniApp, NOT_FOUND, OWNER, Permission, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
 
 /**
  * A mapping from roles to permissions granted to the role
@@ -197,4 +198,82 @@ export async function updateAcccess(resourceId: string, generalRole: Role | unde
     const value = generalRole || deleteField();
     updateDoc(accessRef, AccessField.general, value);
 
+}
+
+/**
+ * Inject a list of collaborators with specific roles into
+ * a given Access document
+ * @param resourceId The `id` of the resource whose access document is being updated
+ * @param list The list of collaborators to be inject
+ */
+export async function injectCollaborators(resourceId: string, list: IdentityRole[]) {
+
+    const db = getFirestore(firebaseApp);
+    const docRef = doc(db, ACCESS, resourceId);
+
+    const collaborators: Record<string, IdentityRole> = {};
+
+    const failures: Identity[] = [];
+
+    for (const e of list) {
+        
+        const libRef = doc(db, LIBRARIES, e.identity.uid);
+
+        const path = new FieldPath("resources", resourceId);
+        try {
+            await updateDoc(libRef, path, true); 
+            collaborators[e.identity.uid] = e;           
+        } catch (error) {
+            failures.push(e.identity);
+        
+        }
+    }
+
+    if (!isEmpty(collaborators)) {
+        await updateDoc(docRef, {collaborators})
+    }
+
+    return failures;
+}
+
+export async function changeCollaboratorRole(resourceId: string, identityRole: IdentityRole) {
+
+
+    const db = getFirestore(firebaseApp);
+
+    const libRef = doc(db, LIBRARIES, identityRole.identity.uid);
+    const path = new FieldPath("resources", resourceId);
+
+    const batch = writeBatch(db);
+    batch.update(libRef, path, true);
+
+    const accessPath = new FieldPath("collaborators", identityRole.identity.uid)
+    const accessRef = doc(db, ACCESS, resourceId);
+    batch.update(accessRef, accessPath, identityRole);
+
+    await batch.commit();
+}
+
+export async function removeAcess(resourceId: string, identityRole: IdentityRole) {
+    
+    const db = getFirestore(firebaseApp);
+
+    const libRef = doc(db, LIBRARIES, identityRole.identity.uid);
+    const libPath = new FieldPath("resources", resourceId);
+
+    const batch = writeBatch(db);
+    batch.update(libRef, libPath, deleteField());
+
+    const accessPath = new FieldPath("collaborators", identityRole.identity.uid)
+    const accessRef = doc(db, ACCESS, resourceId);
+    batch.update(accessRef, accessPath, deleteField());
+
+    await batch.commit();
+}
+
+export function createIdentityRole(identity: Identity, role: Role) : IdentityRole {
+    return {
+        identity,
+        role
+    }
 }
