@@ -1,7 +1,7 @@
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, limit, query, setDoc, updateDoc, where } from "firebase/firestore";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
-import { ANONYMOUS, Identity } from "./types";
+import { ANONYMOUS, Identity, SessionUser } from "./types";
 
 export function createIdentity(uid: string, username: string, displayName: string) : Identity {
     return {uid, username, displayName}
@@ -22,6 +22,15 @@ export async function checkUsernameAvailability(username: string) {
 
     return snapshot.size === 0;
 
+}
+
+export function userToIdentity(user: SessionUser) : Identity {
+
+    return {
+        uid: user.uid,
+        username: user.username,
+        displayName: user.displayName
+    }
 }
 
 /**

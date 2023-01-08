@@ -1,11 +1,12 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, deleteField, doc, documentId, FieldPath, getDoc, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where, writeBatch } from "firebase/firestore";
+import { collection, deleteField, doc, documentId, FieldPath, getDoc, getFirestore, onSnapshot, query, runTransaction, serverTimestamp, Unsubscribe, updateDoc, where, writeBatch } from "firebase/firestore";
 import deckAccessLoaded from "../store/actions/deckAccessLoaded";
 import { AppDispatch, RootState } from "../store/store";
 import { isEmpty } from "../util/common";
+import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, AccessField, LIBRARIES } from "./firestoreConstants";
-import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, Identity, IdentityRole, LerniApp, NOT_FOUND, OWNER, Permission, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
+import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, Identity, IdentityRole, LerniApp, NOT_FOUND, OWNER, Permission, ProtoAccessRequest, ProtoAccessResponse, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
 
 /**
  * A mapping from roles to permissions granted to the role
@@ -46,6 +47,7 @@ export function checkPrivilege(
     }
 
     const role = getRole(accessEnvelope, resourceId, userUid);
+    
     if (!role) {
         return false;
     }
@@ -116,6 +118,11 @@ export function getRole(accessEnvelope: AccessEnvelope, resourceId: string | und
     const generalRole = access.general;
     if (generalRole) {
         return generalRole;
+    }
+
+    const idRole = access.collaborators[userUid];
+    if (idRole) {
+        return idRole.role;
     }
 
     return undefined;
@@ -201,8 +208,72 @@ export async function updateAcccess(resourceId: string, generalRole: Role | unde
 }
 
 /**
+ * Create an `AccessRequest` object suitable for persisting in Firestore
+ * @param resourceId The resource for which access is being requested
+ * @param requester The identity of the user requesting access
+ */
+function createAccessRequest(resourceId: string, requester: Identity, message?: string) {
+    const result: ProtoAccessRequest = {
+        id: generateUid(),
+        createdAt: serverTimestamp(),
+        resourceId,
+        requester
+    }
+
+    if (message) {
+        result.message = message;
+    }
+
+    return result;
+}
+
+function createAccessResponse(resourceId: string, accepted: boolean, message?: string) {
+    const result: ProtoAccessResponse = {
+        id: generateUid(),
+        createdAt: serverTimestamp(),
+        resourceId,
+        accepted
+    }
+    if (message) {
+        result.message = message
+    }
+    return result;
+}
+
+export async function persistAccessResponse(requesterUid: string, resourceId: string, accepted: boolean, message?: string) {
+
+    const response = createAccessResponse(resourceId, accepted, message);
+    
+    const db = getFirestore(firebaseApp);
+    const libRef = doc(db, LIBRARIES, requesterUid);
+    const notifications = {
+        [response.id] : response
+    }
+    const data = { notifications }
+
+    await updateDoc(libRef, data);
+}
+
+
+export async function persistAccessRequest(ownerUid: string, resourceId: string, requester: Identity, message?: string) {
+    const request = createAccessRequest(resourceId, requester, message);
+
+    const db = getFirestore(firebaseApp);
+    const libRef = doc(db, LIBRARIES, ownerUid);
+
+    const notifications = {
+        [request.id] : request
+    }
+
+    const data = { notifications }
+
+    await updateDoc(libRef, data);
+}
+
+/**
  * Inject a list of collaborators with specific roles into
  * a given Access document
+ * @param ownerUid The `uid` of the user who owns the resource
  * @param resourceId The `id` of the resource whose access document is being updated
  * @param list The list of collaborators to be inject
  */

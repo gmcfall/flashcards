@@ -2,6 +2,21 @@ rules_version = '2';
 service cloud.firestore {
 
   match /databases/{database}/documents {
+    
+    function getCollabRole(userUid, access) {
+      let collaborators = access.collaborators;
+      return userUid in collaborators ? collaborators[userUid].role : null;
+    }
+
+    function allowCollabView(userUid, access) {
+      let role = getCollabRole(userUid, access);
+      return role == "viewer" || role == "editor";
+    }
+
+    function allowCollabEdit(userUid, access) {
+      let role = getCollabRole(userUid, access);
+      return role == "editor"
+    }
 
     match /libraries/{userId} {
 
@@ -15,19 +30,21 @@ service cloud.firestore {
       allow create: if request.auth.uid == request.resource.data.owner;
     }
     match /decks/{deckId} {
+
       function grantDeckRead(deckId) {
         let access = get(/databases/$(database)/documents/access/$(deckId)).data;
         let isOwner = request.auth.uid == access.owner;
         let general = access.general;
         let generalCanView = general is string && (general == "viewer" || general == "editor");
-        return isOwner || generalCanView;
+        
+        return isOwner || generalCanView || allowCollabView(request.auth.uid, access);
       }
       function grantDeckUpdate(deckId) {
         let access = get(/databases/$(database)/documents/access/$(deckId)).data;
         let isOwner = request.auth.uid == access.owner;
         let general = access.general;
         let generalCanEdit = general is string && general == "editor";
-        return isOwner || generalCanEdit;
+        return isOwner || generalCanEdit || allowCollabEdit(request.auth.uid, access);
       }
       function grantDeckDelete(deckId) {
         let access = get(/databases/$(database)/documents/access/$(deckId)).data;
@@ -46,13 +63,13 @@ service cloud.firestore {
         let isOwner = request.auth.uid == access.owner;
         let general = access.general;
         let generalCanView = general is string && (general == "viewer" || general == "editor");
-        return isOwner || generalCanView;
+        return isOwner || generalCanView || allowCollabView(request.auth.uid, access);
       }
       function grantCardWrite() {
         let access= get(/databases/$(database)/documents/access/$(resource.data.access)).data;
         let isOwner = request.auth.uid == access.owner;
         let generalCanEdit = access.general is string && access.general == "editor";
-        return isOwner || generalCanEdit;
+        return isOwner || generalCanEdit  || allowCollabEdit(request.auth.uid, access);
       }
       function grantCardCreate() {
         let access = get(/databases/$(database)/documents/access/$(request.resource.data.access)).data;
@@ -63,7 +80,8 @@ service cloud.firestore {
       allow create: if grantCardCreate();
     }    
     match /metadata/{resourceId} {
-      allow read, update, delete: if request.auth.uid == resource.data.owner;
+      allow read: if true;
+      allow update, delete: if request.auth.uid == resource.data.owner;
       allow create: if request.auth.uid == request.resource.data.owner;
     }
     match /search/{tag} {

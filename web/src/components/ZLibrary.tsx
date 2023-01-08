@@ -1,15 +1,22 @@
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
-import { Alert, Box, Button, CircularProgress, IconButton, List, ListItem, ListItemButton, ListItemText, Tooltip, Typography } from "@mui/material";
-import { useEffect } from "react";
+import {
+    Alert, Box, Button, CircularProgress, FormControl, IconButton, List, ListItem, ListItemButton,
+    ListItemText, MenuItem, Paper, Select, SelectChangeEvent, Tooltip, Typography
+} from "@mui/material";
+import { useEffect, useState } from "react";
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
+import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
 import { selectAccountIsIncomplete, selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
-import { libraryUnsubscribe, selectLibrary, subscribeLibrary } from '../model/library';
+import { libraryUnsubscribe, removeNotification, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
-import { ClientLibrary, ERROR, Metadata, ResourceRef, UNKNOWN_RESOURCE_TYPE } from '../model/types';
+import {
+    AccessNotification, AccessRequest, AccessResponse, ClientLibrary, EDITOR, ERROR,
+    Metadata, ResourceRef, Role, RoleName, UNKNOWN_RESOURCE_TYPE, VIEWER
+} from '../model/types';
 import alertPost from '../store/actions/alertPost';
 import deckAdd from '../store/actions/deckAdd';
 import deckDelete from '../store/actions/deckDelete';
@@ -106,10 +113,6 @@ function ZLibResource(props: LibResourceProps) {
     )
 }
 
-interface LibraryContentProps {
-    lib: ClientLibrary
-}
-
 function resourceRef(id: string, map: Record<string, Metadata>) : ResourceRef {
     const metadata = map[id];
     return (metadata) ? {
@@ -122,13 +125,17 @@ function resourceRef(id: string, map: Record<string, Metadata>) : ResourceRef {
         name: "Loading..."
     }
 }
+
+interface LibraryContentProps {
+    lib: ClientLibrary
+}
 function ZLibraryResourceList(props: LibraryContentProps) {
     const {lib} = props;
 
     const metadata = lib.metadata;
 
     return (
-        <List>
+        <List sx={{maxWidth: "50rem", minWidth: "20rem"}}>
             {
                 lib.resources.map(id => (
                     <ZLibResource key={id} resource={resourceRef(id, metadata)}/>
@@ -136,8 +143,244 @@ function ZLibraryResourceList(props: LibraryContentProps) {
             }
         </List>
     )
-
 }
+
+interface AccessNotificationProps {
+    userUid: string;
+    notification: AccessNotification;
+    metadata: Record<string, Metadata>;
+}
+
+function ZAccessNotification(props: AccessNotificationProps) {
+    const {userUid, notification, metadata} = props;
+
+    const meta = metadata[notification.resourceId];
+
+    if (notification.hasOwnProperty("requester")) {
+        return (
+            <ZAccessRequest
+                notification={notification as AccessRequest}
+                metadata={meta}
+            />
+        )
+    }
+
+    if (notification.hasOwnProperty("accepted")) {
+        return <ZAccessResponse
+            userUid={userUid}
+            notification={notification as AccessResponse}
+            metadata={meta}
+        />
+    }
+
+    return null;
+}
+
+
+interface AccessResponseProps {
+    userUid: string;
+    notification: AccessResponse;
+    metadata?: Metadata;
+}
+
+function ZAccessResponse(props: AccessResponseProps) {
+    const {userUid, notification, metadata} = props;
+    
+    const name = resourceName(metadata);
+
+    const text = notification.accepted ?
+        `You have been granted access to “${name}”` :
+        `You have been denied access to “${name}”`;
+
+    const severity = notification.accepted ? "success" : "error";
+
+    async function handleClick() {
+        
+        try {
+            await removeNotification(userUid, notification.id);
+        } catch (error) {
+            console.log('ZAccessResponse handleClick', error);
+        }
+    }
+
+    return (
+        <Box sx={{
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            <Alert severity={severity}>
+                {text}
+            </Alert>
+
+            <Box sx={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "0.75rem"
+            }}>
+                <Button 
+                    variant='contained'
+                    onClick={handleClick}
+                >
+                    OK
+                </Button>
+            </Box>
+        </Box>
+    )
+}
+
+
+interface AccessRequestProps {
+    notification: AccessRequest;
+    metadata?: Metadata;
+}
+
+function ZAccessRequest(props: AccessRequestProps) {
+    const {notification, metadata} = props;
+
+    const dispatch = useAppDispatch();
+    const [role, setRole] = useState<Role>(EDITOR);
+    const [submitDisabled, setSubmitDisabled] = useState<boolean>(false);
+    const [errorMessage, setErrorMessage] = useState<string>("");
+
+    const requester = notification.requester;
+
+    const text = `${requester.displayName} (@${requester.username}) 
+        is requesting access to "${resourceName(metadata)}"`
+
+    const message = notification.message;
+
+    function handleRoleChange(event: SelectChangeEvent) {
+        setRole(event.target.value as Role)
+    }
+
+    async function handleSubmit() {
+        if (metadata) {
+            setSubmitDisabled(true);
+            const idRole = createIdentityRole(notification.requester, role);
+    
+            try {
+                await injectCollaborators(notification.resourceId, [idRole]);
+                await removeNotification(metadata.owner, notification.id);
+                await persistAccessResponse(
+                    notification.requester.uid,
+                    notification.resourceId,
+                    true
+                )
+                dispatch(alertPost({
+                    severity: "success",
+                    message: "Sharing was successful"
+                }))
+            } catch (error) {
+                setErrorMessage("An error occurred while sharing access.");
+                console.log(error);
+            }
+        }
+    }
+
+    return (
+        <Box sx={{
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            <Typography>{text}</Typography>
+            {message && (
+                <Typography sx={{
+                    marginTop: "0.75rem",
+                    maxWidth: "30rem",
+                    paddingLeft: "1rem",
+                    fontSize: "90%"
+                }}>
+                    {message}
+                </Typography>
+            )}
+            <Box sx={{
+                display: "flex",
+                flexDirection: "column"
+                
+            }}>
+
+            {errorMessage && (
+                <Alert severity="error">
+                    {errorMessage}
+                </Alert>
+            )}
+            {!errorMessage && (
+                <>
+                    <FormControl size="small" sx={{marginTop: "1rem", marginBottom: "1rem"}}>
+                        <Box>
+                            <Select
+                                value={role}
+                                onChange={handleRoleChange}
+                            >
+                                <MenuItem value={EDITOR}>{RoleName[EDITOR]}</MenuItem>
+                                <MenuItem value={VIEWER}>{RoleName[VIEWER]}</MenuItem>
+                            </Select>
+                        </Box>
+                    </FormControl>
+                    <Box>
+                        <Button
+                            disabled={submitDisabled || !metadata}
+                            variant='contained'
+                            onClick={handleSubmit}
+                        >
+                            Share
+                        </Button>
+                    </Box>
+                </>
+
+            )}
+            </Box>
+        </Box>
+    )
+   
+}
+
+function resourceName(metadata?: Metadata) {
+    return metadata ? metadata.name : "Loading...";
+}
+
+interface LibraryNotificationsProps {
+    userUid: string;
+    lib: ClientLibrary;
+}
+
+function ZLibraryNotifications(props: LibraryNotificationsProps) {
+    const {lib, userUid} = props;
+    const notifications = lib.notifications;
+    if (!notifications || notifications.length===0) {
+        return null;
+    }
+
+
+    return (
+        <Box>
+        {notifications.map(n => (
+            <Paper 
+                key={n.id}
+                elevation={3} 
+                sx={{
+                    marginLeft: "auto",
+                    marginRight: "1rem",
+                    marginTop: "1rem",
+                    marginBottom: "1rem",
+                    padding: "1rem"
+                }}
+            >
+
+                <ZAccessNotification
+                    userUid={userUid}
+                    notification={n}
+                    metadata={lib.metadata}
+                />
+                
+            
+            </Paper>
+        ))}
+        </Box>
+
+    )
+}
+
 
 function ZLibraryContent() {
     const dispatch = useAppDispatch();
@@ -171,7 +414,7 @@ function ZLibraryContent() {
         return <ZAccountIncomplete/>
     }
 
-    if (!user) {
+    if (!user || !userUid) {
        return (
         <Box sx={{marginTop: "2rem"}}>
             <ZAccessDeniedAlert>
@@ -216,7 +459,15 @@ function ZLibraryContent() {
         )
     }
 
-    return <ZLibraryResourceList lib={lib}/>;
+    return (
+        <Box sx={{
+            display: "flex",
+            justifyContent: "center"
+        }}>
+            <ZLibraryResourceList lib={lib}/>
+            <ZLibraryNotifications lib={lib} userUid={userUid}/>
+        </Box>
+    );
 }
 
 
@@ -226,7 +477,9 @@ export default function ZLibrary() {
         <Box sx={{display: "flex", flexDirection: "column"}}>
             <ZLibraryHeader/>
             <Box id="contentRoot" sx={{display: "flex", justifyContent: "center", width: "100%"}}>
-                <Box id="contentContainer" sx={{maxWidth: "50rem", minWidth: "20rem"}}>
+                <Box id="contentContainer" sx={{
+                    width: "100%"
+                }}>
                     <ZLibraryContent/>
                 </Box>
             </Box>

@@ -10,6 +10,7 @@ import { selectAccountIsIncomplete, selectCurrentUser, selectRegistrationState, 
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectNewActiveCard } from "../model/deckEditor";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
+import { userToIdentity } from "../model/identity";
 import { EDIT, NOT_FOUND } from "../model/types";
 import deckeditorMount from "../store/actions/deckeditorMount";
 import deckeditorNewActiveCardDelete from "../store/actions/deckeditorNewActiveCardDelete";
@@ -406,9 +407,11 @@ export default function ZDeckEditor() {
         }
     }, [newActiveCard, editor, dispatch])
     
-    if (!session) {
+    const access = deckAccess?.payload;
+    if (!session || !deckId || !access || !user) {
         return null;
     }
+
     
     if (accountIsIncomplete) {
         return <ZAccountIncomplete/>
@@ -417,8 +420,12 @@ export default function ZDeckEditor() {
     return (
         (!session && <Box/>) ||
         ((deckAccess?.error === NOT_FOUND) && <ZNotFound message="The deck you are trying to access was not found."/>) ||
-        ((!canEdit) && <ZNeedAccess/>) ||
-        (
+        ((!canEdit) && (
+            <ZNeedAccess 
+                resourceId={deckId} 
+                access={access} 
+                requester={userToIdentity(user)}/>
+        )) || (
             <Box id="deck-editor" sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%"}}>
                 {canEdit && <ZUseTipTap setEditor={setEditor}/>}
                 <ZDeckEditorHeader editor={editor}/>

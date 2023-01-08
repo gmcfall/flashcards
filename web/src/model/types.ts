@@ -1,8 +1,14 @@
 
 import {JSONContent} from "@tiptap/core";
 import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
+import { FieldValue } from "firebase/firestore";
 
 export type {JSONContent} from "@tiptap/core";
+
+export interface ClientTimestamp {
+    seconds: number,
+    nanoseconds: number
+}
 
 /**
  * A record that specifies the type of markup that should be
@@ -59,19 +65,6 @@ export interface ClientFlashcard extends FlashcardBase {
 }
 
 
-export interface NamedUser {
-    /** The `uid` value of the user as defined by Firebase Auth */
-    uid: string;
-
-    /** 
-     * The user's display name, which may be the person's real name
-     * or an alias.
-     */
-    displayName: string;
-
-    /** The person's `username` without the leading "@" */
-    username: string;
-}
 
 export interface UserNames {
     displayName: string;
@@ -180,6 +173,70 @@ export interface ResourceRef {
     name: string
 }
 
+export interface ProtoAccessRequest {
+    /** An identifier for the request */
+    id: string,
+
+    /** The timestamp when the request was created */
+    createdAt: FieldValue;
+
+    /** The id of the resource for which access is requeste */
+    resourceId: string;
+
+    /** The identity of the user requesting access */
+    requester: Identity;
+
+    /** An optional message */
+    message?: string;
+}
+
+
+
+export interface ProtoAccessResponse {
+    /** An identifier for the request */
+    id: string,
+
+    /** The timestamp when the request was created */
+    createdAt: FieldValue;
+
+    /** The id of the resource for which access is requeste */
+    resourceId: string;
+
+    /** True if access was granted and false otherwise */
+    accepted: boolean;
+
+    /** An optional message */
+    message?: string;
+}
+
+export interface AccessNotificationBase {
+    /** An identifier for the request */
+    id: string,
+
+    /** The timestamp when the request was created */
+    createdAt: ClientTimestamp;
+
+    /** The id of the resource for which access is requeste */
+    resourceId: string;
+
+    /** An optional message from the requester */
+    message?: string;
+}
+
+export interface AccessRequest extends AccessNotificationBase {
+    
+    /** The identity of the user requesting access */
+    requester: Identity;
+}
+
+export interface AccessResponse extends AccessNotificationBase {
+
+    /** True if access was granted and false otherwise */
+    accepted: boolean;
+}
+
+export type AccessNotification = AccessRequest | AccessResponse;
+
 /**
  * A Library document in Firestore.
  * 
@@ -194,6 +251,9 @@ export interface FirestoreLibrary {
      * to add and remove resources from the library.
      */
     resources: Record<string, boolean>;
+
+    notifications: Record<string, AccessNotification>;
+
 
 }
 
@@ -289,6 +349,9 @@ export interface ClientLibrary {
     /** The list of `id` values for resources in the library */
     resources: string[];
 
+    /** The list of access requests */
+    notifications: AccessNotification[];
+
     /** A map where the key is the `id` for a resource and the value is its metadata */
     metadata: Record<string, Metadata>;
 }
@@ -379,7 +442,7 @@ export const IDENTITY_NOT_FOUND = 'IDENTITY_NOT_FOUND';
  * This reduces our reliance on the Firebase API should we need to
  * switch later.
  */
-export interface SessionUser extends NamedUser {
+export interface SessionUser extends Identity {
 
     /**
      * The list of identity providers for the user.

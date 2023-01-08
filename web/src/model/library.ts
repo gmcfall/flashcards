@@ -1,20 +1,24 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, deleteDoc, doc, documentId, getDoc, getFirestore, onSnapshot, query, setDoc, Unsubscribe, where } from "firebase/firestore";
+import { collection, deleteDoc, deleteField, doc, documentId, FieldPath, getDoc, getFirestore, onSnapshot, query, setDoc, Timestamp, Unsubscribe, updateDoc, where } from "firebase/firestore";
 import libraryReceive from "../store/actions/libraryReceive";
 import metadataReceived from "../store/actions/metadataReceived";
 import metadataRemoved from "../store/actions/metadataRemoved";
 import { AppDispatch, RootState } from "../store/store";
+import { compareTimestamps, toClientTimestamp } from "../util/time";
 import { deleteDeck } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { LIBRARIES, METADATA } from "./firestoreConstants";
-import { ClientLibrary, FirestoreLibrary, LerniApp, Metadata, MetadataEnvelope } from "./types";
+import { AccessNotification, ClientLibrary, FirestoreLibrary, LerniApp, Metadata, MetadataEnvelope } from "./types";
 
 export function doLibraryReceive(lerni: LerniApp, action: PayloadAction<FirestoreLibrary>) {
-    const serverLib = action.payload;
+
+    const clientLibrary = toClientLibrary(action.payload);
     if (!lerni.library) {
-        lerni.library = toClientLibrary(serverLib);
+        lerni.library = clientLibrary;
     } else {
-        lerni.library.resources = Object.keys(serverLib.resources);
+        const lib = lerni.library;
+        lib.resources = clientLibrary.resources;
+        lib.notifications = clientLibrary.notifications;
     }
 }
 
@@ -44,7 +48,8 @@ export function doMetadataRemoved(lerni: LerniApp, action: PayloadAction<string>
  */
 export function createFirestoreLibrary(): FirestoreLibrary {
     return {
-        resources: {}
+        resources: {},
+        notifications: {}
     }
 }
 
@@ -66,16 +71,6 @@ export function selectLibrary(state: RootState) {
     return state.lerni.library;
 }
 
-function toClientLibrary(lib: FirestoreLibrary) : ClientLibrary {
-
-    const resources = Object.keys(lib.resources);
-    
-    return {
-        resources,
-        metadata: {}
-    }
-}
-
 let unsubscribe: Unsubscribe | null = null;
 let libraryUser: string | null = null;
 export function subscribeLibrary(dispatch: AppDispatch, userUid: string) {
@@ -92,7 +87,7 @@ export function subscribeLibrary(dispatch: AppDispatch, userUid: string) {
     const docRef = doc(db, LIBRARIES, userUid);
 
     unsubscribe = onSnapshot(docRef, (document) => {
-        const lib = document.data() as FirestoreLibrary;
+        const lib = toFirestoreLibrary(document.data() as FirestoreLibrary);
         dispatch(libraryReceive(lib));
         updateMetadataSubscriptions(dispatch, lib);
     })
@@ -181,3 +176,44 @@ export async function deleteLibrary(userUid: string) {
     await deleteDoc(libRef);
 }
 
+export async function removeNotification(userUid: string, notificationId: string) {
+    const db = getFirestore(firebaseApp);
+
+    const libRef = doc(db, LIBRARIES, userUid);
+    const path = new FieldPath("notifications", notificationId);
+    await updateDoc(libRef, path, deleteField());
+}
+
+function toClientLibrary(lib: FirestoreLibrary) {
+
+    const resources = Object.keys(lib.resources);
+    const notifications = Object.values(lib.notifications);
+
+    notifications.sort( (a, b) => compareTimestamps(a.createdAt, b.createdAt) );
+    const result: ClientLibrary = {
+        resources,
+        notifications,
+        metadata: {}
+    }
+
+    return result;
+}
+
+function toFirestoreLibrary(lib: FirestoreLibrary): FirestoreLibrary {
+    const resources = lib.resources;
+    const notifications: Record<string, AccessNotification> = {}
+    const map = lib.notifications;
+    for (const key in map) {
+        const value = map[key];
+        const newValue: AccessNotification = {
+            ...value,
+            createdAt: toClientTimestamp(value.createdAt as Timestamp)
+        }
+        notifications[value.id] = newValue;
+    }
+
+    return {
+        resources,
+        notifications
+    }
+}

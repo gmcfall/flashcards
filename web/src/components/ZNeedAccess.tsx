@@ -1,27 +1,76 @@
-import { Box, Button, TextareaAutosize, Typography } from "@mui/material";
+import { Box, Button, TextareaAutosize, Typography, Alert } from "@mui/material";
 import { useState } from "react";
 import { useSession } from "../hooks/customHooks";
 import { useAppDispatch } from "../hooks/hooks";
+import { Access, Identity } from "../model/types";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
 import authSignin from "../store/actions/authSignin";
 import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
 import { ZRegisterWizard } from "./ZRegisterWizard";
 import { ZSigninWizard } from "./ZSigninWizard";
+import { persistAccessRequest } from "../model/access";
 
+interface AlertData {
+    severity: "error" | "info";
+    message: string;
+}
 
-function ZRequestAccess() {
+function ZRequestAccess(props: NeedAccessProps) {
+
+    const {resourceId, access, requester} = props;
+
+    const [submitDisabled, setSubmitDisabled] = useState<boolean>(false);
+    const [alertData, setAlertData] = useState<AlertData | null>(null);
+
+    async function handleSubmit() {
+        setSubmitDisabled(true);
+        const textArea = document.getElementById("RequesterMessage") as HTMLTextAreaElement;
+        let message = textArea?.value;
+        if (message) {
+            message = message.trim();
+        }
+        try {
+            await persistAccessRequest(access.owner, resourceId, requester, message);
+            setAlertData({
+                severity: "info",
+                message: "Your request has been sent. You will receive a notification in your Library if access is granted."
+            })
+        } catch (error) {
+            console.log(error);
+            setAlertData({
+                severity: "error",
+                message: "An error occurred while submitting your access request."
+            })
+        }
+    }
+
     return (
         <>
             <Typography sx={{marginBottom: "20px"}}>Request access, or switch to an account with access.</Typography>
-            <TextareaAutosize
-                style={{minWidth: "200px", padding: "10px"}}
-                minRows={5}
-                maxRows={10}
-                placeholder="Message (optional)"
-            />
-            <Box sx={{marginTop: "20px"}}>
-                <Button variant="contained">Request Access</Button>
-            </Box>
+
+            { alertData && (
+                <Alert severity={alertData.severity}>
+                    {alertData.message}
+                </Alert>
+            )}
+            {!alertData && (
+                <>
+                <TextareaAutosize
+                    id="RequesterMessage"
+                    style={{minWidth: "200px", padding: "10px"}}
+                    minRows={5}
+                    maxRows={10}
+                    placeholder="Message (optional)"
+                />
+                <Box sx={{marginTop: "20px"}}>
+                    <Button 
+                        variant="contained"
+                        disabled={submitDisabled}
+                        onClick={handleSubmit}
+                    >Request Access</Button>
+                </Box>
+                </>
+            )}
         </>
     )
 }
@@ -64,7 +113,13 @@ function ZMustSignIn() {
     )
 }
 
-export default function ZNeedAccess() {
+interface NeedAccessProps {
+    resourceId: string,
+    access: Access,
+    requester: Identity
+}
+export default function ZNeedAccess(props: NeedAccessProps) {
+    const {resourceId, access, requester} = props;
 
     const session = useSession();
 
@@ -81,7 +136,7 @@ export default function ZNeedAccess() {
                 <Box sx={{display: "flex"}}>
                     <Box sx={{display: "flex", flexDirection: "column", marginRight: "50px"}}>
                         <Typography variant="h1">You need access</Typography>
-                        {isSignedIn && <ZRequestAccess/>}
+                        {isSignedIn && <ZRequestAccess resourceId={resourceId} access={access} requester={requester}/>}
                         {!isSignedIn && <ZMustSignIn/>}
                     </Box>
                     <Box>
