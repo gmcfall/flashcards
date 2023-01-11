@@ -2,7 +2,7 @@
 
 import { FirebaseApp } from 'firebase/app';
 import React, { useState } from 'react';
-import EntityClient from './EntityClient';
+import EntityClient, { putCache } from './EntityClient';
 import { EntityCache } from './types';
 
 
@@ -19,7 +19,7 @@ export function FirebaseProvider(props: FirebaseProviderProps) {
     const [cache, setCache] = useState<EntityCache>({entities: {}})
     const [client] = useState<EntityClient>(new EntityClient(firebaseApp, cache, setCache));
 
-    client.putCache(cache);
+    putCache(client, cache);
 
     return (
         <FirebaseContext.Provider value={client}>

@@ -1,10 +1,11 @@
-import { useContext } from "react";
-import { ListenerOptions, lookupEntity, startDocListener, toTuple, validatePath } from "./common";
+import { getAuth, onAuthStateChanged, User } from "firebase/auth";
+import produce from "immer";
+import { useContext, useEffect } from "react";
+import { createEntity, ListenerOptions, lookupEntity, startDocListener, toEntityTuple, validatePath } from "./common";
+import { addEntity } from "./EntityClient";
 import { FirebaseContext } from "./FirebaseContext";
-import LeaseeClient from "./LeaseeClient";
-import { EntityTuple, PathElement } from "./types";
+import { AuthTuple, EntityCache, EntityTuple, PathElement } from "./types";
 import { hashEntityKey } from "./util";
-import { useEffect } from 'react';
 
 /**
  * Use a snapshot listener to retrieve data from a Firestore document.
@@ -44,12 +45,102 @@ export function useDocListener<
 
     }, [leasee, hashValue, client, entity, validPath, options])
 
-    if (entity) {
-        return toTuple(entity);
+    return toEntityTuple<TFinal>(entity);
+}
+
+/**
+ * Options for managing Firebase Authentication
+ */
+export interface AuthOptions<Type=User> {
+    /** A function that transforms the Firebase user into a different structure */
+    transform?: (user: User) => Type;
+
+    /** A callback that is invoked when it is known that the user is not signed in */
+    onSignedOut?: () => void;
+}
+
+/** The key under which the authenticated user is stored in the EntityCache */
+export const AUTH_USER = 'authUser';
+
+/**
+ * 
+ * @param options An object with the following properties:
+ *      - `transform` A function that transforms the Firebase User into a new type.
+ *        This function has the form `(user: User) => Type` where `Type` is the
+ *        type of object to which the Firebase User has been transformed.
+ *      - `onSignedOut` A callback that fires when it is known that the user is not signed in.
+ *         This function takes no arguments and has no return value, so the signature of the 
+ *         callback is `() => void`.
+ */
+export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>) : AuthTuple<UserType> {
+
+    const transform = options?.transform;
+    const onSignedOut = options?.onSignedOut;
+
+    const client = useContext(FirebaseContext);
+
+    if (!client) {
+        throw new Error("FirebaseContext was used outside of a provider");
     }
 
+    const entity = lookupEntity(client.cache, AUTH_USER);
+
+    useEffect(() => {
+        if (!entity) {
+            const auth = getAuth(client.firebaseApp);
+            const unsubscribe = onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    client.setCache(
+                        (cache: EntityCache) => {
+                            const nextCache = produce(cache, draftCache => {
+                                const data = transform ? transform(user) : user;
+                                const entity = createEntity(unsubscribe, data);
+                                addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache)
+                            })
+
+                            return nextCache;
+                        }
+                    )
+                } else {
+                    client.setCache(
+                        (cache: EntityCache) => {
+                            const nextCache = produce(cache, draftCache => {
+                                const entity = createEntity(unsubscribe, null);
+                                addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache)
+                            })
+                            return nextCache;
+                        }
+                    )
+                }
+            }, (error: Error) => {
+                client.setCache(
+                    (cache: EntityCache) => {
+                        const nextCache = produce(cache, draftCache => {
+                            const entity = createEntity(unsubscribe, undefined, error);
+                            addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache);
+                        })
+                        return nextCache;
+                    }
+                )
+            })
+            // Create a `PendingTuple` and add it to the cache
+            client.setCache(
+                (cache: EntityCache) => {
+                    const nextCache = produce(cache, draftCache => {
+                        const entity = createEntity(unsubscribe);
+                        addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache, {cacheTime: Number.POSITIVE_INFINITY})
+                    })
+                    return nextCache;
+                }
+            )
+        }
+
+    }, [entity, client, transform, onSignedOut])
+       
     return (
-        validPath ? ['pending', undefined, undefined] :
-        ['idle', undefined, undefined]
-    );
+        entity?.data===null ? ['signedOut', null, undefined] :
+        entity?.data        ? ['signedIn', entity.data as UserType, undefined] :
+        entity?.error       ? ['error', undefined, entity.error] :
+                              ['pending', undefined, undefined]
+    )
 }

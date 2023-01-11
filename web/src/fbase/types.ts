@@ -25,6 +25,17 @@ export type NonIdleTuple<T> = (
     ErrorTuple
 )
 
+export type AuthStatus = 'pending' | 'signedIn' | 'signedOut' | 'error';
+export type SignedInTuple<UserType> = ['signedIn', UserType, undefined];
+export type SignedOutTuple = ['signedOut', null, undefined];
+
+export type AuthTuple<UserType> = (
+    PendingTuple            |
+    SignedInTuple<UserType> |
+    SignedOutTuple          |
+    ErrorTuple
+)
+
 export type KeyElement = any;
 export type PathElement = string | undefined;
 
@@ -47,5 +58,6 @@ export interface EntityClientOptions {
 }
 
 export type LeaseOptions = Partial<EntityClientOptions>;
+
 
 

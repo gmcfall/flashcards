@@ -1,15 +1,22 @@
 import { collection, documentId, getFirestore, onSnapshot, query, where } from "firebase/firestore";
-import EntityClient from "./EntityClient";
-import LeaseeClient from "./LeaseeClient";
-import { Entity, EntityCache, EntityClientOptions, LeaseOptions, NonIdleTuple, PathElement, Unsubscribe } from "./types";
-import { hashEntityKey } from "./util";
 import produce from 'immer';
+import EntityClient, { addEntity, claimLease, removeEntity } from "./EntityClient";
+import LeaseeClient from "./LeaseeClient";
+import { Entity, EntityCache, EntityTuple, LeaseOptions, NonIdleTuple, PathElement, Unsubscribe } from "./types";
+import { hashEntityKey } from "./util";
 
 export function toTuple<T>(entity: Entity<T>): NonIdleTuple<T> {
     return (
-        entity.data ? ["success", entity.data, undefined] :
-        entity.error ? ["error", undefined, entity.error] :
-        ["pending", undefined, undefined]
+        entity?.data  ? ["success", entity.data, undefined] :
+        entity?.error ? ["error", undefined, entity.error] :
+        ["pending", undefined, undefined] 
+    )
+}
+
+export function toEntityTuple<T>(entity?: Entity<T>) : EntityTuple<T> {
+    return (
+        entity ? toTuple<T>(entity) :
+        ["idle", undefined, undefined]
     )
 }
 
@@ -46,7 +53,7 @@ export function startDocListener<
     const onRemove = options?.onRemove;
     const leaseOptions = options?.leaseOptions;
     if (validPath && oldEntity) {
-        client.claimLease(hashValue, leasee, leaseOptions);
+        claimLease(client, hashValue, leasee, leaseOptions);
     }
 
     if (validPath && !oldEntity) {
@@ -85,7 +92,7 @@ export function startDocListener<
                                                 const leaseeClient = new LeaseeClient(leasee, client, draftCache);
                                                 const finalData = transform ? transform(leaseeClient, data) : data;
                                                 const entity = createEntity(unsubscribe, finalData);
-                                                client.addEntity(hashValue, entity, leasee, draftCache);
+                                                addEntity(client, hashValue, entity, leasee, draftCache);
                                             })
 
                                             return nextCache;
@@ -97,7 +104,7 @@ export function startDocListener<
                                     client.setCache(
                                         (currentCache: EntityCache) => {
                                             const nextCache = produce(currentCache, draftCache => {
-                                                client.removeEntity(hashValue, draftCache);
+                                                removeEntity(client, hashValue, draftCache);
                                                 if (onRemove) {
                                                     const data = change.doc.data() as TRaw;
                                                     const leaseeClient = new LeaseeClient(leasee, client, draftCache);
@@ -127,10 +134,10 @@ export function startDocListener<
                 }
 
                 if (unsubscribeVar) {
-                    // Create a `LoadingTuple` and add it to the cache
+                    // Create a `PendingTuple` and add it to the cache
                     const newCache = produce(latestCache, draftCache => {
                         const entity = createEntity(unsubscribeVar!);
-                        client.addEntity(hashValue, entity, leasee, draftCache);
+                        addEntity(client, hashValue, entity, leasee, draftCache);
                     }) 
                     return newCache;
                 }
@@ -146,7 +153,7 @@ export function lookupEntity(cache: EntityCache, key: string) {
     return cache.entities[key];
 }
 
-function createEntity(unsubscribe: () => void, data?: any, error?: Error) {
+export function createEntity(unsubscribe: () => void, data?: any, error?: Error) {
     const result: Entity<any> = {
         unsubscribe
     }
