@@ -269,6 +269,8 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
                 }
             }
         })
+    }, (error) => {
+        console.error("error", error);
     })
 
 }

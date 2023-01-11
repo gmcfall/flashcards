@@ -349,7 +349,7 @@ export interface ClientLibrary {
     /** The list of `id` values for resources in the library */
     resources: string[];
 
-    /** The list of access requests */
+    /** The list of access notifications */
     notifications: AccessNotification[];
 
     /** A map where the key is the `id` for a resource and the value is its metadata */

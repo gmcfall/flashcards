@@ -217,3 +217,28 @@ function toFirestoreLibrary(lib: FirestoreLibrary): FirestoreLibrary {
         notifications
     }
 }
+
+// export function libraryTransform(client: EntityClient, lib: FirestoreLibrary) : ClientLibrary {
+//     const clientLib = toClientLibrary(lib);
+
+//     const map : Record<string, string> = {};
+
+//     // Fetch metadata for each resource listed in the Library,
+//     // and put the resource name into the map.
+
+//     clientLib.resources.forEach( resourceId => {
+//         const path = [METADATA, resourceId];
+//         const [status, data] = fetchEntity<Metadata>(client, path);
+//         const name = status === 'success' ? data.name : "Loading...";
+//         map[resourceId] = name;
+//     })
+
+//     clientLib.resources.sort((a, b) => {
+//         const aName = map[a];
+//         const bName = map[b];
+
+//         return aName.localeCompare(bName);
+//     })
+
+//     return clientLib;
+// }

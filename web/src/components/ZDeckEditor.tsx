@@ -332,7 +332,6 @@ export default function ZDeckEditor() {
     
     const canEdit = checkPrivilege(EDIT, deckAccess, deckId, userUid);
 
-
     useEffect(() => {
         function handleKeyup(event: KeyboardEvent) {
             const target = event.target as any;
