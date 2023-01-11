@@ -1,11 +1,12 @@
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import produce from "immer";
 import { useContext, useEffect } from "react";
+import { isPromise } from "util/types";
 import { createEntity, ListenerOptions, lookupEntity, startDocListener, toEntityTuple, validatePath } from "./common";
 import { addEntity } from "./EntityClient";
 import { FirebaseContext } from "./FirebaseContext";
 import { AuthTuple, EntityCache, EntityTuple, PathElement } from "./types";
-import { hashEntityKey } from "./util";
+import { asError, asPromise, hashEntityKey } from "./util";
 
 /**
  * Use a snapshot listener to retrieve data from a Firestore document.
@@ -53,7 +54,7 @@ export function useDocListener<
  */
 export interface AuthOptions<Type=User> {
     /** A function that transforms the Firebase user into a different structure */
-    transform?: (user: User) => Type;
+    transform?: ((user: User) => Type) | ((user: User) => Promise<Type>);
 
     /** A callback that is invoked when it is known that the user is not signed in */
     onSignedOut?: () => void;
@@ -66,7 +67,8 @@ export const AUTH_USER = 'authUser';
  * 
  * @param options An object with the following properties:
  *      - `transform` A function that transforms the Firebase User into a new type.
- *        This function has the form `(user: User) => Type` where `Type` is the
+ *        This function must have the form `(user: User) => Type` or 
+ *        `(user: User) => Promise<Type>` where `Type` is the
  *        type of object to which the Firebase User has been transformed.
  *      - `onSignedOut` A callback that fires when it is known that the user is not signed in.
  *         This function takes no arguments and has no return value, so the signature of the 
@@ -90,18 +92,37 @@ export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>
             const auth = getAuth(client.firebaseApp);
             const unsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    client.setCache(
-                        (cache: EntityCache) => {
-                            const nextCache = produce(cache, draftCache => {
-                                const data = transform ? transform(user) : user;
-                                const entity = createEntity(unsubscribe, data);
-                                addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache)
-                            })
-
-                            return nextCache;
+                    const data = transform ? transform(user) : user;
+                    const promise = asPromise<UserType>(data);
+                    promise.then(
+                        userObject => {
+                            client.setCache(
+                                (cache: EntityCache) => {
+                                    const nextCache = produce(cache, draftCache => {
+                                        const entity = createEntity(unsubscribe, userObject);
+                                        addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache)
+                                    })
+        
+                                    return nextCache;
+                                }
+                            )
                         }
-                    )
+                    ).catch(err => {
+                        const error = asError(err, "An error occurred while processing the Firebase User");
+                        client.setCache(
+                            (cache: EntityCache) => {
+                                const nextCache = produce(cache, draftCache => {
+                                    const entity = createEntity(unsubscribe, undefined, error);
+                                    addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache);
+                                })
+                                return nextCache;
+                            }
+                        )
+                    })
                 } else {
+                    if (onSignedOut) {
+                        onSignedOut();
+                    }
                     client.setCache(
                         (cache: EntityCache) => {
                             const nextCache = produce(cache, draftCache => {
@@ -112,7 +133,7 @@ export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>
                         }
                     )
                 }
-            }, (error: Error) => {
+            }, (error) => {
                 client.setCache(
                     (cache: EntityCache) => {
                         const nextCache = produce(cache, draftCache => {

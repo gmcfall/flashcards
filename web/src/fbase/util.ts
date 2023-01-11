@@ -52,3 +52,23 @@ export function hashEntityKey(entityKey: EntityKey): string {
 function simpleType(value: any) {
     return value===undefined ? null : value;
 }
+
+export function isPromise(data: any)  {
+  return (typeof data?.then === 'function');
+}
+
+export function asPromise<T>(data: any) {
+  return isPromise(data) ? data as Promise<T> : Promise.resolve<T>(data as T);
+}
+
+export function asError(err: any, message: string) {
+  if (err instanceof Error) {
+    return err;
+  }
+
+  if (typeof err?.message === 'string') {
+    return new Error(err.message);
+  }
+
+  return new Error(message);
+}
