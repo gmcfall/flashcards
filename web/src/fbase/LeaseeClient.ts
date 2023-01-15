@@ -1,6 +1,6 @@
-import { ListenerOptions, lookupEntity, startDocListener, toTuple, validatePath } from "./common";
-import EntityClient from "./EntityClient";
-import { EntityCache, EntityTuple, KeyElement, NonIdleTuple, PathElement } from "./types";
+import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
+import EntityClient, { removeLeaseeFromLease } from "./EntityClient";
+import { EntityKey, EntityTuple, PathElement } from "./types";
 import { hashEntityKey } from "./util";
 
 /**
@@ -19,75 +19,88 @@ export default class LeaseeClient {
     /** The EntityClient that manages Firebase entities */
     readonly entityClient: EntityClient;
 
-    /** An immer proxy of the EntityClient cache */
-    readonly cache: EntityCache;
 
-    constructor(leasee: string, entityClient: EntityClient, cache: EntityCache) {
+    constructor(leasee: string, entityClient: EntityClient) {
         this.leasee = leasee;
         this.entityClient = entityClient;
-        this.cache = cache;
     }
-
 }
 
 /**
- * Get an entity from a given LeaseeClient without initiating a fetch if it is not found.
- * @param client The LeaseeClient used to retrieve the requested entity.
- * @param key The key under which the entity is stored
- * @returns An array containing three elements:
- *      - The first element is the status of the entity; one of "idle", "loading", "success", or "error".
- *      - If the status is "success", the second element contains the entity data. Otherwise, the second
- *        element is `undefined`.
- *      - If the status is "error", the third element contains the Error object thrown while fetching
- *        or processing the entity. Otherwise, the third element is `undefined`.
+ * Get a tuple describing an entity in the local cache.
+ * @param client The client that provides access to the cache
+ * @param entityKey The key under which the entity is stored in the cache
+ * @returns A tuple describing the requested entity.
  */
-export function getEntity<Type>(client: LeaseeClient, key: KeyElement) : EntityTuple<Type> {
-    const hashValue = hashEntityKey(key);
-    const entity = client.cache.entities[hashValue];
-    if (entity) {
-        return toTuple<Type>(entity);
-    }
-    
-    return ['idle', undefined, undefined];
+export function getEntity<Type>(client: EntityClient | LeaseeClient, key: EntityKey) {
+    const validKey = validateKey(key);
+    const hashValue = validKey ? hashEntityKey(key) : "";
+    const cache = client.hasOwnProperty("entityClient") ? 
+        (client as LeaseeClient).entityClient.cache :
+        (client as EntityClient).cache;
+    return lookupEntityTuple<Type>(cache, hashValue);
 }
 
-
 /**
- * Get an entity from the cache within a given LeaseeClient. If the entity is not found in the cache,
- * start a listener to fetch the entity data from Firestore.
- * @param client The LeaseeClient used to retrieve the requested entity.
- * @param key The key under which the entity is stored in the client cache.
- * @param options An object with the following optional properties"
- *      - `transform` A function that transforms a Firestore document into a new structure.
- *      - `onRemove` An optional callback invoked when the document is removed from Firestore.
- *      - `leaseOptions` Options for the Lease 
- * @returns An array containing three elements. 
- *      - The first element is the status of the entity; one of "loading", "success", "error".
- *      - If the status is "success", the second element contains the entity data. Otherwise, the second
- *        element is `undefined`.
- *      - If the status is "error", the third element contains the Error object thrown while fetching
- *        processing the entity. Otherwise, the third element is `undefined`.
+ * Get a specific entity from the cache, and start a document listener
+ * if the entity is not found in the cache. This function is 
+ * similar to the `useDocListener` hook, but it is designed for use in
+ * event handlers (including HTML DOM events and events triggered by 
+ * other document listeners).
+ * 
+ * This function has two generic type parameters:
+ *  - `TRaw`: The type of the data object in Firestore
+ *  - `TFinal`: The final type of the entity if a transform is applied
+ * 
+ * @param client The LeaseeClient used to fetch the entity
+ * @param path The path the document in Firestore
+ * @param options Options for managaging the entity. This argument is an object 
+ *  with the following optional properties:
+ *      - transform: A function that transforms raw data from Firestore into a 
+ *          a different structure.  This function has the form 
+ *          `(client: LeaseeClient, value: TRaw) => TFinal` 
+ *      - onRemove: A callback that fires when the listener reports that the Firestore
+ *          document has been removed. The callback has the form
+ *          `(client: LeaseeClient, data: TRaw) => void`
+ * @returns An EntityTuple describing the requested entity
  */
-export function fetchEntity<
-    TRaw = unknown, // The raw type stored in Firestore
-    TFinal = TRaw,  // The final type, if a transform is applied
-> (
+export function fetchEntity<TRaw = unknown, TFinal = TRaw>(
     client: LeaseeClient,
-    key: PathElement[], 
+    path: PathElement[], 
     options?: ListenerOptions<TRaw, TFinal>
-): NonIdleTuple<TFinal> {
+) : EntityTuple<TFinal> {
 
-    const validPath = validatePath(key);
+    const validPath = validatePath(path);
     const hashValue = validPath ? hashEntityKey(validPath) : '';
-    const oldEntity = lookupEntity(client.entityClient.cache, hashValue);
-
-    if (oldEntity) {
-        return toTuple(oldEntity);
-    }
     startDocListener<TRaw, TFinal>(
-        client.leasee, client.entityClient, validPath, hashValue, oldEntity, options
-    );
+        client.leasee, client.entityClient, validPath, hashValue, options
+    )
 
-    return ['pending', undefined, undefined];
+    return lookupEntityTuple<TFinal>(client.entityClient.cache, hashValue);
+}
+
+/**
+ * Release the claim that a leasee has on a specific entity within the local cache
+ * @param client LeaseeClient The LeaseeClient that manages leases and entities on behalf of the leasee
+ * @param key The EntityKey under which the entity is stored in the local cache
+ */
+export function releaseClaim(client: LeaseeClient, key: EntityKey) {
+
+    if (validateKey(key)) {
+        const hashValue = hashEntityKey(key);
+        const lease = client.entityClient.leases.get(hashValue);
+        if (lease) {
+            const leasee = client.leasee;
+            removeLeaseeFromLease(client.entityClient, lease, leasee);
+            const leaseeLeases = client.entityClient.leaseeLeases;
+            const set = leaseeLeases.get(leasee);
+            if (set) {
+                set.delete(lease);
+                if (set.size === 0) {
+                    leaseeLeases.delete(leasee);
+                }
+            }
+        }
+    }
 }
 

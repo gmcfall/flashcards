@@ -1,9 +1,9 @@
 
 export interface Entity<T> {
-    unsubscribe?: () => void;
     data?: T;
     error?: Error;
 };
+
 
 export type EntityStatus = 'idle' | 'pending' | 'success' | 'error';
 
@@ -43,7 +43,7 @@ export type Unsubscribe = () => void;
 
 export interface EntityCache {
 
-    entities: Record<string, Entity<any>>;
+    entities: Record<string, Entity<any> | undefined>;
 }
 
 export type EntityKey = readonly unknown[];

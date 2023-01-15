@@ -1,12 +1,19 @@
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
-import produce from "immer";
 import { useContext, useEffect } from "react";
-import { isPromise } from "util/types";
-import { createEntity, ListenerOptions, lookupEntity, startDocListener, toEntityTuple, validatePath } from "./common";
-import { addEntity } from "./EntityClient";
+import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
+import EntityClient, { createLeasedEntity, putEntity } from "./EntityClient";
 import { FirebaseContext } from "./FirebaseContext";
-import { AuthTuple, EntityCache, EntityTuple, PathElement } from "./types";
+import { AuthTuple, EntityKey, EntityTuple, PathElement } from "./types";
 import { asError, asPromise, hashEntityKey } from "./util";
+
+/** The error message when useContext(FirebaseContext) returns `undefined` */
+const OUTSIDE = "FirebaseContext was used outside of a provider";
+
+/** The key under which the authenticated user is stored in the EntityCache */
+export const AUTH_USER = 'authUser';
+
+/** The lease options for the Firebase Auth user */
+export const AUTH_USER_LEASE_OPTIONS = {cacheTime: Number.POSITIVE_INFINITY};
 
 /**
  * Use a snapshot listener to retrieve data from a Firestore document.
@@ -32,21 +39,20 @@ export function useDocListener<
     const client = useContext(FirebaseContext);
 
     if (!client) {
-        throw new Error("FirebaseContext was used outside of provider")
+        throw new Error(OUTSIDE)
     }
 
     const validPath = validatePath(path);
     const hashValue = validPath ? hashEntityKey(validPath) : '';
-    const entity = lookupEntity(client.cache, hashValue);
 
     useEffect( () => {
         startDocListener<TRaw, TFinal>(
-            leasee, client, validPath, hashValue, entity, options
+            leasee, client, validPath, hashValue, options
         );
 
-    }, [leasee, hashValue, client, entity, validPath, options])
+    }, [leasee, hashValue, client, validPath, options])
 
-    return toEntityTuple<TFinal>(entity);
+    return lookupEntityTuple<TFinal>(client.cache, hashValue);
 }
 
 /**
@@ -54,22 +60,21 @@ export function useDocListener<
  */
 export interface AuthOptions<Type=User> {
     /** A function that transforms the Firebase user into a different structure */
-    transform?: ((user: User) => Type) | ((user: User) => Promise<Type>);
+    transform?: ((user: User) => Type | null) | ((user: User) => Promise<Type | null>);
 
     /** A callback that is invoked when it is known that the user is not signed in */
     onSignedOut?: () => void;
 }
 
-/** The key under which the authenticated user is stored in the EntityCache */
-export const AUTH_USER = 'authUser';
 
 /**
  * 
  * @param options An object with the following properties:
  *      - `transform` A function that transforms the Firebase User into a new type.
- *        This function must have the form `(user: User) => Type` or 
- *        `(user: User) => Promise<Type>` where `Type` is the
- *        type of object to which the Firebase User has been transformed.
+ *        This function must have the form `(user: User) => Type | null` or 
+ *        `(user: User) => Promise<Type | null>` where `Type` is the
+ *        type of object to which the Firebase User has been transformed. The transform may
+ *        force the user to signout, in which case it returns (or resolves) to null.
  *      - `onSignedOut` A callback that fires when it is known that the user is not signed in.
  *         This function takes no arguments and has no return value, so the signature of the 
  *         callback is `() => void`.
@@ -82,86 +87,71 @@ export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>
     const client = useContext(FirebaseContext);
 
     if (!client) {
-        throw new Error("FirebaseContext was used outside of a provider");
+        throw new Error(OUTSIDE);
     }
 
-    const entity = lookupEntity(client.cache, AUTH_USER);
 
     useEffect(() => {
-        if (!entity) {
+        const lease = client.leases.get(AUTH_USER);
+        if (!lease?.unsubscribe) {
             const auth = getAuth(client.firebaseApp);
             const unsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) {
                     const data = transform ? transform(user) : user;
-                    const promise = asPromise<UserType>(data);
+                    const promise = asPromise<UserType | null>(data);
                     promise.then(
                         userObject => {
-                            client.setCache(
-                                (cache: EntityCache) => {
-                                    const nextCache = produce(cache, draftCache => {
-                                        const entity = createEntity(unsubscribe, userObject);
-                                        addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache)
-                                    })
-        
-                                    return nextCache;
-                                }
-                            )
+                            putEntity(client, AUTH_USER, userObject);
                         }
                     ).catch(err => {
                         const error = asError(err, "An error occurred while processing the Firebase User");
-                        client.setCache(
-                            (cache: EntityCache) => {
-                                const nextCache = produce(cache, draftCache => {
-                                    const entity = createEntity(unsubscribe, undefined, error);
-                                    addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache);
-                                })
-                                return nextCache;
-                            }
-                        )
+                        putEntity(client, AUTH_USER, error);
                     })
                 } else {
                     if (onSignedOut) {
                         onSignedOut();
                     }
-                    client.setCache(
-                        (cache: EntityCache) => {
-                            const nextCache = produce(cache, draftCache => {
-                                const entity = createEntity(unsubscribe, null);
-                                addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache)
-                            })
-                            return nextCache;
-                        }
-                    )
+                    putEntity(client, AUTH_USER, null);
                 }
             }, (error) => {
-                client.setCache(
-                    (cache: EntityCache) => {
-                        const nextCache = produce(cache, draftCache => {
-                            const entity = createEntity(unsubscribe, undefined, error);
-                            addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache);
-                        })
-                        return nextCache;
-                    }
-                )
+                putEntity(client, AUTH_USER, error);
             })
             // Create a `PendingTuple` and add it to the cache
-            client.setCache(
-                (cache: EntityCache) => {
-                    const nextCache = produce(cache, draftCache => {
-                        const entity = createEntity(unsubscribe);
-                        addEntity(client, AUTH_USER, entity, AUTH_USER, draftCache, {cacheTime: Number.POSITIVE_INFINITY})
-                    })
-                    return nextCache;
-                }
-            )
+            createLeasedEntity(client, unsubscribe, AUTH_USER, AUTH_USER, AUTH_USER_LEASE_OPTIONS);
         }
 
-    }, [entity, client, transform, onSignedOut])
+    }, [client, transform, onSignedOut])
        
+    return lookupAuthTuple<UserType>(client);
+}
+
+function lookupAuthTuple<UserType>(client: EntityClient): AuthTuple<UserType> {
+    const entity = client.cache.entities[AUTH_USER];
+    
     return (
         entity?.data===null ? ['signedOut', null, undefined] :
         entity?.data        ? ['signedIn', entity.data as UserType, undefined] :
         entity?.error       ? ['error', undefined, entity.error] :
-                              ['pending', undefined, undefined]
+                            ['pending', undefined, undefined]
     )
+}
+
+export function useAuthUser<UserType=User>() {
+    const client = useContext(FirebaseContext);
+    
+    if (!client) {
+        throw new Error(OUTSIDE);
+    }
+    return lookupEntityTuple<UserType>(client?.cache, AUTH_USER);
+}
+
+export function useEntity<Type=any>(key: EntityKey) {
+    const client = useContext(FirebaseContext);
+   
+    if (!client) {
+        throw new Error(OUTSIDE);
+    }
+    const validKey = validateKey(key);
+    const hashValue = validKey ? hashEntityKey(key) : '';
+    return lookupEntityTuple<Type>(client?.cache, hashValue);
 }

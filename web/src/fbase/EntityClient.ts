@@ -1,9 +1,8 @@
 import { FirebaseApp } from "firebase/app";
+import { Unsubscribe } from "firebase/auth";
 import produce from "immer";
-import { lookupEntity, toEntityTuple } from "./common";
 import Lease from "./Lease";
-import { Entity, EntityCache, EntityClientOptions, EntityKey, LeaseOptions } from "./types";
-import { hashEntityKey } from "./util";
+import { Entity, EntityCache, EntityClientOptions, LeaseOptions } from "./types";
 
 export default class EntityClient {
 
@@ -67,12 +66,6 @@ export default class EntityClient {
         }, self.options.cacheTime)
     }
 
-    lookupEntity(key: EntityKey) {
-        const hashValue = hashEntityKey(key);
-        const entity = lookupEntity(this.cache, hashValue);
-        return toEntityTuple(entity);
-    }
-
     /**
      * Remove a given leasee from all leases that it currently claims.
      * @param leasee The name of the leasee
@@ -81,20 +74,23 @@ export default class EntityClient {
         const set = this.leaseeLeases.get(leasee);
         if (set) {
             set.forEach(lease => {
-                lease.removeLeasee(leasee);
-                if (lease.leasees.size===0) {
-                    this.abandonedLeases.add(lease);
-                }
+                removeLeaseeFromLease(this, lease, leasee);
             })
             this.leaseeLeases.delete(leasee);
         }
     }
-
 }
 
-export function putCache(client: EntityClient, cache: EntityCache) {
-    client.cache = cache;
+export function removeLeaseeFromLease(client: EntityClient, lease: Lease, leasee: string) {
+    lease.removeLeasee(leasee);
+    if (
+        (lease.leasees.size===0) &&
+        !client.abandonedLeases.has(lease)
+    ) {
+        client.abandonedLeases.add(lease);
+    }
 }
+
 
 /**
  * Add a given entity to the cache on behalf of a given leasee.
@@ -103,10 +99,49 @@ export function putCache(client: EntityClient, cache: EntityCache) {
  * @param leasee The name of the leasee adding the entity
  * @param cache The cache proxy to which the entity will be added
  */
-export function addEntity(client: EntityClient, key: string, entity: Entity<any>, leasee: string, cache: EntityCache, options?: LeaseOptions) {
-    cache.entities[key] = entity;
+export function createLeasedEntity(
+    client: EntityClient, 
+    unsubscribe: Unsubscribe,
+    key: string,
+    leasee: string, 
+    options?: LeaseOptions
+) {
+    putEntity(client, key, undefined);
+    const lease = new Lease(key, unsubscribe);
+    client.leases.set(key, lease);
     claimLease(client, key, leasee, options);
 }
+
+/**
+ * Put a value into the EntityCache managed by a given EntityClient.
+ * @param client The EntityClient that manages the EntityCache. 
+ * @param key The hash of the EntityKey under which the entity is stored in the EntityCache
+ * @param value The value to be added to the cache
+ */
+export function putEntity(
+    client: EntityClient,
+    key: string,
+    value: unknown
+) {
+
+    client.setCache(
+        oldCache => {
+            const nextCache = produce(oldCache, draftCache => {
+                
+                const entity: Entity<any> = (
+                    value instanceof Error ? {error: value} :
+                    typeof value === 'undefined' ? {} :
+                    {data: value as any}
+                )
+                draftCache.entities[key] = entity;
+            })
+
+            return nextCache;
+        }
+    )
+}
+
+
 
 
 /**
@@ -116,13 +151,14 @@ export function addEntity(client: EntityClient, key: string, entity: Entity<any>
  */
 export function removeEntity(client: EntityClient, key: string, cache: EntityCache) {
     const entity = cache.entities[key];
+    const lease = client.leases.get(key);
     if (entity) {
-        if (entity.unsubscribe) {
-            entity.unsubscribe();
+        const unsubscribe = lease?.unsubscribe;
+        if (unsubscribe) {
+            unsubscribe();
         }
         delete cache.entities[key];
     }
-    const lease = client.leases.get(key);
     if (lease) {
         lease.leasees.forEach(leasee => {
             const set = client.leaseeLeases.get(leasee);
@@ -135,6 +171,7 @@ export function removeEntity(client: EntityClient, key: string, cache: EntityCac
     client.leases.delete(key);
 }
 
+
 export function claimLease(client: EntityClient, entityKey: string, leasee: string, options?: LeaseOptions) {
 
     let lease = client.leases.get(entityKey);
@@ -143,18 +180,26 @@ export function claimLease(client: EntityClient, entityKey: string, leasee: stri
         client.leases.set(entityKey, lease);
     }
     if (!lease.leasees.has(leasee)) {
+        if (client.abandonedLeases.has(lease)) {
+            client.abandonedLeases.delete(lease);
+        }
         lease.addLeasee(leasee);
         let set = client.leaseeLeases.get(leasee);
         if (!set) {
             set = new Set<Lease>();
             client.leaseeLeases.set(leasee, set);
         }
-        set.add(lease);
+        if (!set.has(lease)) {
+            set.add(lease);
+        }
     }
-    if (options) {
-        lease.options = options;
+    if (lease.options !== options) {
+        if (options) {
+            lease.options = options;
+        } else if (lease.options) {
+            delete lease.options;
+        }
     }
-    client.abandonedLeases.delete(lease);
 }
 
 function expiryTime(lease: Lease, cacheTime: number) {

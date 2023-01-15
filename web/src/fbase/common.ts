@@ -1,8 +1,8 @@
 import { collection, documentId, getFirestore, onSnapshot, query, where } from "firebase/firestore";
 import produce from 'immer';
-import EntityClient, { addEntity, claimLease, removeEntity } from "./EntityClient";
+import EntityClient, { claimLease, createLeasedEntity, removeEntity } from "./EntityClient";
 import LeaseeClient from "./LeaseeClient";
-import { Entity, EntityCache, EntityTuple, LeaseOptions, NonIdleTuple, PathElement, Unsubscribe } from "./types";
+import { Entity, EntityCache, EntityKey, EntityTuple, LeaseOptions, NonIdleTuple, PathElement } from "./types";
 import { hashEntityKey } from "./util";
 
 export function toTuple<T>(entity: Entity<T>): NonIdleTuple<T> {
@@ -31,6 +31,40 @@ export function validatePath(path: PathElement[]) {
     return path as string[];
 }
 
+export function validateKey(key: EntityKey) {
+    if (!key) {
+        return null;
+    }
+    for (const value of key) {
+       if (!isValid(value)) {
+        return null;
+       }
+    }
+    return key;
+}
+
+function isValid(value: unknown) {
+
+    if (value === undefined) {
+        return false;
+    }
+
+    if (typeof value === 'object') {
+        if (value) {
+            const obj = value as any;
+            for (const key in obj) {
+                if (!isValid(obj[key])) {
+                    return false;
+                }
+            }
+        }
+    }
+    
+
+    return true;
+}
+
+
 export interface ListenerOptions<TRaw, TFinal> {
     transform?: (client: LeaseeClient, value: TRaw) => TFinal;
     onRemove?: (client: LeaseeClient, value: TRaw) => void;
@@ -45,118 +79,90 @@ export function startDocListener<
     client: EntityClient,
     validPath: string[] | null,
     hashValue: string,
-    oldEntity: Entity<any> | undefined,
     options?: ListenerOptions<TRaw, TFinal>
 ) {
+    if (!validPath) {
+        return;
+    }
 
-    const transform = options?.transform;
-    const onRemove = options?.onRemove;
+    const lease = client.leases.get(hashValue);
+    const unsubscribe = lease?.unsubscribe;
+
+
     const leaseOptions = options?.leaseOptions;
-    if (validPath && oldEntity) {
+    if (unsubscribe) {
         claimLease(client, hashValue, leasee, leaseOptions);
-    }
-
-    if (validPath && !oldEntity) {
-
-        // During a given render cycle, multiple components may call
-        // `useDocListener` for the same Firestore document. We must
-        // ensure that `onSnapshot` gets called only once. Therefore,
-        // we use `setCache` to obtain the latest revision of the 
-        // cache, and check it for the entity stored under the given
-        // `hashValue`.
-        client.setCache(
-            (latestCache: EntityCache) => {
-                const latestEntity = lookupEntity(latestCache, hashValue);
-                let unsubscribeVar: Unsubscribe | null = null;
-                if (!latestEntity) {
-                    const collectionName = validPath[0];
-                    const collectionKeys = validPath.slice(1, validPath.length-1);
-                    const docId = validPath[validPath.length-1];
-                    const db = getFirestore(client.firebaseApp);
-                
-                    const collectionRef = collection(db, collectionName, ...collectionKeys);
-                
-                    const q = query(collectionRef, where(documentId(), "==", docId));
-
-                    const unsubscribe = onSnapshot(q, snapshot => {
+    } else { 
         
-                        snapshot.docChanges().forEach(change => {
-                            switch (change.type) {
-                                case 'added':
-                                case 'modified': {
-                                    const data = change.doc.data() as TRaw;
+        const transform = options?.transform;
+        const onRemove = options?.onRemove;
 
-                                    client.setCache(
-                                        (currentCache: EntityCache) => {
-                                            const nextCache = produce(currentCache, draftCache => {
-                                                const leaseeClient = new LeaseeClient(leasee, client, draftCache);
-                                                const finalData = transform ? transform(leaseeClient, data) : data;
-                                                const entity = createEntity(unsubscribe, finalData);
-                                                addEntity(client, hashValue, entity, leasee, draftCache);
-                                            })
+        
+        const collectionName = validPath[0];
+        const collectionKeys = validPath.slice(1, validPath.length-1);
+        const docId = validPath[validPath.length-1];
+        const db = getFirestore(client.firebaseApp);
+    
+        const collectionRef = collection(db, collectionName, ...collectionKeys);
+    
+        const q = query(collectionRef, where(documentId(), "==", docId));
 
-                                            return nextCache;
-                                        }
-                                    )
-                                    break;
-                                }
-                                case 'removed': {
-                                    client.setCache(
-                                        (currentCache: EntityCache) => {
-                                            const nextCache = produce(currentCache, draftCache => {
-                                                removeEntity(client, hashValue, draftCache);
-                                                if (onRemove) {
-                                                    const data = change.doc.data() as TRaw;
-                                                    const leaseeClient = new LeaseeClient(leasee, client, draftCache);
-                                                    onRemove(leaseeClient, data);
-                                                }
-                                            })
+        const unsubscribe = onSnapshot(q, snapshot => {
 
-                                            return nextCache;
-                                        }
-                                    )
-                                    break;
-                                }
+            snapshot.docChanges().forEach(change => {
+                switch (change.type) {
+                    case 'added':
+                    case 'modified': {
+                        const data = change.doc.data() as TRaw;
+
+                        const finalData = transform ?
+                            transform(new LeaseeClient(leasee, client), data) :
+                            data;
+
+                        putEntity(client, hashValue, {data: finalData});
+                        break;
+                    }
+                    case 'removed': {
+                        client.setCache(
+                            (currentCache: EntityCache) => {
+                                const nextCache = produce(currentCache, draftCache => {
+                                    removeEntity(client, hashValue, draftCache);
+                                    if (onRemove) {
+                                        const data = change.doc.data() as TRaw;
+                                        const leaseeClient = new LeaseeClient(leasee, client);
+                                        onRemove(leaseeClient, data);
+                                    }
+                                })
+
+                                return nextCache;
                             }
-                        })
-                    }, err => {
-                
-                        const error = err as Error;
-
-                        putEntity(
-                            client, 
-                            hashValue, 
-                            createEntity(unsubscribe, undefined, error)
-                        );
-                        
-                    })
-                    unsubscribeVar = unsubscribe;
+                        )
+                        break;
+                    }
                 }
+            })
+        }, error => {
 
-                if (unsubscribeVar) {
-                    // Create a `PendingTuple` and add it to the cache
-                    const newCache = produce(latestCache, draftCache => {
-                        const entity = createEntity(unsubscribeVar!);
-                        addEntity(client, hashValue, entity, leasee, draftCache);
-                    }) 
-                    return newCache;
-                }
+            putEntity(
+                client, 
+                hashValue, 
+                createEntity(undefined, error)
+            );
+            
+        })
 
-                return latestCache;
-            }
-        )
+        createLeasedEntity(client, unsubscribe, hashValue, leasee, options?.leaseOptions);
     }
 
 }
 
-export function lookupEntity(cache: EntityCache, key: string) {
-    return cache.entities[key];
+export function lookupEntityTuple<T>(cache: EntityCache, key: string) : EntityTuple<T> {
+    const entity = cache.entities[key];
+    return toEntityTuple<T>(entity);
 }
 
-export function createEntity(unsubscribe: () => void, data?: any, error?: Error) {
-    const result: Entity<any> = {
-        unsubscribe
-    }
+export function createEntity(data?: any, error?: Error) {
+    const result: Entity<any> = {};
     if (data !== undefined) {
         result.data = data;
     }
