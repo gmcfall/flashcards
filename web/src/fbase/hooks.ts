@@ -60,7 +60,7 @@ export function useDocListener<
  */
 export interface AuthOptions<Type=User> {
     /** A function that transforms the Firebase user into a different structure */
-    transform?: ((user: User) => Type | null) | ((user: User) => Promise<Type | null>);
+    transform?: ((user: User) => Type | null);
 
     /** A callback that is invoked when it is known that the user is not signed in */
     onSignedOut?: () => void;
@@ -98,20 +98,12 @@ export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>
             const unsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) {
                     const data = transform ? transform(user) : user;
-                    const promise = asPromise<UserType | null>(data);
-                    promise.then(
-                        userObject => {
-                            putEntity(client, AUTH_USER, userObject);
-                        }
-                    ).catch(err => {
-                        const error = asError(err, "An error occurred while processing the Firebase User");
-                        putEntity(client, AUTH_USER, error);
-                    })
+                    putEntity(client, AUTH_USER, data);
                 } else {
+                    putEntity(client, AUTH_USER, null);
                     if (onSignedOut) {
                         onSignedOut();
                     }
-                    putEntity(client, AUTH_USER, null);
                 }
             }, (error) => {
                 putEntity(client, AUTH_USER, error);

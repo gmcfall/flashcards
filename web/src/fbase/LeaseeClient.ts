@@ -1,5 +1,6 @@
 import { ListenerOptions, lookupEntityTuple, startDocListener, toEntityTuple, validateKey, validatePath } from "./common";
 import EntityClient, { claimLease, putEntity, removeLeaseeFromLease } from "./EntityClient";
+import { AUTH_USER, AUTH_USER_LEASE_OPTIONS } from "./hooks";
 import Lease from "./Lease";
 import { EntityKey, EntityTuple, LeaseOptions, PathElement } from "./types";
 import { hashEntityKey } from "./util";
@@ -43,7 +44,18 @@ export function watchEntity<
 
 
     return lookupEntityTuple<TFinal>(client.entityClient.cache, hashValue);
+}
 
+export function setUser(client: LeaseeClient, value: unknown) {
+    const entityClient = client.entityClient;
+
+    putEntity(client.entityClient, AUTH_USER, value);
+    let lease = entityClient.leases.get(AUTH_USER);
+    if (!lease) {
+        lease = new Lease(AUTH_USER);
+        entityClient.leases.set(AUTH_USER, lease);
+    }
+    claimLease(entityClient, AUTH_USER, client.leasee, AUTH_USER_LEASE_OPTIONS);
 }
 
 export function setEntity(client: LeaseeClient, key: EntityKey, value: unknown, options?: LeaseOptions) {
