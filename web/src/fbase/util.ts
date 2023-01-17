@@ -57,10 +57,6 @@ export function isPromise(data: any)  {
   return (typeof data?.then === 'function');
 }
 
-export function asPromise<T>(data: any) {
-  return isPromise(data) ? data as Promise<T> : Promise.resolve<T>(data as T);
-}
-
 export function asError(err: any, message: string) {
   if (err instanceof Error) {
     return err;
