@@ -4,7 +4,7 @@ import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, vali
 import EntityClient, { createLeasedEntity, putEntity } from "./EntityClient";
 import { FirebaseContext } from "./FirebaseContext";
 import { AuthTuple, EntityKey, EntityTuple, PathElement } from "./types";
-import { asError, asPromise, hashEntityKey } from "./util";
+import { hashEntityKey } from "./util";
 
 /** The error message when useContext(FirebaseContext) returns `undefined` */
 const OUTSIDE = "FirebaseContext was used outside of a provider";
