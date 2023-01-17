@@ -101,7 +101,7 @@ export function removeLeaseeFromLease(client: EntityClient, lease: Lease, leasee
  */
 export function createLeasedEntity(
     client: EntityClient, 
-    unsubscribe: Unsubscribe,
+    unsubscribe: Unsubscribe | undefined,
     key: string,
     leasee: string, 
     options?: LeaseOptions
@@ -140,9 +140,6 @@ export function putEntity(
         }
     )
 }
-
-
-
 
 /**
  * Remove an entity from a given cache.

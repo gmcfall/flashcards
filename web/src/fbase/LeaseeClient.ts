@@ -1,6 +1,7 @@
-import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
-import EntityClient, { removeLeaseeFromLease } from "./EntityClient";
-import { EntityKey, EntityTuple, PathElement } from "./types";
+import { ListenerOptions, lookupEntityTuple, startDocListener, toEntityTuple, validateKey, validatePath } from "./common";
+import EntityClient, { claimLease, putEntity, removeLeaseeFromLease } from "./EntityClient";
+import Lease from "./Lease";
+import { EntityKey, EntityTuple, LeaseOptions, PathElement } from "./types";
 import { hashEntityKey } from "./util";
 
 /**
@@ -23,6 +24,40 @@ export default class LeaseeClient {
     constructor(leasee: string, entityClient: EntityClient) {
         this.leasee = leasee;
         this.entityClient = entityClient;
+    }
+}
+
+export function watchEntity<
+    TRaw = unknown,
+    TFinal = TRaw
+>(
+    client: LeaseeClient,
+    path: PathElement[],
+    options?: ListenerOptions<TRaw, TFinal>
+) {
+
+    const validPath = validatePath(path);
+    const hashValue = validPath ? hashEntityKey(path) : "";
+
+    startDocListener(client.leasee, client.entityClient, validPath, hashValue, options);
+
+
+    return lookupEntityTuple<TFinal>(client.entityClient.cache, hashValue);
+
+}
+
+export function setEntity(client: LeaseeClient, key: EntityKey, value: unknown, options?: LeaseOptions) {
+    const validKey = validateKey(key);
+    if (validKey) {
+        const hashValue = hashEntityKey(key);
+        const entityClient = client.entityClient;
+        putEntity(entityClient, hashValue, value);
+        let lease = entityClient.leases.get(hashValue);
+        if (!lease) {
+            lease = new Lease(hashValue);
+            entityClient.leases.set(hashValue, lease);
+        }
+        claimLease(entityClient, hashValue, client.leasee, options);
     }
 }
 
