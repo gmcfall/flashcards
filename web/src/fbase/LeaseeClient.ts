@@ -1,4 +1,4 @@
-import { ListenerOptions, lookupEntityTuple, startDocListener, toEntityTuple, validateKey, validatePath } from "./common";
+import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
 import EntityClient, { claimLease, putEntity, removeLeaseeFromLease } from "./EntityClient";
 import { AUTH_USER, AUTH_USER_LEASE_OPTIONS } from "./hooks";
 import Lease from "./Lease";

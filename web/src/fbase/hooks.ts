@@ -60,7 +60,7 @@ export function useDocListener<
  */
 export interface AuthOptions<Type=User> {
     /** A function that transforms the Firebase user into a different structure */
-    transform?: ((user: User) => Type | null);
+    transform?: ((user: User) => Type | null | undefined);
 
     /** A callback that is invoked when it is known that the user is not signed in */
     onSignedOut?: () => void;
