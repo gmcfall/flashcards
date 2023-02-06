@@ -28,6 +28,33 @@ export default class LeaseeClient {
     }
 }
 
+/**
+ * A function that creates a listener for a given document. This function is idempotent: you
+ * can call it multiple times with the same arguments, but a listener will be created only on
+ * the first call.
+ * @param client The LeaseeClient that manages the caller's leases.
+ * @param path The path to the document to be watched. If any element of the path is `undefined`,
+ *      this function does nothing and returns `[idle, undefined, undefined]`.
+ * @param options An object encapsulating optional arguments. This object may contain any of the
+ *  the following fields:
+ *      - `transform`: A function that transforms the raw data to its final form for storage in the local cache.
+ *              This function receives three arguments:  a `LeaseeClient`, the raw data value from the 
+ *              Firestore document and the path to the document expressed as string array. The function returns 
+ *              the final (transformed) data value for storage in the local cache.
+ *      - `onRemove`: A callback invoked when the document is removed from Firestore. This function receives three 
+ *              arguments:  a `LeaseeClient`, the raw data value from the Firestore document and the path to the 
+ *              document expressed as string array. The function has no return value.
+ *      - `onError`: A callback invoked if an error occurred while listening to the Firestore document. This
+ *              function receives two arguments: a `LeaseeClient`, the `Error` thrown by Firestore and the path
+ *              to the document expressed as string array. The function has no return value.
+ *      - `leaseOptions`: An object of type `LeaseOptions` encapsulating options for the lease that will be 
+ *              created when the data value is stored in the local cache.
+ * 
+ * @returns A Tuple describing the entity being watched. This tuple contains three elements:
+ *      - The entity status ('idle', 'pending', 'success', or 'error')
+ *      - The current data value which may be `null` or `undefined`
+ *      - An `Error` object if the status is `error`.
+ */
 export function watchEntity<
     TRaw = unknown,
     TFinal = TRaw
@@ -41,7 +68,6 @@ export function watchEntity<
     const hashValue = validPath ? hashEntityKey(path) : "";
 
     startDocListener(client.leasee, client.entityClient, validPath, hashValue, options);
-
 
     return lookupEntityTuple<TFinal>(client.entityClient.cache, hashValue);
 }

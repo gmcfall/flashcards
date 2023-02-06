@@ -22,12 +22,15 @@ export const AUTH_USER_LEASE_OPTIONS = {cacheTime: Number.POSITIVE_INFINITY};
  * @param options An object encapsulating optional arguments. This object may contain any of the
  *  the following fields:
  *      - `transform`: A function that transforms the raw data to its final form for storage in the local cache.
- *              This function receives two arguments:  a `LeaseeClient` and the raw data value from the 
- *              Firestore document. The function returns the final (transformed) data value for storage in the
- *              local cache.
- *      - `onRemove`: A callback invoked when the document is removed from Firestore. This function receives two 
- *              argumets:  a `LeaseeClient` and the raw data value from the Firestore document. The function has
- *              no return value.
+ *              This function receives three arguments:  a `LeaseeClient`, the raw data value from the 
+ *              Firestore document and the path to the document expressed as string array. The function returns 
+ *              the final (transformed) data value for storage in the local cache.
+ *      - `onRemove`: A callback invoked when the document is removed from Firestore. This function receives three 
+ *              arguments:  a `LeaseeClient`, the raw data value from the Firestore document and the path to the 
+ *              document expressed as string array. The function has no return value.
+ *      - `onError`: A callback invoked if an error occurred while listening to the Firestore document. This
+ *              function receives two arguments: a `LeaseeClient`, the `Error` thrown by Firestore and the path
+ *              to the document expressed as string array. The function has no return value.
  *      - `leaseOptions`: An object of type `LeaseOptions` encapsulating options for the lease that will be 
  *              created when the data value is stored in the local cache.
  * @returns An array containing three elements. 

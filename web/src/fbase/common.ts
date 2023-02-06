@@ -66,8 +66,9 @@ function isValid(value: unknown) {
 
 
 export interface ListenerOptions<TRaw, TFinal> {
-    transform?: (client: LeaseeClient, value: TRaw) => TFinal;
-    onRemove?: (client: LeaseeClient, value: TRaw) => void;
+    transform?: (client: LeaseeClient, value: TRaw, path: PathElement[]) => TFinal;
+    onRemove?: (client: LeaseeClient, value: TRaw, path: PathElement[]) => void;
+    onError?: (client: LeaseeClient, error: Error, path: PathElement[]) => void;
     leaseOptions?: LeaseOptions;
 }
 
@@ -116,7 +117,7 @@ export function startDocListener<
                         const data = change.doc.data() as TRaw;
 
                         const finalData = transform ?
-                            transform(new LeaseeClient(leasee, client), data) :
+                            transform(new LeaseeClient(leasee, client), data, validPath) :
                             data;
 
                         putEntity(client, hashValue, {data: finalData});
@@ -130,7 +131,7 @@ export function startDocListener<
                                     if (onRemove) {
                                         const data = change.doc.data() as TRaw;
                                         const leaseeClient = new LeaseeClient(leasee, client);
-                                        onRemove(leaseeClient, data);
+                                        onRemove(leaseeClient, data, validPath);
                                     }
                                 })
 
@@ -148,6 +149,13 @@ export function startDocListener<
                 hashValue, 
                 createEntity(undefined, error)
             );
+
+            const onError = options?.onError;
+            if (onError) {
+                const leaseeClient = new LeaseeClient(leasee, client);
+                onError(leaseeClient, error, validPath);
+            }
+
             
         })
 
