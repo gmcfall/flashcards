@@ -66,9 +66,9 @@ function isValid(value: unknown) {
 
 
 export interface ListenerOptions<TRaw, TFinal> {
-    transform?: (client: LeaseeClient, value: TRaw, path: PathElement[]) => TFinal;
-    onRemove?: (client: LeaseeClient, value: TRaw, path: PathElement[]) => void;
-    onError?: (client: LeaseeClient, error: Error, path: PathElement[]) => void;
+    transform?: (client: LeaseeClient, value: TRaw, path: string[]) => TFinal;
+    onRemove?: (client: LeaseeClient, value: TRaw, path: string[]) => void;
+    onError?: (client: LeaseeClient, error: Error, path: string[]) => void;
     leaseOptions?: LeaseOptions;
 }
 
