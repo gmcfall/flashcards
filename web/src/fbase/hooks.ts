@@ -19,7 +19,17 @@ export const AUTH_USER_LEASE_OPTIONS = {cacheTime: Number.POSITIVE_INFINITY};
  * Use a snapshot listener to retrieve data from a Firestore document.
  * @param leasee The name of the component that is leasing the data to be retrieved.
  * @param path The path to the document in Firestore, starting with the name of a collection.
- * @param transform An optional function to transform the data received from Firestore into a new structure
+ * @param options An object encapsulating optional arguments. This object may contain any of the
+ *  the following fields:
+ *      - `transform`: A function that transforms the raw data to its final form for storage in the local cache.
+ *              This function receives two arguments:  a `LeaseeClient` and the raw data value from the 
+ *              Firestore document. The function returns the final (transformed) data value for storage in the
+ *              local cache.
+ *      - `onRemove`: A callback invoked when the document is removed from Firestore. This function receives two 
+ *              argumets:  a `LeaseeClient` and the raw data value from the Firestore document. The function has
+ *              no return value.
+ *      - `leaseOptions`: An object of type `LeaseOptions` encapsulating options for the lease that will be 
+ *              created when the data value is stored in the local cache.
  * @returns An array containing three elements. 
  *      - The first element is the status of the entity; one of "idle", "loading", "success", "error".
  *      - If the status is "success", the second element contains the entity data. Otherwise, the second
