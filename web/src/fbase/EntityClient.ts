@@ -4,31 +4,60 @@ import produce from "immer";
 import Lease from "./Lease";
 import { Entity, EntityCache, EntityClientOptions, LeaseOptions } from "./types";
 
+export function createEntityClient(
+    firebaseApp: FirebaseApp,
+    cache: EntityCache,
+    setCache: React.Dispatch<React.SetStateAction<EntityCache>>,
+    options?: EntityClientOptions
+) {
+    return new EntityClient(
+        firebaseApp,
+        cache,
+        setCache,
+        new Map<string, Lease>(),
+        new Set<Lease>(),
+        new Map<string, Set<Lease>>(),
+        options
+    )
+}
+
+export function updateEntityClient(client: EntityClient, cache: EntityCache) {
+    return (cache === client.cache) ? client : new EntityClient(
+        client.firebaseApp,
+        cache,
+        client.setCache,
+        client.leases,
+        client.abandonedLeases,
+        client.leaseeLeases,
+        client.options
+    )
+}
+
 export default class EntityClient {
 
     /** The FirebaseApp that will be used to fetch documents */
     readonly firebaseApp: FirebaseApp;
 
+    /** The function used to set a new revision of the cache */
+    readonly setCache: React.Dispatch<React.SetStateAction<EntityCache>>;
+    
+    /** The current state of the cache */
+    readonly cache: EntityCache;
+
     /** A Map where the key is the hash of an EntityKey and the value is the Lease for the entity */
-    readonly leases: Map<string, Lease> = new Map<string, Lease>();
+    readonly leases: Map<string, Lease>;
 
     /** 
      * A Map where the key is the hash of an EntityKey and the value is a Lease that has been abandonded,
      * i.e. the Lease has leasees. This map allows for quick garbage collection.
      */
-    readonly abandonedLeases: Set<Lease> = new Set<Lease>();
+    readonly abandonedLeases: Set<Lease>;
 
     /**
      * A Map where the key is the name for a leasee, and the value is the set of
      * Leases owned by the leasee.
      */
-    readonly leaseeLeases: Map<string, Set<Lease>> = new Map<string, Set<Lease>>();
-
-    /** The function used to set a new revision of the cache */
-    readonly setCache: React.Dispatch<React.SetStateAction<EntityCache>>;
-    
-    /** The current state of the cache */
-    cache: EntityCache;
+    readonly leaseeLeases: Map<string, Set<Lease>>;
 
     /** Options for managing expiry of entities in the cache */
     options: EntityClientOptions;
@@ -37,11 +66,17 @@ export default class EntityClient {
         firebaseApp: FirebaseApp,
         cache: EntityCache,
         setCache: React.Dispatch<React.SetStateAction<EntityCache>>,
+        leases: Map<string, Lease>,
+        abandonedLeases: Set<Lease>,
+        leaseeLeases: Map<string, Set<Lease>>,
         options?: EntityClientOptions
     ) {
         this.firebaseApp = firebaseApp;
         this.cache = cache;
         this.setCache = setCache;
+        this.leases = leases;
+        this.abandonedLeases = abandonedLeases;
+        this.leaseeLeases = leaseeLeases;
         this.options = options || {cacheTime: 300000};
         
         const self = this;
@@ -107,8 +142,11 @@ export function createLeasedEntity(
     options?: LeaseOptions
 ) {
     putEntity(client, key, undefined);
-    const lease = new Lease(key, unsubscribe);
-    client.leases.set(key, lease);
+    let lease = client.leases.get(key);
+    if (!lease) {
+        lease = new Lease(key, unsubscribe);
+        client.leases.set(key, lease);
+    }
     claimLease(client, key, leasee, options);
 }
 
@@ -135,6 +173,8 @@ export function putEntity(
                 )
                 draftCache.entities[key] = entity;
             })
+
+            console.log('putEntity', {key, nextCache});
 
             return nextCache;
         }

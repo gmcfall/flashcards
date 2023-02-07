@@ -59,5 +59,10 @@ export interface EntityClientOptions {
 
 export type LeaseOptions = Partial<EntityClientOptions>;
 
+export interface ErrorInfo {
+    message: string;
+    error?: Error
+}
+
 
 

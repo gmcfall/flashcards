@@ -43,6 +43,18 @@ export function validateKey(key: EntityKey) {
     return key;
 }
 
+/**
+ * A specialized error that occurs if the user signed in with an identity provider
+ * that is incompatible with the identity provider used during registration.
+ * Two identity providers are incompatible if they instantiate users with different
+ * Firestore `uid` values.
+ */
+export class IncompatibleIdentityProviderError extends Error {
+    constructor(message?: string) {
+        super(message || 'An incompatible identity provider was used to sign in');
+    }
+}
+
 function isValid(value: unknown) {
 
     if (value === undefined) {
@@ -65,7 +77,7 @@ function isValid(value: unknown) {
 }
 
 
-export interface ListenerOptions<TRaw, TFinal> {
+export interface ListenerOptions<TRaw, TFinal=TRaw> {
     transform?: (client: LeaseeClient, value: TRaw, path: string[]) => TFinal;
     onRemove?: (client: LeaseeClient, value: TRaw, path: string[]) => void;
     onError?: (client: LeaseeClient, error: Error, path: string[]) => void;
@@ -164,8 +176,8 @@ export function startDocListener<
 
 }
 
-export function lookupEntityTuple<T>(cache: EntityCache, key: string) : EntityTuple<T> {
-    const entity = cache.entities[key];
+export function lookupEntityTuple<T>(cache: EntityCache, key: string | null) : EntityTuple<T> {
+    const entity = key === null ? undefined : cache.entities[key];
     return toEntityTuple<T>(entity);
 }
 
@@ -184,6 +196,7 @@ export function createEntity(data?: any, error?: Error) {
 
 
 function putEntity(client: EntityClient, key: string | string[], entity: Entity<any>) {
+    console.log('putEntity', {key, entity})
     const setCache = client.setCache;
     const hashValue = Array.isArray(key) ? hashEntityKey(key) : key;
 

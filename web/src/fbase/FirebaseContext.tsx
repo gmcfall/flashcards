@@ -2,7 +2,7 @@
 
 import { FirebaseApp } from 'firebase/app';
 import React, { useState } from 'react';
-import EntityClient from './EntityClient';
+import EntityClient, { createEntityClient, updateEntityClient } from './EntityClient';
 import { EntityCache } from './types';
 
 
@@ -17,11 +17,14 @@ export function FirebaseProvider(props: FirebaseProviderProps) {
     const {firebaseApp, children} = props;
 
     const [cache, setCache] = useState<EntityCache>({entities: {}})
-    const [client] = useState<EntityClient>(new EntityClient(firebaseApp, cache, setCache));
-    client.cache = cache;
+    const [client] = useState<EntityClient>(createEntityClient(firebaseApp, cache, setCache));
+
+    console.log('FirebaseProvider', {cache, sameCache: client.cache === cache})
+
+    const clientValue = updateEntityClient(client, cache);
 
     return (
-        <FirebaseContext.Provider value={client}>
+        <FirebaseContext.Provider value={clientValue}>
             {children}
         </FirebaseContext.Provider>
     )

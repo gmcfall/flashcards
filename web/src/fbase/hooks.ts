@@ -3,6 +3,7 @@ import { useContext, useEffect } from "react";
 import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
 import EntityClient, { createLeasedEntity, putEntity } from "./EntityClient";
 import { FirebaseContext } from "./FirebaseContext";
+import LeaseeClient from "./LeaseeClient";
 import { AuthTuple, EntityKey, EntityTuple, PathElement } from "./types";
 import { hashEntityKey } from "./util";
 
@@ -73,7 +74,7 @@ export function useDocListener<
  */
 export interface AuthOptions<Type=User> {
     /** A function that transforms the Firebase user into a different structure */
-    transform?: ((user: User) => Type | null | undefined);
+    transform?: (client: LeaseeClient, user: User) => Type | null | undefined;
 
     /** A callback that is invoked when it is known that the user is not signed in */
     onSignedOut?: () => void;
@@ -110,7 +111,8 @@ export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>
             const auth = getAuth(client.firebaseApp);
             const unsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    const data = transform ? transform(user) : user;
+                    const leaseeClient = new LeaseeClient(AUTH_USER, client);
+                    const data = transform ? transform(leaseeClient, user) : user;
                     putEntity(client, AUTH_USER, data);
                 } else {
                     putEntity(client, AUTH_USER, null);

@@ -75,6 +75,8 @@ export function watchEntity<
 export function setUser(client: LeaseeClient, value: unknown) {
     const entityClient = client.entityClient;
 
+    
+    console.log('setUser', value);
     putEntity(client.entityClient, AUTH_USER, value);
     let lease = entityClient.leases.get(AUTH_USER);
     if (!lease) {
@@ -84,10 +86,30 @@ export function setUser(client: LeaseeClient, value: unknown) {
     claimLease(entityClient, AUTH_USER, client.leasee, AUTH_USER_LEASE_OPTIONS);
 }
 
-export function setEntity(client: LeaseeClient, key: EntityKey, value: unknown, options?: LeaseOptions) {
+function toHashValue(key: string | EntityKey) {
+    if (typeof(key) === 'string') {
+        return key;
+    }
     const validKey = validateKey(key);
-    if (validKey) {
-        const hashValue = hashEntityKey(key);
+    return validKey ? hashEntityKey(key) : null;
+}
+
+/**
+ * Insert or update the data value for some entity in the local cache.
+ * This function also creates or updates the caller's lease for that entity.
+ * @param client The LeaseeClient that provides access to the local cache
+ * @param key The key under which the entity shall be stored
+ * @param value The data value to be stored in the local cache
+ * @param options An object containing the following optional configuration parameters
+ *  for the caller's lease...
+ *      - `cacheTime`: The minimum number of milliseconds that an abandoned entity can live in the cache.
+ *              An abandoned entity is one that has no leasees. Set `cacheTime` to `Number.POSITIVE_INFINITY`
+ *              if you want the entity to remain in the cache indefinitely.
+ */
+export function setEntity(client: LeaseeClient, key: string | EntityKey, value: unknown, options?: LeaseOptions) {
+
+    const hashValue = toHashValue(key);
+    if (hashValue) {
         const entityClient = client.entityClient;
         putEntity(entityClient, hashValue, value);
         let lease = entityClient.leases.get(hashValue);
@@ -105,9 +127,8 @@ export function setEntity(client: LeaseeClient, key: EntityKey, value: unknown, 
  * @param entityKey The key under which the entity is stored in the cache
  * @returns A tuple describing the requested entity.
  */
-export function getEntity<Type>(client: EntityClient | LeaseeClient, key: EntityKey) {
-    const validKey = validateKey(key);
-    const hashValue = validKey ? hashEntityKey(key) : "";
+export function getEntity<Type>(client: EntityClient | LeaseeClient, key: string | EntityKey) {
+    const hashValue = toHashValue(key);
     const cache = client.hasOwnProperty("entityClient") ? 
         (client as LeaseeClient).entityClient.cache :
         (client as EntityClient).cache;
