@@ -1,8 +1,5 @@
 
-export interface Entity<T> {
-    data?: T;
-    error?: Error;
-};
+export type Entity = unknown;
 
 
 export type EntityStatus = 'idle' | 'pending' | 'success' | 'error';
@@ -41,10 +38,7 @@ export type PathElement = string | undefined;
 
 export type Unsubscribe = () => void;
 
-export interface EntityCache {
-
-    entities: Record<string, Entity<any> | undefined>;
-}
+export type EntityCache = Record<string, Entity>;
 
 export type EntityKey = readonly unknown[];
 

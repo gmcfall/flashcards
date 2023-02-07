@@ -133,13 +133,13 @@ export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>
 }
 
 function lookupAuthTuple<UserType>(client: EntityClient): AuthTuple<UserType> {
-    const entity = client.cache.entities[AUTH_USER];
+    const entity = client.cache[AUTH_USER];
     
     return (
-        entity?.data===null ? ['signedOut', null, undefined] :
-        entity?.data        ? ['signedIn', entity.data as UserType, undefined] :
-        entity?.error       ? ['error', undefined, entity.error] :
-                            ['pending', undefined, undefined]
+        entity===undefined      ? ['pending', undefined, undefined] :
+        entity===null           ? ['signedOut', null, undefined] :
+        entity instanceof Error ? ['error', undefined, entity as Error] :
+                                  ['signedIn', entity as UserType, undefined]
     )
 }
 

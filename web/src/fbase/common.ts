@@ -5,17 +5,17 @@ import LeaseeClient from "./LeaseeClient";
 import { Entity, EntityCache, EntityKey, EntityTuple, LeaseOptions, NonIdleTuple, PathElement } from "./types";
 import { hashEntityKey } from "./util";
 
-export function toTuple<T>(entity: Entity<T>): NonIdleTuple<T> {
+export function toTuple<T>(entity: Entity): NonIdleTuple<T> {
     return (
-        entity?.data  ? ["success", entity.data, undefined] :
-        entity?.error ? ["error", undefined, entity.error] :
-        ["pending", undefined, undefined] 
+        entity === undefined  ? ["pending", undefined, undefined] :
+        entity instanceof Error ? ["error", undefined, entity as Error] :
+        ["success", entity as T, undefined] 
     )
 }
 
-export function toEntityTuple<T>(entity?: Entity<T>) : EntityTuple<T> {
+export function toEntityTuple<T>(entity?: Entity) : EntityTuple<T> {
     return (
-        entity ? toTuple<T>(entity) :
+        entity !== undefined ? toTuple<T>(entity) :
         ["idle", undefined, undefined]
     )
 }
@@ -159,7 +159,7 @@ export function startDocListener<
             putEntity(
                 client, 
                 hashValue, 
-                createEntity(undefined, error)
+                error
             );
 
             const onError = options?.onError;
@@ -177,41 +177,24 @@ export function startDocListener<
 }
 
 export function lookupEntityTuple<T>(cache: EntityCache, key: string | null) : EntityTuple<T> {
-    const entity = key === null ? undefined : cache.entities[key];
+    const entity = key === null ? undefined : cache[key];
     return toEntityTuple<T>(entity);
 }
 
-export function createEntity(data?: any, error?: Error) {
-    const result: Entity<any> = {};
-    if (data !== undefined) {
-        result.data = data;
-    }
-    if (error !== undefined) {
-        result.error = error;
-    }
-    
-    return result;
-}
 
 
-
-function putEntity(client: EntityClient, key: string | string[], entity: Entity<any>) {
-    console.log('putEntity', {key, entity})
+function putEntity(client: EntityClient, key: string | string[], entity: Entity) {
     const setCache = client.setCache;
     const hashValue = Array.isArray(key) ? hashEntityKey(key) : key;
 
     setCache(
         (oldCache: EntityCache) => {
-            const oldEntities = oldCache.entities;
-            const newEntities = {
-                ...oldEntities,
+            
+            const newCache = {
+                ...oldCache,
                 [hashValue]: entity
             }
 
-            const newCache = {
-                ...oldCache,
-                entities: newEntities
-            }
 
             return newCache;
         }

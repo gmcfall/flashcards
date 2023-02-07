@@ -2,7 +2,7 @@ import { FirebaseApp } from "firebase/app";
 import { Unsubscribe } from "firebase/auth";
 import produce from "immer";
 import Lease from "./Lease";
-import { Entity, EntityCache, EntityClientOptions, LeaseOptions } from "./types";
+import { EntityCache, EntityClientOptions, LeaseOptions } from "./types";
 
 export function createEntityClient(
     firebaseApp: FirebaseApp,
@@ -165,16 +165,8 @@ export function putEntity(
     client.setCache(
         oldCache => {
             const nextCache = produce(oldCache, draftCache => {
-                
-                const entity: Entity<any> = (
-                    value instanceof Error ? {error: value} :
-                    typeof value === 'undefined' ? {} :
-                    {data: value as any}
-                )
-                draftCache.entities[key] = entity;
+                draftCache[key] = value;
             })
-
-            console.log('putEntity', {key, nextCache});
 
             return nextCache;
         }
@@ -187,14 +179,14 @@ export function putEntity(
  * @param cache The cache containing the entity
  */
 export function removeEntity(client: EntityClient, key: string, cache: EntityCache) {
-    const entity = cache.entities[key];
+    const entity = cache[key];
     const lease = client.leases.get(key);
     if (entity) {
         const unsubscribe = lease?.unsubscribe;
         if (unsubscribe) {
             unsubscribe();
         }
-        delete cache.entities[key];
+        delete cache[key];
     }
     if (lease) {
         lease.leasees.forEach(leasee => {

@@ -75,8 +75,6 @@ export function watchEntity<
 export function setUser(client: LeaseeClient, value: unknown) {
     const entityClient = client.entityClient;
 
-    
-    console.log('setUser', value);
     putEntity(client.entityClient, AUTH_USER, value);
     let lease = entityClient.leases.get(AUTH_USER);
     if (!lease) {

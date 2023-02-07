@@ -19,8 +19,6 @@ export function FirebaseProvider(props: FirebaseProviderProps) {
     const [cache, setCache] = useState<EntityCache>({entities: {}})
     const [client] = useState<EntityClient>(createEntityClient(firebaseApp, cache, setCache));
 
-    console.log('FirebaseProvider', {cache, sameCache: client.cache === cache})
-
     const clientValue = updateEntityClient(client, cache);
 
     return (
