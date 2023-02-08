@@ -9,15 +9,15 @@ import generateUid from "../util/uid";
 import { deckEditorReceiveAddedCard } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
 import { CardField, CARDS, DeckField, DECKS } from "./firestoreConstants";
-import { CardRef, ClientFlashcard, Deck, FLASHCARD, LerniApp, ServerFlashcard } from "./types";
+import { CardRef, ClientFlashcard, Deck, FLASHCARD, LerniApp0, ServerFlashcard } from "./types";
 
-export function doFlashcardSelect(lerni: LerniApp, action: PayloadAction<string>) {
+export function doFlashcardSelect(lerni: LerniApp0, action: PayloadAction<string>) {
     if (lerni.deckEditor) {
         lerni.deckEditor.activeCard = action.payload;
     }
 }
 
-export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<JSONContent>) {
+export function doFlashcardContentUpdate(lerni: LerniApp0, action: PayloadAction<JSONContent>) {
 
     const activeId = getActiveCardId(lerni);
     if (activeId) {
@@ -28,7 +28,7 @@ export function doFlashcardContentUpdate(lerni: LerniApp, action: PayloadAction<
     }
 }
 
-export function doFlashcardRemoved(lerni: LerniApp, action: PayloadAction<string>) {
+export function doFlashcardRemoved(lerni: LerniApp0, action: PayloadAction<string>) {
     const cardId = action.payload;
     delete lerni.cards[cardId];
     if (lerni.deckEditor) {
@@ -62,7 +62,7 @@ export async function deleteFlashcard(deck: Deck, cardId: string) {
 
 }
 
-export function doFlashcardAddFulfilled(lerni: LerniApp, action: PayloadAction<string>) {
+export function doFlashcardAddFulfilled(lerni: LerniApp0, action: PayloadAction<string>) {
     if (lerni.deckEditor) {
         lerni.deckEditor.activeCard = action.payload;
     }
@@ -121,7 +121,7 @@ export function subscribeCard(dispatch: Dispatch, cardId: string) {
 
 let lastSavedId = '';
 let lastSavedContent = '';
-export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string | null) {
+export async function saveFlashcardContent(lerni: LerniApp0, activeIdArg: string | null) {
     
     const activeId = activeIdArg || getActiveCardId(lerni);
     const cards = lerni.cards;
@@ -143,7 +143,7 @@ export async function saveFlashcardContent(lerni: LerniApp, activeIdArg: string 
     return true;
 }
 
-function getActiveCardId(lerni: LerniApp) {
+function getActiveCardId(lerni: LerniApp0) {
     const id = lerni.deckEditor ? lerni.deckEditor.activeCard : null;
     if (id) {
         // Verify that the card exists
@@ -165,7 +165,7 @@ export function unsubscribeAllCards() {
 /**
  * Handle a newly added Flashcard.
  */
-export function doFlashcardAdded(lerni: LerniApp, action: PayloadAction<ServerFlashcard>) {
+export function doFlashcardAdded(lerni: LerniApp0, action: PayloadAction<ServerFlashcard>) {
     const card = toClientFlashcard(action.payload);
     lerni.cards[card.id] = {card};
 
@@ -179,7 +179,7 @@ function toClientFlashcard(serverCard: ServerFlashcard) : ClientFlashcard {
     }
 }
 
-export function doFlashcardModified(lerni: LerniApp, action: PayloadAction<ServerFlashcard>) {
+export function doFlashcardModified(lerni: LerniApp0, action: PayloadAction<ServerFlashcard>) {
     const card = toClientFlashcard(action.payload);    
     lerni.cards[card.id] = {card};
 

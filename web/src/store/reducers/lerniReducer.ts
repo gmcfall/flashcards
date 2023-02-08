@@ -3,7 +3,7 @@ import { doAccessSet, doDeckAccessLoaded } from "../../model/access";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
 import { doAlertPost, doAlertRemove } from "../../model/alert";
 import {
-    doAccountDeleteEnd, doAuthEmailVerified, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailVerified, doAuthRegisterStageUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSessionNameUpdate, doAuthSignin, doAuthSignout
+    doAccountDeleteEnd, doAuthEmailVerified, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailVerified, doAuthRegisterStageUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSessionNameUpdate
 } from "../../model/auth";
 import { doDeckAdded, doDeckModified, doDeckNameUpdate, doDeckPublishFulfilled } from "../../model/deck";
 import { doDeckeditorMount, doDeckeditorNewActiveCardDelete, doDeckeditorUnmount } from "../../model/deckEditor";
@@ -11,7 +11,7 @@ import { doErrorDisplay } from "../../model/errorHandler";
 import { doFlashcardAdded, doFlashcardAddFulfilled, doFlashcardContentUpdate, doFlashcardModified, doFlashcardRemoved, doFlashcardSelect } from "../../model/flashcard";
 import { doLibraryReceive, doMetadataReceived } from "../../model/library";
 import { doResourceSearchEnd, doResourceSearchRequestPending, doResourceSearchResponsePart } from "../../model/search";
-import { LerniApp } from "../../model/types";
+import { LerniApp0 } from "../../model/types";
 import accessGeneralChange from "../actions/accessGeneralChange";
 import accessSet from "../actions/accessSet";
 import accountDeleteEmailChange from "../actions/accountDeleteEmailChange";
@@ -32,8 +32,6 @@ import authRegisterStageUpdate from "../actions/authRegisterStageUpdate";
 import authSessionBegin from "../actions/authSessionBegin";
 import authSessionEnd from "../actions/authSessionEnd";
 import authSessionNameUpdate from "../actions/authSessionNameUpdate";
-import authSignin from "../actions/authSignin";
-import authSignout from "../actions/authSignout";
 import authStateChanged from "../actions/authStateChanged";
 import deckAccessLoaded from "../actions/deckAccessLoaded";
 import deckAdd from "../actions/deckAdd";
@@ -60,7 +58,7 @@ import resourceSearchEnd from "../actions/resourceSearchEnd";
 import resourceSearchRequest from "../actions/resourceSearchRequest";
 import resourceSearchResponsePart from "../actions/resourceSearchResponse";
 
-const initialState: LerniApp = {
+const initialState: LerniApp0 = {
     cards: {}
 }
 
@@ -91,8 +89,6 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(authSessionBegin, doAuthSessionBegin)
         .addCase(authSessionEnd, doAuthSessionEnd)
         .addCase(authSessionNameUpdate, doAuthSessionNameUpdate)
-        .addCase(authSignin, doAuthSignin)
-        .addCase(authSignout.pending, doAuthSignout)
         .addCase(authStateChanged.rejected, doErrorDisplay)
         .addCase(deckDelete.rejected, doErrorDisplay)
         .addCase(deckAdd.rejected, doErrorDisplay)

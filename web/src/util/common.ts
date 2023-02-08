@@ -17,3 +17,7 @@ export function isEmpty(object: Object) {
     }
     return true;
 }
+
+export function last<T>(array: T[]) {
+    return array[array.length-1];
+}

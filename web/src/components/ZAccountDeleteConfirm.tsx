@@ -2,9 +2,9 @@
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { EmailAuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { useEffect } from 'react';
+import { useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { selectDeleteAccountForm } from "../model/account";
-import { selectCurrentUser } from "../model/auth";
 import { SessionUser } from "../model/types";
 import accountDeleteEmailChange from "../store/actions/accountDeleteEmailChange";
 import accountDeleteFacebook from "../store/actions/accountDeleteFacebook";
@@ -199,7 +199,7 @@ function ZAccountDeleteActions(props: AccountDeleteActionsProps) {
 export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) {
     const {open, setOpen} = props;
 
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
     if (!user) {
         return null;
     }

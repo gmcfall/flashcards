@@ -1,7 +1,14 @@
+import { deleteUser, getAuth } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, limit, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { ListenerOptions } from "../fbase/common";
+import LeaseeApi from "../fbase/LeaseeApi";
+import { mutate, setAuthUser, watchEntity } from "../fbase/functions";
+import { last as lastElement } from "../util/common";
+import { createSessionUser, endSignIn } from "./auth";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
-import { ANONYMOUS, Identity, SessionUser } from "./types";
+import { appGetState } from "./lerni";
+import { ANONYMOUS, Identity, LerniApp, SessionUser } from "./types";
 
 export function createIdentity(uid: string, username: string, displayName: string) : Identity {
     return {uid, username, displayName}
@@ -166,4 +173,55 @@ function trimAtSign(username: string) {
         username = username.substring(1);
     }
     return username;
+}
+
+export function identityPath(userUid: string) {
+    return [IDENTITIES, userUid];
+}
+
+function identityTransform(api: LeaseeApi, identity: Identity, path: string[]) {
+    const client = api.getClient();
+
+    const auth = getAuth(client.firebaseApp);
+    const user = auth.currentUser;
+    if (user) {
+        const uid = identity.uid;
+        if (uid === user.uid) {
+            const sessionUser = createSessionUser(user, identity);
+            setAuthUser(client, sessionUser);
+            endSignIn(client);
+        }
+    }
+    return identity;
+}
+
+function onIdentityError(api: LeaseeApi, error: Error, path: string[]) {
+    const client = api.getClient();
+    const auth = getAuth(client.firebaseApp);
+    const user = auth.currentUser;
+    if (user) {
+        const lerni = appGetState(client);
+        const uid = lastElement(path);
+        if (uid === user.uid && !lerni.authRegisterStage) {
+            if (lerni.signinActive) {
+                deleteUser(user);
+                mutate(client, (lerni: LerniApp) => {
+                    delete lerni.signinActive;
+                })
+            }
+        }
+    }
+}
+
+export function watchCurrentUserIdentity(api: LeaseeApi, userUid: string) {
+    const options: ListenerOptions<Identity> = {
+        transform: identityTransform,
+        onError: onIdentityError,
+        leaseOptions: {
+            cacheTime: Number.POSITIVE_INFINITY
+        }
+    }
+    const path = identityPath(userUid);
+    const client = api.getClient();
+    return watchEntity(client, api.leasee, path, options);
 }

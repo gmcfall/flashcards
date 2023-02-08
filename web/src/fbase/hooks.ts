@@ -1,6 +1,7 @@
 import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { useContext, useEffect } from "react";
 import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
+import EntityApi from "./EntityApi";
 import EntityClient, { createLeasedEntity, putEntity } from "./EntityClient";
 import { entityApi, FirebaseContext } from "./FirebaseContext";
 import LeaseeApi from "./LeaseeApi";
@@ -142,12 +143,8 @@ function lookupAuthTuple<UserType>(client: EntityClient): AuthTuple<UserType> {
     )
 }
 
-export function useEntityClient() {
-    const client = useContext(FirebaseContext);
-    if (!client) {
-        throw new Error(OUTSIDE);
-    }
-    return client;
+export function useEntityApi(): EntityApi {
+    return entityApi;
 }
 
 export function useAuthUser<UserType=User>() {
@@ -180,8 +177,4 @@ export function useData<StateType, ReturnType>(selector: (state: StateType) => R
 
     const state = client.cache as StateType;
     return selector(state);
-}
-
-export interface TypedUseDataHook<StateType> {
-    <ReturnType>(selector: (state: StateType) => ReturnType): ReturnType;
 }

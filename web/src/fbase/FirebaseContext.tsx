@@ -15,6 +15,7 @@ interface FirebaseProviderProps {
     firebaseApp: FirebaseApp;
     children?: React.ReactNode;
 }
+
 export function FirebaseProvider(props: FirebaseProviderProps) {
     const {firebaseApp, children} = props;
 

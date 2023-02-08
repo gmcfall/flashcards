@@ -1,8 +1,9 @@
 
 import { Box, Button, Divider, Typography } from "@mui/material";
+import { useEntityApi } from "../fbase/hooks";
 import { useAppDispatch } from "../hooks/hooks";
+import { authBeginSignIn } from "../model/auth";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
-import authSignin from "../store/actions/authSignin";
 import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
 interface AccessDeniedMessage {
     title: string
@@ -11,9 +12,10 @@ export function ZAccessDeniedMessage(props: AccessDeniedMessage) {
     const {title} = props;
 
     const dispatch = useAppDispatch();
+    const api = useEntityApi();
 
     function handleSignInClick() {
-        dispatch(authSignin(true))
+        authBeginSignIn(api);
     }
 
     function handleRegisterClick() {

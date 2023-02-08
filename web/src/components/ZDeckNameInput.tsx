@@ -1,6 +1,6 @@
 import { TextField } from "@mui/material";
+import { useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectSession } from "../model/auth";
 import { selectDeck } from "../model/deck";
 import deckNameSubmit from "../store/actions/deckNameSubmit";
 import deckNameUpdate from "../store/actions/deckNameUpdate";
@@ -9,9 +9,9 @@ import { DECK_NAME_INPUT } from "./lerniConstants";
 export default function ZDeckNameInput() {
     const dispatch = useAppDispatch();
     const deck = useAppSelector(selectDeck);
-    const session = useAppSelector(selectSession);
+    const user = useSessionUser();
 
-    if (!deck || !session) {
+    if (!deck || !user) {
         return null;
     }
     const deckId = deck.id;

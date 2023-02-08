@@ -2,13 +2,9 @@ import EmailIcon from '@mui/icons-material/Email';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import { AuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { useState } from "react";
-import { batch } from 'react-redux';
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { emailPasswordSignIn, providerSignIn, selectSigninActive } from '../model/auth';
-import { GET_IDENTITY_FAILED, IDENTITY_NOT_FOUND, ProviderNames, SIGNIN_FAILED } from '../model/types';
-import alertPost from '../store/actions/alertPost';
-import authSessionBegin from '../store/actions/authSessionBegin';
-import authSignin from "../store/actions/authSignin";
+import { useData, useEntityApi } from '../fbase/hooks';
+import { authEndSignIn, emailPasswordSignIn, providerSignIn, selectSigninActive } from '../model/auth';
+import { GET_IDENTITY_FAILED, IDENTITY_NOT_FOUND, ProviderNames, SignInResult, SIGNIN_FAILED, SIGNIN_OK } from '../model/types';
 import { dialogContentStyle } from './lerniConstants';
 import LerniTheme from './lerniTheme';
 import ZFacebookIcon from './ZFacebookIcon';
@@ -45,7 +41,7 @@ enum SigninStage {
 
 interface ProviderError {
     provider: AuthProvider;
-    error: Error;
+    cause: SignInResult;
 }
 
 interface SigninBeginProps {
@@ -57,33 +53,23 @@ interface SigninBeginProps {
 function ZSigninBegin(props: SigninBeginProps) {
 
     const {onClose, setStage, setProviderError} = props;
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
 
     function handleProviderClick(provider: AuthProvider) {
-        providerSignIn(provider).then(
-            session => {
-                batch(() => {
-                    dispatch(authSessionBegin(session));
-                    dispatch(alertPost({
-                        severity: "success",
-                        message: "Welcome back!"
-                        
-                    }))
-                })
-                onClose();
-            }
-        ).catch(
-            error => {
-                if (error instanceof Error) {
-                    if (error.cause) {
-                        console.error(error.message, error.cause);
-                    } else {
-                        console.error(error.message);
-                    }
-                    setProviderError({error, provider});
-                    setStage(SigninStage.providerError)
-                } else {
-                    console.error("ZSigninBegin: Unexpected provider error", error);
+
+        providerSignIn(api, provider).then(
+            result => {
+                switch (result) {
+                    case SIGNIN_OK: 
+                        onClose();
+                        break;
+
+                    default:
+                        setProviderError({
+                            provider,
+                            cause: result
+                        })
+                        setStage(SigninStage.providerError);
                 }
             }
         )
@@ -181,7 +167,7 @@ function emailAlert(errorCode: string) {
 function ZSigninEmail(props: SigninEmailProps) {
     const {onClose} = props;
 
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const [email, setEmail] = useState<string>('');
     const [password, setPassword] = useState<string>('');
     const [errorCode, setErrorCode] = useState<string>('');
@@ -197,23 +183,16 @@ function ZSigninEmail(props: SigninEmailProps) {
     }
 
     function handleSubmit() {
-        emailPasswordSignIn(email, password).then(
-            (session => {
-                batch(() => {
-                    dispatch(authSessionBegin(session));
-                    dispatch(alertPost({
-                        severity: "success",
-                        message: "Welcome back!"
-                        
-                    }))
-                })
-                onClose();
-            })
-        ).catch(
-            error => {
-                console.error(error);
-                if (error instanceof Error) {
-                    setErrorCode(error.message);
+
+        emailPasswordSignIn(api, email, password).then(
+            result => {
+                switch(result) {
+                    case SIGNIN_OK:
+                        onClose();
+                        break;
+
+                    default:
+                        setErrorCode(result);
                 }
             }
         )
@@ -272,10 +251,10 @@ function renderProviderError(
     setStage: (value: SigninStage) => void
 ) {
     if (providerError) {
-        const message = providerError.error.message;
+        const cause = providerError.cause;
         const providerId = providerError.provider.providerId;
         const providerName = ProviderNames[providerId];
-        switch (message) {
+        switch (cause) {
             case SIGNIN_FAILED: 
                 return (
                     <>
@@ -352,12 +331,12 @@ function ZProviderError(props: ProviderErrorProps) {
 
 
 function ZSigninBody() {
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const [stage, setStage] = useState<SigninStage>(SigninStage.begin);
     const [providerError, setProviderError] = useState<ProviderError | null>(null);
     
     function handleClose() {
-        dispatch(authSignin(false));
+        authEndSignIn(api);
     }
 
     switch (stage) {
@@ -386,7 +365,7 @@ function ZSigninBody() {
 
 export function ZSigninWizard() {
 
-    const signinActive = useAppSelector(selectSigninActive);
+    const signinActive = useData(selectSigninActive);
     if (!signinActive) {
         return null;
     }

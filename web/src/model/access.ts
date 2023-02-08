@@ -6,7 +6,7 @@ import { isEmpty } from "../util/common";
 import generateUid from "../util/uid";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, AccessField, LIBRARIES } from "./firestoreConstants";
-import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, Identity, IdentityRole, LerniApp, NOT_FOUND, OWNER, Permission, ProtoAccessRequest, ProtoAccessResponse, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
+import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, Identity, IdentityRole, LerniApp0, NOT_FOUND, OWNER, Permission, ProtoAccessRequest, ProtoAccessResponse, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
 
 /**
  * A mapping from roles to permissions granted to the role
@@ -57,7 +57,7 @@ export function checkPrivilege(
 }
 
 
-export function doDeckAccessLoaded(lerni: LerniApp, action: PayloadAction<AccessEnvelope>) {
+export function doDeckAccessLoaded(lerni: LerniApp0, action: PayloadAction<AccessEnvelope>) {
     lerni.deckAccess = action.payload;
 }
 
@@ -165,7 +165,7 @@ export function createAccessEnvelope(resourceId: string) {
     return result;
 }
 
-export function doAccessSet(lerni: LerniApp, action: PayloadAction<AccessEnvelope>) {
+export function doAccessSet(lerni: LerniApp0, action: PayloadAction<AccessEnvelope>) {
     lerni.deckAccess = action.payload;
 }
 

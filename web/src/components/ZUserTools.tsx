@@ -3,9 +3,9 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useState } from 'react';
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectCurrentUser } from "../model/auth";
-import authSignout from "../store/actions/authSignout";
+import { useEntityApi } from '../fbase/hooks';
+import { useSessionUser } from '../hooks/customHooks';
+import { authSignOut } from '../model/auth';
 import ZAccountDeleteConfirm from './ZAccountDeleteConfirm';
 import ZAccountSettings from './ZAccountSettings';
 
@@ -15,8 +15,9 @@ export default function ZUserTools() {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState<boolean>(false);
 
-    const dispatch = useAppDispatch();
-    const user = useAppSelector(selectCurrentUser);
+    const api = useEntityApi();
+
+    const user = useSessionUser();
 
     if (!user) {
         return null;
@@ -33,7 +34,7 @@ export default function ZUserTools() {
     };
     function handleSignOut() {
         handleCloseMenu();
-        dispatch(authSignout());
+        authSignOut(api);
     }
 
     function handleAccountSettingsOpen() {
