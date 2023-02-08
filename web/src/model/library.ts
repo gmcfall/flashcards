@@ -8,9 +8,9 @@ import { compareTimestamps, toClientTimestamp } from "../util/time";
 import { deleteDeck } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { LIBRARIES, METADATA } from "./firestoreConstants";
-import { AccessNotification, ClientLibrary, FirestoreLibrary, LerniApp, Metadata, MetadataEnvelope } from "./types";
+import { AccessNotification, ClientLibrary, FirestoreLibrary, LerniApp0, Metadata, MetadataEnvelope } from "./types";
 
-export function doLibraryReceive(lerni: LerniApp, action: PayloadAction<FirestoreLibrary>) {
+export function doLibraryReceive(lerni: LerniApp0, action: PayloadAction<FirestoreLibrary>) {
 
     const clientLibrary = toClientLibrary(action.payload);
     if (!lerni.library) {
@@ -22,7 +22,7 @@ export function doLibraryReceive(lerni: LerniApp, action: PayloadAction<Firestor
     }
 }
 
-export function doMetadataReceived(lerni: LerniApp, action: PayloadAction<MetadataEnvelope>) {
+export function doMetadataReceived(lerni: LerniApp0, action: PayloadAction<MetadataEnvelope>) {
     const lib = lerni.library;
     if (!lib) {
         console.log("ERROR:doMetadataReceived: expected `lerni.library` to be defined");
@@ -33,7 +33,7 @@ export function doMetadataReceived(lerni: LerniApp, action: PayloadAction<Metada
     }
 }
 
-export function doMetadataRemoved(lerni: LerniApp, action: PayloadAction<string>) {
+export function doMetadataRemoved(lerni: LerniApp0, action: PayloadAction<string>) {
 
     const lib = lerni.library;
     if (lib) {
@@ -217,3 +217,28 @@ function toFirestoreLibrary(lib: FirestoreLibrary): FirestoreLibrary {
         notifications
     }
 }
+
+// export function libraryTransform(client: EntityClient, lib: FirestoreLibrary) : ClientLibrary {
+//     const clientLib = toClientLibrary(lib);
+
+//     const map : Record<string, string> = {};
+
+//     // Fetch metadata for each resource listed in the Library,
+//     // and put the resource name into the map.
+
+//     clientLib.resources.forEach( resourceId => {
+//         const path = [METADATA, resourceId];
+//         const [status, data] = fetchEntity<Metadata>(client, path);
+//         const name = status === 'success' ? data.name : "Loading...";
+//         map[resourceId] = name;
+//     })
+
+//     clientLib.resources.sort((a, b) => {
+//         const aName = map[a];
+//         const bName = map[b];
+
+//         return aName.localeCompare(bName);
+//     })
+
+//     return clientLib;
+// }

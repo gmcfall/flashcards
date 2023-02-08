@@ -9,9 +9,9 @@ import {
     FormHelperText, IconButton, InputBase, Menu, MenuItem, Select, SelectChangeEvent, TextField, Tooltip, Typography
 } from "@mui/material";
 import { useEffect, useState } from "react";
+import { useSessionUser } from '../hooks/customHooks';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { changeCollaboratorRole, createIdentityRole, injectCollaborators, removeAcess, selectDeckAccessEnvelope } from '../model/access';
-import { selectCurrentUser } from '../model/auth';
 import { selectDeck } from "../model/deck";
 import { createIdentity, getIdentity, getIdentityByUsername } from '../model/identity';
 import { Access, AccessEnvelope, ANONYMOUS, Deck, EDITOR, Identity, IdentityRole, NOT_FOUND, Role, RoleName, SessionUser, VIEWER } from "../model/types";
@@ -887,7 +887,7 @@ export function ZSharingDialog(props: SharingDialogProps) {
     const [owner, setOwner] = useState<null | Identity>(null);
 
 
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
     const deck = useAppSelector(selectDeck);
     const accessEnvelope = useAppSelector(selectDeckAccessEnvelope);
     

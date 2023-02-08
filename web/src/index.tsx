@@ -1,5 +1,4 @@
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
@@ -9,7 +8,9 @@ import ZDeckPlayer from './components/ZDeckPlayer';
 import ZDeckShare from './components/ZDeckShare';
 import ZHome from './components/ZHome';
 import ZLibrary from './components/ZLibrary';
+import { FirebaseProvider } from './fbase/FirebaseContext';
 import './index.css';
+import firebaseApp from './model/firebaseApp';
 import reportWebVitals from './reportWebVitals';
 import store from './store/store';
 
@@ -41,16 +42,18 @@ const theme = createTheme({
 root.render(
   <Provider store={store}>
     <ThemeProvider theme={theme}>
-      <ZAuth/>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<ZHome/>}/>
-          <Route path="/library" element={<ZLibrary/>}/>
-          <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
-          <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
-          <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
-        </Routes>
-      </BrowserRouter>
+      <FirebaseProvider firebaseApp={firebaseApp}>
+        <ZAuth/>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<ZHome/>}/>
+            <Route path="/library" element={<ZLibrary/>}/>
+            <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
+            <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
+            <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
+          </Routes>
+        </BrowserRouter>
+      </FirebaseProvider>
     </ThemeProvider>
   </Provider>
 );

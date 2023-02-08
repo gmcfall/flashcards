@@ -1,17 +1,17 @@
+import { useEffect } from "react";
+import { AuthOptions, useAuthListener } from "../fbase/hooks";
 import { createAccessEnvelope, selectDeckAccessEnvelope } from "../model/access";
-import { selectSession } from "../model/auth";
-import { useAppDispatch, useAppSelector } from "./hooks";
-import { useEffect} from "react";
-import accessSet from "../store/actions/accessSet";
-import { ACCESS_DENIED, NOT_FOUND, UNKNOWN_ERROR } from "../model/types";
+import { userTransform } from "../model/auth";
+import { ACCESS_DENIED, NOT_FOUND, SessionUser, UNKNOWN_ERROR } from "../model/types";
 import accessGet from "../store/actions/accessGet";
-import authListen from "../store/actions/authListen";
+import accessSet from "../store/actions/accessSet";
+import { useAppDispatch, useAppSelector } from "./hooks";
 
 export function useAccessControl(resourceId?: string) {
 
 
     const dispatch = useAppDispatch();
-    const session = useAppSelector(selectSession);
+    const user = useSessionUser();
     const deckAccess = useAppSelector(selectDeckAccessEnvelope);
     
 
@@ -20,10 +20,10 @@ export function useAccessControl(resourceId?: string) {
             if (!deckAccess) {
                 const envelope = createAccessEnvelope(resourceId);
                 dispatch(accessSet(envelope));
-            } else if (session && !deckAccess.payload) {
+            } else if (user && !deckAccess.payload) {
 
                 const error = deckAccess.error;
-                const userUid = session?.user?.uid;
+                const userUid = user?.uid;
                 switch (error) {
                     case UNKNOWN_ERROR:
                         // Do nothing.
@@ -53,7 +53,7 @@ export function useAccessControl(resourceId?: string) {
                 }
             }
         }
-    }, [resourceId, dispatch, session, deckAccess])
+    }, [resourceId, dispatch, user, deckAccess])
 
     if (resourceId && deckAccess && deckAccess.resourceId !== resourceId) {
         return undefined;
@@ -61,14 +61,11 @@ export function useAccessControl(resourceId?: string) {
     return resourceId ? deckAccess : undefined;
 }
 
-export function useSession() {
+const sessionUserOptions: AuthOptions<SessionUser> = {
+    transform: userTransform
+}
 
-    const dispatch = useAppDispatch();
-    const session = useAppSelector(selectSession);
-    useEffect(() => {
-        dispatch(authListen())
-    }, [dispatch])
-
-    return session;
-
+export function useSessionUser() {
+    const [, user] = useAuthListener(sessionUserOptions);
+    return user;
 }

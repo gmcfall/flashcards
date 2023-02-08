@@ -1,9 +1,9 @@
 import { Box, Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { useEntityApi } from "../fbase/hooks";
+import { useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch } from "../hooks/hooks";
-import { resendEmailVerification, selectCurrentUser, startEmailVerificationListener, stopEmailVerificationListener, userProfileIsIncomplete } from "../model/auth";
-import authSignout from "../store/actions/authSignout";
+import { authSignOut, resendEmailVerification, startEmailVerificationListener, stopEmailVerificationListener, userProfileIsIncomplete } from "../model/auth";
 import { HasUser } from "./lerniCommon";
 import LerniTheme from "./lerniTheme";
 import ZAccountDeleteConfirm from "./ZAccountDeleteConfirm";
@@ -86,11 +86,11 @@ function ZCompleteProfile(props: HasUser) {
 }
 
 function ZOtherActions() {
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const [confirmDeleteOpen, setConfirmDeleteOpen] = useState<boolean>(false);
     
     function handleSignOut() {
-        dispatch(authSignout());
+        authSignOut(api);
     }
     
     function handleDeleteAccount() {
@@ -132,7 +132,7 @@ function ZOtherActions() {
 
 export default function ZAccountIncomplete() {
 
-    const user = useSelector(selectCurrentUser);
+    const user = useSessionUser();
     if (!user) {
         return null;
     }

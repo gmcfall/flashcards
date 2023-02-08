@@ -1,13 +1,6 @@
-import { useEffect } from 'react'
-import { useAppDispatch } from "../hooks/hooks";
-import authListen from '../store/actions/authListen';
+import { useSessionUser } from '../hooks/customHooks';
 
 export default function ZAuth() {
-
-    const dispatch = useAppDispatch();
-    useEffect(() => {
-        dispatch(authListen())
-    }, [dispatch])
-
+    useSessionUser();
     return null;
 }

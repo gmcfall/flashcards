@@ -1,8 +1,9 @@
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import { Box, Button, Link as Anchor, Typography } from "@mui/material";
 import { Link } from 'react-router-dom';
+import { useSessionUser } from '../hooks/customHooks';
 import { useAppSelector } from '../hooks/hooks';
-import { selectAccountIsIncomplete, selectSession } from '../model/auth';
+import { selectAccountIsIncomplete } from '../model/auth';
 import { libraryRoute } from '../model/routes';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
 import LerniTheme from './lerniTheme';
@@ -71,8 +72,8 @@ export default function ZHome() {
 }
 
 function ZLibraryLink() {
-    const session = useAppSelector(selectSession);
-    if (!session) {
+    const user = useSessionUser();
+    if (!user) {
         return null;
     }
     return (

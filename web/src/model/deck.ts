@@ -18,7 +18,7 @@ import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DeckField, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
 import { subscribeCard } from "./flashcard";
 import { createMetadata } from "./metadata";
-import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp, LOCK_CLOSED, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SharingIconType, Tags, UNTITLED_DECK } from "./types";
+import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp0, LOCK_CLOSED, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SharingIconType, Tags, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -41,7 +41,7 @@ function createDeckAccess(owner: string) : Access {
     }
 }
 
-export function doDeckPublishFulfilled(lerni: LerniApp, action: PayloadAction) {
+export function doDeckPublishFulfilled(lerni: LerniApp0, action: PayloadAction) {
     setAlert(lerni, {
         severity: INFO,
         message: "The deck has been published"
@@ -49,7 +49,7 @@ export function doDeckPublishFulfilled(lerni: LerniApp, action: PayloadAction) {
 }
 
 // TODO: move this to a Firebase function
-export async function publishDeck(lerni: LerniApp) {
+export async function publishDeck(lerni: LerniApp0) {
 
     const deck = lerni.deck;
     if (deck) {
@@ -162,7 +162,7 @@ async function addSearchResources(db: Firestore, resourceRef: ResourceRef, tags:
 }
 
 
-function getDeckTags(lerni: LerniApp) {
+function getDeckTags(lerni: LerniApp0) {
     const set = new Set<string>();
     const deck = lerni.deck;
     if (deck) {
@@ -269,6 +269,8 @@ export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
                 }
             }
         })
+    }, (error) => {
+        console.error("error", error);
     })
 
 }
@@ -285,7 +287,7 @@ export function deckUnsubscribe() {
     }
 }
 
-export function doDeckModified(lerni: LerniApp, action: PayloadAction<Deck>) {
+export function doDeckModified(lerni: LerniApp0, action: PayloadAction<Deck>) {
     const newDeck = action.payload;
     // The deck may have been modified for two reasons:
     // 1. To update the `name`
@@ -296,7 +298,7 @@ export function doDeckModified(lerni: LerniApp, action: PayloadAction<Deck>) {
     deckEditorReceiveModifiedDeck(lerni, oldDeck, newDeck);
 }
 
-export function doDeckAdded(lerni: LerniApp, action: PayloadAction<Deck>) {
+export function doDeckAdded(lerni: LerniApp0, action: PayloadAction<Deck>) {
     const deck = action.payload;
     lerni.deck = deck;
     if (lerni.deckEditor) {
@@ -304,7 +306,7 @@ export function doDeckAdded(lerni: LerniApp, action: PayloadAction<Deck>) {
     }
 }
 
-export function doDeckNameUpdate(lerni: LerniApp, action: PayloadAction<string>) {
+export function doDeckNameUpdate(lerni: LerniApp0, action: PayloadAction<string>) {
     const deck = lerni.deck;
     if (deck) {
         deck.name = action.payload;

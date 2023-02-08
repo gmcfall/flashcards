@@ -6,8 +6,9 @@ import {
 } from '@mui/material';
 import { AuthProvider, FacebookAuthProvider, getAuth, GoogleAuthProvider, TwitterAuthProvider } from 'firebase/auth';
 import { useEffect, useState } from 'react';
+import { useSessionUser } from '../hooks/customHooks';
 import { useAppDispatch, useAppSelector } from '../hooks/hooks';
-import { providerRegister, selectCurrentUser, selectRegistrationState, submitEmailRegistrationForm, submitIdentityCleanup } from '../model/auth';
+import { providerRegister0, selectRegistrationState, submitEmailRegistrationForm, submitIdentityCleanup } from '../model/auth';
 import firebaseApp from '../model/firebaseApp';
 import { replaceAnonymousUsername } from '../model/identity';
 import { ProviderNames, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_END, REGISTER_PROVIDER_USERNAME } from '../model/types';
@@ -97,7 +98,7 @@ function registerViaProvider(
     provider: AuthProvider,
     setError: (value: string | null) => void
 ) {
-    providerRegister(dispatch, provider).catch(
+    providerRegister0(dispatch, provider).catch(
         error => {
             if (error instanceof Error) {
                 console.error(error.message);
@@ -178,7 +179,7 @@ function ZEmailUsernameRetry()  {
     const [username, setUsername] = useState<string>("");
     const [usernameError, setUsernameError] = useState<string>("");
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
 
     function handleSubmit() {
         const ok = validateUsername(username, setUsernameError);
@@ -415,7 +416,7 @@ function ZEmailVerify(props: RegisterWizardCloser) {
 
 function ZProviderUsername() {
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
     const [displayName, setDisplayName] = useState<string>("");
     const [displayNameError, setDisplayNameError] = useState<string>("");
     const [username, setUsername] = useState<string>("");

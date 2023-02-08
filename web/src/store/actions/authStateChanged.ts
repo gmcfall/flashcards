@@ -11,7 +11,7 @@ const authStateChanged = createAppAsyncThunk(
     async (user: User, thunkApi) => {
         try {
             const state = thunkApi.getState();
-            const signinActive = selectSigninActive(state);
+            const signinActive = selectSigninActive(state.lerni);
             if (signinActive) {
                 return;
             }

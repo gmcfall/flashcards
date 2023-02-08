@@ -1,18 +1,18 @@
 import { Button } from "@mui/material";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectCurrentUser } from "../model/auth";
-import authSignin from "../store/actions/authSignin";
+import { useEntityApi } from "../fbase/hooks";
+import { useSessionUser } from "../hooks/customHooks";
+import { authBeginSignIn } from "../model/auth";
 import { SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
 import { ZSigninWizard } from "./ZSigninWizard";
 
 export default function ZSignInButton() {
-    const dispatch = useAppDispatch();
-    const user = useAppSelector(selectCurrentUser);
+    const api = useEntityApi();
+    const user = useSessionUser();
     // Don't display the sign in button if the user is already signed in
     
 
     function handleClick() {
-        dispatch(authSignin(true));
+        authBeginSignIn(api);
     }
 
     return (

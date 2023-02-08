@@ -349,7 +349,7 @@ export interface ClientLibrary {
     /** The list of `id` values for resources in the library */
     resources: string[];
 
-    /** The list of access requests */
+    /** The list of access notifications */
     notifications: AccessNotification[];
 
     /** A map where the key is the `id` for a resource and the value is its metadata */
@@ -411,31 +411,40 @@ export const REGISTER_PROVIDER_END: RegisterStage = 'REGISTER_PROVIDER_END';
  */
 export const REGISTER_EMAIL_USERNAME_RETRY: RegisterStage = 'REGISTER_EMAIL_USERNAME_RETRY';
 
+/**
+ * A possible return value from the `providerSignIn` and `emailPasswordSignIn` functions.
+ */
+export type SignInResult =
+    'SIGNIN_FAILED' |
+    'GET_IDENTITY_FAILED' |
+    'IDENTITY_NOT_FOUND' |
+    'SIGNIN_OK'
+
+
 /** 
- * A message indicating that sign-in via an external AuthProvider 
- * (Google, Facebook, Twitter) failed.
- * 
- * This message is encapsulated in an Error thrown by `providerSignIn`
+ * A return value from `providerSignIn` or `emailPasswordSignIn` indicating that the 
+ * Firebase threw an error during the sign in process.
  */
-export const SIGNIN_FAILED ='SIGNIN_FAILED';
+export const SIGNIN_FAILED: SignInResult ='SIGNIN_FAILED';
 
 /**
- * A message indicating that an error occurred while getting
- * the Identity document from Firestore after a successful signin
- * from an external AuthProvider (Google, Facebook, Twitter).
- * 
- * This message is encapsulated in an Error thrown by `providerSignIn`
+ * A return value from `providerSignIn` or `emailPasswordSignIn` indicating that an error 
+ * occurred while getting the Identity document from Firestore after a successful signin.
  */
-export const GET_IDENTITY_FAILED = 'GET_IDENTITY_FAILED';
+export const GET_IDENTITY_FAILED: SignInResult = 'GET_IDENTITY_FAILED';
 
 /**
- * A message indicating that the Identity document from Firestore
- * was not found after a successful signin from an exernal 
- * AuthProvider (Google, Facebook, Twitter).
- * 
- * This message is encapsulated in an Error thrown by `providerSignIn`
+ * A return value from `providerSignIn` or `emailPasswordSignIn` indicating that the 
+ * Identity document from Firestore was not found after a successful signin.
  */
-export const IDENTITY_NOT_FOUND = 'IDENTITY_NOT_FOUND';
+export const IDENTITY_NOT_FOUND: SignInResult = 'IDENTITY_NOT_FOUND';
+
+/**
+ * A return value from `providerSignIn` or `emailPasswordSignIn` indicating that the 
+ * sign in process was successful.
+ */
+export const SIGNIN_OK: SignInResult = 'SIGNIN_OK';
+
 
 /**
  * A representation of a User stored in the client-side Session.
@@ -517,8 +526,6 @@ export interface AlertData {
     severity: AlertSeverity,
     message: string
 }
-
-
 
 /** A role that determines permissions for accessing a Deck */
 export type Role = 'owner' | 'editor' | 'viewer';
@@ -720,6 +727,22 @@ export interface DeckEditor {
 }
 
 export interface LerniApp {
+
+    /** The state of the Registration dialog */
+    authRegisterStage?: RegisterStage,
+    
+    /**
+     * A flag which specifies whether the user is actively signing in.
+     * When true, the ZSigninWizard is open.
+     */
+    signinActive?: boolean;
+    
+    /** Data used to display a transient Alert */
+    alertData?: AlertData,
+
+}
+
+export interface LerniApp0 {
 
     /** Details about the current session */
     session?: Session,

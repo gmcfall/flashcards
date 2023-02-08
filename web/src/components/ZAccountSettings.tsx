@@ -1,11 +1,11 @@
-import ZDialogWithTitle from "./ZDialogWithTitle";
+import Button from '@mui/material/Button';
 import DialogContentText from '@mui/material/DialogContentText';
 import TextField from '@mui/material/TextField';
-import Button from '@mui/material/Button';
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectCurrentUser } from "../model/auth";
 import React, { useState } from 'react';
+import { useSessionUser } from "../hooks/customHooks";
+import { useAppDispatch } from "../hooks/hooks";
 import accountDisplayNameUpdate from "../store/actions/accountDisplayNameUpdate";
+import ZDialogWithTitle from "./ZDialogWithTitle";
 
 interface AccountSettingsProps {
     open: boolean;
@@ -16,7 +16,7 @@ export default function ZAccountSettings(props: AccountSettingsProps) {
     const {open, setOpen} = props;
 
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
 
     const [displayName, setDisplayName] = useState<string>(
         user?.displayName || 'Anonymous'

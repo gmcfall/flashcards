@@ -1,18 +1,23 @@
 import { NavigateFunction } from "react-router-dom";
 import { createAppAsyncThunk } from "../../hooks/hooks";
-import { selectCurrentUser } from "../../model/auth";
 import { createDeck, saveDeck } from "../../model/deck";
 import { createErrorInfo } from "../../model/errorHandler";
 import { createFlashcardRef, createServerFlashCard } from "../../model/flashcard";
 import { deckEditRoute } from "../../model/routes";
+import { SessionUser } from "../../model/types";
 
+
+interface DeckAddProps {
+    navigate: NavigateFunction,
+    user: SessionUser | null | undefined
+}
 
 const deckAdd = createAppAsyncThunk(
     "deck/add",
-    async (navigate: NavigateFunction, thunkApi) => {
+    async (props: DeckAddProps, thunkApi) => {
+        const navigate = props.navigate;
+        const user = props.user;
         try {
-            const state = thunkApi.getState();
-            const user = selectCurrentUser(state);
             if (!user) {
                 return thunkApi.rejectWithValue({
                     message: "Cannot create a new Deck because you are not signed-in"

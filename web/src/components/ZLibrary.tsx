@@ -6,11 +6,12 @@ import {
     ListItemText, MenuItem, Paper, Select, SelectChangeEvent, Tooltip, Typography
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { useData } from '../fbase/hooks';
+import { useSessionUser } from '../hooks/customHooks';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
-import { selectAccountIsIncomplete, selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
+import { selectAccountIsIncomplete, selectRegistrationState, selectSigninActive } from "../model/auth";
 import { libraryUnsubscribe, removeNotification, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import {
@@ -31,12 +32,12 @@ import ZAuthTools from './ZAuthTools';
 function ZLibraryHeader() {
 
     const dispatch = useAppDispatch();
-    const session = useAppSelector(selectSession);
+    const user = useSessionUser();
     const navigate = useNavigate();
 
     function handleNewDeckButtonClick() {
-        if (session) {
-            dispatch(deckAdd(navigate));
+        if (user) {
+            dispatch(deckAdd({navigate, user}));
         } else {
             dispatch(alertPost({
                 severity: ERROR,
@@ -75,7 +76,7 @@ function ZLibResource(props: LibResourceProps) {
     const {resource} = props;
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const user = useSelector(selectCurrentUser);
+    const user = useSessionUser();
 
     if (!user) {
         return null;
@@ -384,10 +385,9 @@ function ZLibraryNotifications(props: LibraryNotificationsProps) {
 
 function ZLibraryContent() {
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectCurrentUser);
-    const session = useAppSelector(selectSession);
+    const user = useSessionUser();
     const registrationState = useAppSelector(selectRegistrationState);
-    const signinActive = useAppSelector(selectSigninActive);
+    const signinActive = useData(selectSigninActive);
     const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
     const navigate = useNavigate();
 
@@ -406,7 +406,7 @@ function ZLibraryContent() {
 
     }, [dispatch, userUid, accountIsIncomplete])
 
-    if (registrationState || signinActive || !session) {
+    if (registrationState || signinActive || user===undefined) {
         return null;
     }
     
@@ -434,7 +434,7 @@ function ZLibraryContent() {
     }
 
     function handleNewDeck() {
-        dispatch(deckAdd(navigate));
+        dispatch(deckAdd({navigate, user}));
     }
     if (lib.resources.length===0) {
         return (

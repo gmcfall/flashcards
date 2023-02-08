@@ -1,9 +1,9 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../store/store";
 import { displayError } from "./errorHandler";
-import { ClientFlashcard, Deck, DeckEditor, LerniApp } from "./types";
+import { ClientFlashcard, Deck, DeckEditor, LerniApp0 } from "./types";
 
-export function doDeckeditorMount(lerni: LerniApp, action: PayloadAction<string>) {
+export function doDeckeditorMount(lerni: LerniApp0, action: PayloadAction<string>) {
     const deckId = action.payload;
     const deckAccess = lerni.deckAccess;
     if (deckAccess && deckAccess.resourceId !== deckId) {
@@ -19,19 +19,19 @@ export function doDeckeditorMount(lerni: LerniApp, action: PayloadAction<string>
     };
 }
 
-export function doDeckeditorUnmount(lerni: LerniApp, action: PayloadAction) {
+export function doDeckeditorUnmount(lerni: LerniApp0, action: PayloadAction) {
     lerni.deckEditor = {}
     lerni.cards = {}
     delete lerni.deck;
 }
 
-export function doDeckeditorNewActiveCardDelete(lerni: LerniApp, action: PayloadAction) {
+export function doDeckeditorNewActiveCardDelete(lerni: LerniApp0, action: PayloadAction) {
     if (lerni.deckEditor) {
         delete lerni.deckEditor.newActiveCard;
     }
 }
 
-export function deckEditorReceiveAddedDeck(lerni: LerniApp, deckEditor: DeckEditor, deckId: string) {
+export function deckEditorReceiveAddedDeck(lerni: LerniApp0, deckEditor: DeckEditor, deckId: string) {
     const bootstrap = lerni.deckBootstrap;
     if (bootstrap) {
         bootstrap.deckId = deckId;
@@ -44,7 +44,7 @@ export function deckEditorReceiveAddedDeck(lerni: LerniApp, deckEditor: DeckEdit
     }
 }
 
-export function deckEditorReceiveRemovedCard(lerni: LerniApp, deckEditor: DeckEditor, cardId: string) {
+export function deckEditorReceiveRemovedCard(lerni: LerniApp0, deckEditor: DeckEditor, cardId: string) {
     const cardRemove = deckEditor.cardRemove;
     if (!cardRemove) {
         displayError(
@@ -62,7 +62,7 @@ export function deckEditorReceiveRemovedCard(lerni: LerniApp, deckEditor: DeckEd
  * 1. We are receiving cards during the DeckEditor bootstrap process
  * 2. The user clicked the [Add Flashcard] button in the editor
  */
-export function deckEditorReceiveAddedCard(lerni: LerniApp, card: ClientFlashcard) {
+export function deckEditorReceiveAddedCard(lerni: LerniApp0, card: ClientFlashcard) {
     const deckEditor = lerni.deckEditor;
     if (deckEditor) {
         const deck = lerni.deck;
@@ -90,7 +90,7 @@ function endCardAdd(deckEditor: DeckEditor, cardId: string) {
     deckEditor.newActiveCard = true;
 }
 
-function endBootstrap(lerni: LerniApp, deck: Deck, deckEditor: DeckEditor) {
+function endBootstrap(lerni: LerniApp0, deck: Deck, deckEditor: DeckEditor) {
     const deckCards = deck.cards;
     if (deckCards.length>0) {
         const first = deckCards[0];
@@ -100,7 +100,7 @@ function endBootstrap(lerni: LerniApp, deck: Deck, deckEditor: DeckEditor) {
     delete lerni.deckBootstrap;
 }
 
-export function deckEditorReceiveModifiedDeck(lerni: LerniApp, oldDeck: Deck | undefined, newDeck: Deck) {
+export function deckEditorReceiveModifiedDeck(lerni: LerniApp0, oldDeck: Deck | undefined, newDeck: Deck) {
 
     const deckEditor = lerni.deckEditor;
     if (deckEditor) {
@@ -147,7 +147,7 @@ export function deckEditorReceiveModifiedDeck(lerni: LerniApp, oldDeck: Deck | u
     }
 }
 
-function endCardRemove(lerni: LerniApp, deckEditor: DeckEditor, cardId :string, oldDeck: Deck ) {
+function endCardRemove(lerni: LerniApp0, deckEditor: DeckEditor, cardId :string, oldDeck: Deck ) {
     delete deckEditor.cardRemove;
 
     const oldCards = oldDeck.cards;

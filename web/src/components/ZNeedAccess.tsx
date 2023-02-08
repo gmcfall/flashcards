@@ -1,14 +1,15 @@
-import { Box, Button, TextareaAutosize, Typography, Alert } from "@mui/material";
+import { Alert, Box, Button, TextareaAutosize, Typography } from "@mui/material";
 import { useState } from "react";
-import { useSession } from "../hooks/customHooks";
+import { useEntityApi } from "../fbase/hooks";
+import { useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch } from "../hooks/hooks";
+import { persistAccessRequest } from "../model/access";
+import { authBeginSignIn } from "../model/auth";
 import { Access, Identity } from "../model/types";
 import authRegisterBegin from "../store/actions/authRegisterBegin";
-import authSignin from "../store/actions/authSignin";
 import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
 import { ZRegisterWizard } from "./ZRegisterWizard";
 import { ZSigninWizard } from "./ZSigninWizard";
-import { persistAccessRequest } from "../model/access";
 
 interface AlertData {
     severity: "error" | "info";
@@ -76,12 +77,12 @@ function ZRequestAccess(props: NeedAccessProps) {
 }
 
 function ZMustSignIn() {
-    
+    const api = useEntityApi();
     const dispatch = useAppDispatch();
     const [, setRegisterOpen] = useState<boolean>(false);
 
     function handleSignInClick() {
-        dispatch(authSignin(true))
+        authBeginSignIn(api);
     }
 
     function handleRegisterClick() {
@@ -121,14 +122,14 @@ interface NeedAccessProps {
 export default function ZNeedAccess(props: NeedAccessProps) {
     const {resourceId, access, requester} = props;
 
-    const session = useSession();
+    const user = useSessionUser();
 
-    if (!session) {
+    if (user===undefined) {
         return (
             <Box/>
         )
     }
-    const isSignedIn = Boolean(session.user);
+    const isSignedIn = Boolean(user);
 
     return (
 

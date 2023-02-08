@@ -1,7 +1,7 @@
-import { useEffect } from "react";
 import { Box, Typography } from "@mui/material";
+import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useAccessControl, useSession } from "../hooks/customHooks";
+import { useAccessControl, useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch } from "../hooks/hooks";
 import { checkPrivilege } from "../model/access";
 import { deckEditRoute, deckViewRoute } from "../model/routes";
@@ -12,12 +12,12 @@ export default function ZDeckShare() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const accessControl = useAccessControl(deckId);
-    const session = useSession();
+    const user = useSessionUser();
 
     useEffect(() => {
 
-        if (deckId && session && accessControl) {
-            const userUid = session.user?.uid;
+        if (deckId && user && accessControl) {
+            const userUid = user.uid;
             const canEdit = checkPrivilege(EDIT, accessControl, deckId, userUid);
             if (canEdit) {
                 navigate(deckEditRoute(deckId));
@@ -26,7 +26,7 @@ export default function ZDeckShare() {
             }
         }
 
-    }, [deckId, session, accessControl, dispatch, navigate])
+    }, [deckId, user, accessControl, dispatch, navigate])
 
     return (
         <Box sx={{display: "flex", justifyContent: "center", marginTop: "50px"}}>

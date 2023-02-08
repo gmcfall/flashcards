@@ -14,9 +14,9 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSessionUser } from '../hooks/customHooks';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { checkPrivilege, selectDeckAccessEnvelope } from '../model/access';
-import { selectCurrentUser } from '../model/auth';
 import { selectDeck, selectSharingIcon } from '../model/deck';
 import { libraryRoute } from "../model/routes";
 import { GLOBE, LOCK_OPEN, SHARE, SharingIconType, UNTITLED_DECK } from '../model/types';
@@ -232,7 +232,7 @@ function ZShareButton() {
     const [open, setOpen] = useState<boolean>(false);
     const shareIconType = useAppSelector(selectSharingIcon);
     const deckAccess = useAppSelector(selectDeckAccessEnvelope);
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
 
     const userUid = user?.uid;
     const canShare = checkPrivilege(SHARE, deckAccess, deckId, userUid);

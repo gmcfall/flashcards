@@ -1,8 +1,8 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { setAlert } from "./alert";
-import { AlertData, LerniApp, ERROR, ErrorInfo } from "./types";
+import { AlertData, ERROR, ErrorInfo, LerniApp0 } from "./types";
 
-export function doErrorDisplay(lerni: LerniApp, action: PayloadAction<ErrorInfo | undefined>) {
+export function doErrorDisplay(lerni: LerniApp0, action: PayloadAction<ErrorInfo | undefined>) {
     // TODO: Log the error to the firestore console via a function
     const info = action.payload;
     console.log("ERROR:", info);
@@ -18,7 +18,7 @@ export function doErrorDisplay(lerni: LerniApp, action: PayloadAction<ErrorInfo 
 
 }
 
-export function displayError(lerni: LerniApp, message: string, cause?: string) {
+export function displayError(lerni: LerniApp0, message: string, cause?: string) {
     const data: AlertData = {
         severity: ERROR,
         message

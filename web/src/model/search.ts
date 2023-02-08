@@ -6,7 +6,7 @@ import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import firebaseApp from "./firebaseApp";
 import { SEARCH } from "./firestoreConstants";
-import { FULFILLED, LerniApp, PENDING, ResourceRef, ResourceSearchClientData, ResourceSearchRequest, ResourceSearchResponsePart, ResourceSearchServerData } from "./types";
+import { FULFILLED, LerniApp0, PENDING, ResourceRef, ResourceSearchClientData, ResourceSearchRequest, ResourceSearchResponsePart, ResourceSearchServerData } from "./types";
 
 /**
  * Here's a summary of the Search Use Case
@@ -96,7 +96,7 @@ import { FULFILLED, LerniApp, PENDING, ResourceRef, ResourceSearchClientData, Re
  * 
  * See also {@link doResourceSearchEnd}
  */
-export function doResourceSearchRequestPending(lerni: LerniApp, action: PayloadAction<undefined, string, {
+export function doResourceSearchRequestPending(lerni: LerniApp0, action: PayloadAction<undefined, string, {
     arg: ResourceSearchRequest;
     requestId: string;
     requestStatus: "pending";
@@ -184,7 +184,7 @@ function createResourceSearchServerData() {
  * An action handler that fires when the user changes the content of search field to
  * an empty string or the search field blurs.
  */
-export function doResourceSearchEnd(lerni: LerniApp, action: PayloadAction) {
+export function doResourceSearchEnd(lerni: LerniApp0, action: PayloadAction) {
     delete lerni.resourceSearch;
 }
 
@@ -295,7 +295,7 @@ function mergeSearchResults(searchClientData: ResourceSearchClientData) {
     
 }
 
-export function doResourceSearchResponsePart(lerni: LerniApp, action: PayloadAction<ResourceSearchResponsePart>) {
+export function doResourceSearchResponsePart(lerni: LerniApp0, action: PayloadAction<ResourceSearchResponsePart>) {
     
     const clientSearchData = lerni.resourceSearch;
     if (clientSearchData) {

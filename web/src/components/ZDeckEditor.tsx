@@ -3,10 +3,11 @@ import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import { useAccessControl } from "../hooks/customHooks";
+import { useData } from "../fbase/hooks";
+import { useAccessControl, useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { checkPrivilege } from "../model/access";
-import { selectAccountIsIncomplete, selectCurrentUser, selectRegistrationState, selectSession, selectSigninActive } from "../model/auth";
+import { selectAccountIsIncomplete, selectRegistrationState, selectSigninActive } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectNewActiveCard } from "../model/deckEditor";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
@@ -150,9 +151,9 @@ function ZDeckEditorContent(props: TiptapProps) {
     const {editor} = props;
     
     const dispatch = useAppDispatch();
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
     const registrationState = useAppSelector(selectRegistrationState);
-    const signinActive = useAppSelector(selectSigninActive);
+    const signinActive = useData(selectSigninActive);
     const deck = useAppSelector(selectDeck);
     const activeCard = useAppSelector(selectActiveCard);
 
@@ -323,15 +324,13 @@ export default function ZDeckEditor() {
     const {deckId} = useParams();
     const newActiveCard = useSelector(selectNewActiveCard);
     const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
-    const user = useAppSelector(selectCurrentUser);
+    const user = useSessionUser();
     const deckAccess = useAccessControl(deckId);
-    const session = useSelector(selectSession);
     const [editor, setEditor] = useState<Editor | null>(null);
 
     const userUid = user?.uid;
     
     const canEdit = checkPrivilege(EDIT, deckAccess, deckId, userUid);
-
 
     useEffect(() => {
         function handleKeyup(event: KeyboardEvent) {
@@ -408,7 +407,7 @@ export default function ZDeckEditor() {
     }, [newActiveCard, editor, dispatch])
     
     const access = deckAccess?.payload;
-    if (!session || !deckId || !access || !user) {
+    if (!deckId || !access || !user) {
         return null;
     }
 
@@ -418,7 +417,7 @@ export default function ZDeckEditor() {
     }
 
     return (
-        (!session && <Box/>) ||
+        (!user && <Box/>) ||
         ((deckAccess?.error === NOT_FOUND) && <ZNotFound message="The deck you are trying to access was not found."/>) ||
         ((!canEdit) && (
             <ZNeedAccess 
