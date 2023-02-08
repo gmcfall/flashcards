@@ -16,12 +16,6 @@ export type EntityTuple<T> = (
     ErrorTuple
 )
 
-export type NonIdleTuple<T> = (
-    PendingTuple |
-    SuccessTuple<T> |
-    ErrorTuple
-)
-
 export type AuthStatus = 'pending' | 'signedIn' | 'signedOut' | 'error';
 export type SignedInTuple<UserType> = ['signedIn', UserType, undefined];
 export type SignedOutTuple = ['signedOut', null, undefined];

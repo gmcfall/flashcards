@@ -1,38 +1,18 @@
+import produce from "immer";
 import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
 import EntityClient, { claimLease, putEntity, removeLeaseeFromLease } from "./EntityClient";
-import { AUTH_USER, AUTH_USER_LEASE_OPTIONS } from "./hooks";
+import { AUTH_USER } from "./hooks";
 import Lease from "./Lease";
-import { EntityKey, EntityTuple, LeaseOptions, PathElement } from "./types";
+import { EntityCache, EntityKey, EntityTuple, LeaseOptions, PathElement } from "./types";
 import { hashEntityKey } from "./util";
 
-/**
- * A client that allows a leasee to manage Firebase entities.
- * A leasee is some individual that holds a lease to one or more Firebase entities.
- * Typically, the leasee is a React Component, but it doesn't have to be.
- * 
- * The LeaseeClient encapsulates an [immer](https://immerjs.github.io/immer/) 
- * proxy of an EntityClient cache.  This allows the LeaseeClient to update the cache.
- */
-export default class LeaseeClient {
-
-    /** The name of the leasee. Typically this is the name of a React component. */
-    readonly leasee: string;
-
-    /** The EntityClient that manages Firebase entities */
-    readonly entityClient: EntityClient;
-
-
-    constructor(leasee: string, entityClient: EntityClient) {
-        this.leasee = leasee;
-        this.entityClient = entityClient;
-    }
-}
 
 /**
  * A function that creates a listener for a given document. This function is idempotent: you
  * can call it multiple times with the same arguments, but a listener will be created only on
  * the first call.
- * @param client The LeaseeClient that manages the caller's leases.
+ * @param client The EntityClient that manages leases.
+ * @param leasee The name of the leasee that is claiming a lease on the watched entity
  * @param path The path to the document to be watched. If any element of the path is `undefined`,
  *      this function does nothing and returns `[idle, undefined, undefined]`.
  * @param options An object encapsulating optional arguments. This object may contain any of the
@@ -59,30 +39,19 @@ export function watchEntity<
     TRaw = unknown,
     TFinal = TRaw
 >(
-    client: LeaseeClient,
+    client: EntityClient,
+    leasee: string,
     path: PathElement[],
     options?: ListenerOptions<TRaw, TFinal>
 ) {
-
     const validPath = validatePath(path);
     const hashValue = validPath ? hashEntityKey(path) : "";
 
-    startDocListener(client.leasee, client.entityClient, validPath, hashValue, options);
+    startDocListener(leasee, client, validPath, hashValue, options);
 
-    return lookupEntityTuple<TFinal>(client.entityClient.cache, hashValue);
+    return lookupEntityTuple<TFinal>(client.cache, hashValue);
 }
 
-export function setUser(client: LeaseeClient, value: unknown) {
-    const entityClient = client.entityClient;
-
-    putEntity(client.entityClient, AUTH_USER, value);
-    let lease = entityClient.leases.get(AUTH_USER);
-    if (!lease) {
-        lease = new Lease(AUTH_USER);
-        entityClient.leases.set(AUTH_USER, lease);
-    }
-    claimLease(entityClient, AUTH_USER, client.leasee, AUTH_USER_LEASE_OPTIONS);
-}
 
 function toHashValue(key: string | EntityKey) {
     if (typeof(key) === 'string') {
@@ -95,7 +64,8 @@ function toHashValue(key: string | EntityKey) {
 /**
  * Insert or update the data value for some entity in the local cache.
  * This function also creates or updates the caller's lease for that entity.
- * @param client The LeaseeClient that provides access to the local cache
+ * @param client The EntityClient that provides access to the local cache
+ * @param leasee The name of the leasee claiming a lease on the entity
  * @param key The key under which the entity shall be stored
  * @param value The data value to be stored in the local cache
  * @param options An object containing the following optional configuration parameters
@@ -104,34 +74,67 @@ function toHashValue(key: string | EntityKey) {
  *              An abandoned entity is one that has no leasees. Set `cacheTime` to `Number.POSITIVE_INFINITY`
  *              if you want the entity to remain in the cache indefinitely.
  */
-export function setEntity(client: LeaseeClient, key: string | EntityKey, value: unknown, options?: LeaseOptions) {
+export function setLeasedEntity(
+    client: EntityClient, 
+    leasee: string, 
+    key: string | EntityKey, 
+    value: unknown, 
+    options?: LeaseOptions
+) {
 
     const hashValue = toHashValue(key);
     if (hashValue) {
-        const entityClient = client.entityClient;
-        putEntity(entityClient, hashValue, value);
-        let lease = entityClient.leases.get(hashValue);
+        putEntity(client, hashValue, value);
+        let lease = client.leases.get(hashValue);
         if (!lease) {
             lease = new Lease(hashValue);
-            entityClient.leases.set(hashValue, lease);
+            client.leases.set(hashValue, lease);
         }
-        claimLease(entityClient, hashValue, client.leasee, options);
+        claimLease(client, hashValue, leasee, options);
     }
 }
 
+export function setAuthUser(client: EntityClient, value: unknown) {
+    putEntity(client, AUTH_USER, value);
+}
+
+function resolveCache(value: Object) {
+    return (
+        value.hasOwnProperty('cache') ? (value as EntityClient).cache :
+        value as EntityCache
+    )
+}
+
+
+export function mutate<StateType>(client: EntityClient, recipe: (state: StateType) => void) {
+    client.setCache(
+        oldCache => {
+            return produce(oldCache, draft => recipe(draft as StateType));
+        }
+    )
+}
+
+
 /**
  * Get a tuple describing an entity in the local cache.
- * @param client The client that provides access to the cache
+ * @param clientOrCache The client that provides access to the cache, or the cache itself
  * @param entityKey The key under which the entity is stored in the cache
  * @returns A tuple describing the requested entity.
  */
-export function getEntity<Type>(client: EntityClient | LeaseeClient, key: string | EntityKey) {
+export function getEntity<Type>(clientOrCache: EntityClient | Object, key: string | EntityKey) {
     const hashValue = toHashValue(key);
-    const cache = client.hasOwnProperty("entityClient") ? 
-        (client as LeaseeClient).entityClient.cache :
-        (client as EntityClient).cache;
+    const cache = resolveCache(clientOrCache);
     return lookupEntityTuple<Type>(cache, hashValue);
 }
+
+export function getClientState<T>(client: EntityClient) {
+    return client.cache as T
+}
+
+export interface TypedClientStateGetter<T> {
+    (client: EntityClient): T
+}
+
 
 /**
  * Get a specific entity from the cache, and start a document listener
@@ -144,7 +147,8 @@ export function getEntity<Type>(client: EntityClient | LeaseeClient, key: string
  *  - `TRaw`: The type of the data object in Firestore
  *  - `TFinal`: The final type of the entity if a transform is applied
  * 
- * @param client The LeaseeClient used to fetch the entity
+ * @param client The EntityClient that is managing entities
+ * @param leasee The name of the leasee making a claim on the entity
  * @param path The path the document in Firestore
  * @param options Options for managaging the entity. This argument is an object 
  *  with the following optional properties:
@@ -157,7 +161,8 @@ export function getEntity<Type>(client: EntityClient | LeaseeClient, key: string
  * @returns An EntityTuple describing the requested entity
  */
 export function fetchEntity<TRaw = unknown, TFinal = TRaw>(
-    client: LeaseeClient,
+    client: EntityClient,
+    leasee: string,
     path: PathElement[], 
     options?: ListenerOptions<TRaw, TFinal>
 ) : EntityTuple<TFinal> {
@@ -165,26 +170,26 @@ export function fetchEntity<TRaw = unknown, TFinal = TRaw>(
     const validPath = validatePath(path);
     const hashValue = validPath ? hashEntityKey(validPath) : '';
     startDocListener<TRaw, TFinal>(
-        client.leasee, client.entityClient, validPath, hashValue, options
+        leasee, client, validPath, hashValue, options
     )
 
-    return lookupEntityTuple<TFinal>(client.entityClient.cache, hashValue);
+    return lookupEntityTuple<TFinal>(client.cache, hashValue);
 }
 
 /**
  * Release the claim that a leasee has on a specific entity within the local cache
- * @param client LeaseeClient The LeaseeClient that manages leases and entities on behalf of the leasee
+ * @param client EntityClient The EntityClient that manages leases and entities
+ * @param leasee The name of the leasee
  * @param key The EntityKey under which the entity is stored in the local cache
  */
-export function releaseClaim(client: LeaseeClient, key: EntityKey) {
+export function releaseClaim(client: EntityClient, leasee: string, key: EntityKey) {
 
     if (validateKey(key)) {
         const hashValue = hashEntityKey(key);
-        const lease = client.entityClient.leases.get(hashValue);
+        const lease = client.leases.get(hashValue);
         if (lease) {
-            const leasee = client.leasee;
-            removeLeaseeFromLease(client.entityClient, lease, leasee);
-            const leaseeLeases = client.entityClient.leaseeLeases;
+            removeLeaseeFromLease(client, lease, leasee);
+            const leaseeLeases = client.leaseeLeases;
             const set = leaseeLeases.get(leasee);
             if (set) {
                 set.delete(lease);

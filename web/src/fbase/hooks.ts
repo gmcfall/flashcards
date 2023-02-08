@@ -2,8 +2,8 @@ import { getAuth, onAuthStateChanged, User } from "firebase/auth";
 import { useContext, useEffect } from "react";
 import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
 import EntityClient, { createLeasedEntity, putEntity } from "./EntityClient";
-import { FirebaseContext } from "./FirebaseContext";
-import LeaseeClient from "./LeaseeClient";
+import { entityApi, FirebaseContext } from "./FirebaseContext";
+import LeaseeApi from "./LeaseeApi";
 import { AuthTuple, EntityKey, EntityTuple, PathElement } from "./types";
 import { hashEntityKey } from "./util";
 
@@ -74,7 +74,7 @@ export function useDocListener<
  */
 export interface AuthOptions<Type=User> {
     /** A function that transforms the Firebase user into a different structure */
-    transform?: (client: LeaseeClient, user: User) => Type | null | undefined;
+    transform?: (api: LeaseeApi, user: User) => Type | null | undefined;
 
     /** A callback that is invoked when it is known that the user is not signed in */
     onSignedOut?: () => void;
@@ -104,15 +104,14 @@ export function useAuthListener<UserType = User>(options?: AuthOptions<UserType>
         throw new Error(OUTSIDE);
     }
 
-
     useEffect(() => {
         const lease = client.leases.get(AUTH_USER);
         if (!lease?.unsubscribe) {
             const auth = getAuth(client.firebaseApp);
             const unsubscribe = onAuthStateChanged(auth, (user) => {
                 if (user) {
-                    const leaseeClient = new LeaseeClient(AUTH_USER, client);
-                    const data = transform ? transform(leaseeClient, user) : user;
+                    const api = new LeaseeApi(AUTH_USER, entityApi);
+                    const data = transform ? transform(api, user) : user;
                     putEntity(client, AUTH_USER, data);
                 } else {
                     putEntity(client, AUTH_USER, null);
@@ -143,13 +142,21 @@ function lookupAuthTuple<UserType>(client: EntityClient): AuthTuple<UserType> {
     )
 }
 
+export function useEntityClient() {
+    const client = useContext(FirebaseContext);
+    if (!client) {
+        throw new Error(OUTSIDE);
+    }
+    return client;
+}
+
 export function useAuthUser<UserType=User>() {
     const client = useContext(FirebaseContext);
     
     if (!client) {
         throw new Error(OUTSIDE);
     }
-    return lookupEntityTuple<UserType>(client?.cache, AUTH_USER);
+    return lookupEntityTuple<UserType>(client.cache, AUTH_USER);
 }
 
 export function useEntity<Type=any>(key: EntityKey) {
@@ -161,4 +168,20 @@ export function useEntity<Type=any>(key: EntityKey) {
     const validKey = validateKey(key);
     const hashValue = validKey ? hashEntityKey(key) : '';
     return lookupEntityTuple<Type>(client?.cache, hashValue);
+}
+
+export function useData<StateType, ReturnType>(selector: (state: StateType) => ReturnType) {
+
+    const client = useContext(FirebaseContext);
+    
+    if (!client) {
+        throw new Error(OUTSIDE);
+    }
+
+    const state = client.cache as StateType;
+    return selector(state);
+}
+
+export interface TypedUseDataHook<StateType> {
+    <ReturnType>(selector: (state: StateType) => ReturnType): ReturnType;
 }

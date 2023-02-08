@@ -1,24 +1,10 @@
 import { collection, documentId, getFirestore, onSnapshot, query, where } from "firebase/firestore";
 import produce from 'immer';
 import EntityClient, { claimLease, createLeasedEntity, removeEntity } from "./EntityClient";
-import LeaseeClient from "./LeaseeClient";
-import { Entity, EntityCache, EntityKey, EntityTuple, LeaseOptions, NonIdleTuple, PathElement } from "./types";
+import { entityApi } from "./FirebaseContext";
+import LeaseeApi from "./LeaseeApi";
+import { Entity, EntityCache, EntityKey, EntityTuple, LeaseOptions, PathElement } from "./types";
 import { hashEntityKey } from "./util";
-
-export function toTuple<T>(entity: Entity): NonIdleTuple<T> {
-    return (
-        entity === undefined  ? ["pending", undefined, undefined] :
-        entity instanceof Error ? ["error", undefined, entity as Error] :
-        ["success", entity as T, undefined] 
-    )
-}
-
-export function toEntityTuple<T>(entity?: Entity) : EntityTuple<T> {
-    return (
-        entity !== undefined ? toTuple<T>(entity) :
-        ["idle", undefined, undefined]
-    )
-}
 
 export function validatePath(path: PathElement[]) {
     for (const value of path) {
@@ -78,9 +64,9 @@ function isValid(value: unknown) {
 
 
 export interface ListenerOptions<TRaw, TFinal=TRaw> {
-    transform?: (client: LeaseeClient, value: TRaw, path: string[]) => TFinal;
-    onRemove?: (client: LeaseeClient, value: TRaw, path: string[]) => void;
-    onError?: (client: LeaseeClient, error: Error, path: string[]) => void;
+    transform?: (api: LeaseeApi, value: TRaw, path: string[]) => TFinal;
+    onRemove?: (api: LeaseeApi, value: TRaw, path: string[]) => void;
+    onError?: (api: LeaseeApi, error: Error, path: string[]) => void;
     leaseOptions?: LeaseOptions;
 }
 
@@ -129,7 +115,7 @@ export function startDocListener<
                         const data = change.doc.data() as TRaw;
 
                         const finalData = transform ?
-                            transform(new LeaseeClient(leasee, client), data, validPath) :
+                            transform(new LeaseeApi(leasee, entityApi), data, validPath) :
                             data;
 
                         putEntity(client, hashValue, {data: finalData});
@@ -142,8 +128,7 @@ export function startDocListener<
                                     removeEntity(client, hashValue, draftCache);
                                     if (onRemove) {
                                         const data = change.doc.data() as TRaw;
-                                        const leaseeClient = new LeaseeClient(leasee, client);
-                                        onRemove(leaseeClient, data, validPath);
+                                        onRemove(new LeaseeApi(leasee, entityApi), data, validPath);
                                     }
                                 })
 
@@ -164,8 +149,7 @@ export function startDocListener<
 
             const onError = options?.onError;
             if (onError) {
-                const leaseeClient = new LeaseeClient(leasee, client);
-                onError(leaseeClient, error, validPath);
+                onError(new LeaseeApi(leasee, entityApi), error, validPath);
             }
 
             
@@ -177,11 +161,15 @@ export function startDocListener<
 }
 
 export function lookupEntityTuple<T>(cache: EntityCache, key: string | null) : EntityTuple<T> {
-    const entity = key === null ? undefined : cache[key];
-    return toEntityTuple<T>(entity);
+    const value = key === null ? undefined : cache[key];
+    return (
+        ((value===undefined && (key===null || !cache.hasOwnProperty(key))) && ["idle", undefined, undefined]) ||
+        (value===undefined && ["pending", undefined, undefined]) ||
+        (value instanceof Error && ["error", undefined, value as Error]) ||
+        ["success", value as T, undefined]
+    )
+    
 }
-
-
 
 function putEntity(client: EntityClient, key: string | string[], entity: Entity) {
     const setCache = client.setCache;
@@ -194,8 +182,7 @@ function putEntity(client: EntityClient, key: string | string[], entity: Entity)
                 ...oldCache,
                 [hashValue]: entity
             }
-
-
+            
             return newCache;
         }
     )
