@@ -7,18 +7,17 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { useData } from '../fbase/hooks';
+import { useData, useEntityApi } from '../fbase/hooks';
 import { useSessionUser } from '../hooks/customHooks';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
+import { alertError, alertSuccess } from '../model/alert';
 import { selectAccountIsIncomplete, selectRegistrationState, selectSigninActive } from "../model/auth";
 import { libraryUnsubscribe, removeNotification, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import {
-    AccessNotification, AccessRequest, AccessResponse, ClientLibrary, EDITOR, ERROR,
-    Metadata, ResourceRef, Role, RoleName, UNKNOWN_RESOURCE_TYPE, VIEWER
+    AccessNotification, AccessRequest, AccessResponse, ClientLibrary, EDITOR, Metadata, ResourceRef, Role, RoleName, UNKNOWN_RESOURCE_TYPE, VIEWER
 } from '../model/types';
-import alertPost from '../store/actions/alertPost';
 import deckAdd from '../store/actions/deckAdd';
 import deckDelete from '../store/actions/deckDelete';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
@@ -31,6 +30,7 @@ import ZAuthTools from './ZAuthTools';
 
 function ZLibraryHeader() {
 
+    const api = useEntityApi();
     const dispatch = useAppDispatch();
     const user = useSessionUser();
     const navigate = useNavigate();
@@ -39,10 +39,7 @@ function ZLibraryHeader() {
         if (user) {
             dispatch(deckAdd({navigate, user}));
         } else {
-            dispatch(alertPost({
-                severity: ERROR,
-                message: "You must be signed in to create a new Deck"
-            }))
+            alertError(api, "You must be signed in to create a new Deck");
         }
     }
 
@@ -238,7 +235,7 @@ interface AccessRequestProps {
 function ZAccessRequest(props: AccessRequestProps) {
     const {notification, metadata} = props;
 
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const [role, setRole] = useState<Role>(EDITOR);
     const [submitDisabled, setSubmitDisabled] = useState<boolean>(false);
     const [errorMessage, setErrorMessage] = useState<string>("");
@@ -267,10 +264,7 @@ function ZAccessRequest(props: AccessRequestProps) {
                     notification.resourceId,
                     true
                 )
-                dispatch(alertPost({
-                    severity: "success",
-                    message: "Sharing was successful"
-                }))
+                alertSuccess(api, "Sharing was successful");
             } catch (error) {
                 setErrorMessage("An error occurred while sharing access.");
                 console.log(error);

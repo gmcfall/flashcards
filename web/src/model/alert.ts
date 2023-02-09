@@ -1,25 +1,27 @@
-import { PayloadAction } from "@reduxjs/toolkit";
 import EntityApi from "../fbase/EntityApi";
-import { RootState } from "../store/store";
-import { AlertData, ERROR, LerniApp, LerniApp0, SUCCESS } from "./types";
+import { AlertData, ERROR, INFO, LerniApp, LerniApp0, SUCCESS } from "./types";
 
-export function doAlertRemove(lerni: LerniApp0, action: PayloadAction) {
-    delete lerni.alertData;
-}
-
-export function doAlertPost(lerni: LerniApp0, action: PayloadAction<AlertData>) {
-    lerni.alertData = action.payload;
-}
 export function setAlert(lerni: LerniApp0, data: AlertData) {
     lerni.alertData = data;
 }
 
-export function selectAlert(state: RootState) {
-    return state.lerni.alertData;
+export function selectAlert(lerni: LerniApp) {
+    return lerni.alertData;
 }
 
-export function alertError(api: EntityApi, message: string, error: unknown) {
+export function alertError(api: EntityApi, message: string, error?: unknown) {
     api.mutate((lerni: LerniApp) => setError(lerni, message, error))
+}
+
+export function alertInfo(api: EntityApi, message: string) {
+    api.mutate((lerni: LerniApp) => setInfo(lerni, message));
+}
+
+export function setInfo(lerni: LerniApp, message: string) {
+    lerni.alertData = {
+        severity: INFO,
+        message
+    }
 }
 
 export function alertSuccess(api: EntityApi, message: string) {
@@ -45,4 +47,12 @@ export function setSuccess(lerni: LerniApp, message: string) {
         severity: SUCCESS,
         message
     }
+}
+
+export function alertRemove(api: EntityApi) {
+    api.mutate(
+        (lerni: LerniApp) => {
+            delete lerni.alertData
+        }
+    )
 }

@@ -1,16 +1,14 @@
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectAlert } from "../model/alert";
 import { Alert } from "@mui/material";
 import { useEffect } from 'react';
-import alertRemove from "../store/actions/alertRemove";
+import { useData, useEntityApi } from "../fbase/hooks";
+import { alertRemove, selectAlert } from "../model/alert";
 
 let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
 export default function ZAlert() {
 
-    const dispatch = useAppDispatch();
-
-    const alertData = useAppSelector(selectAlert);
+    const api = useEntityApi();
+    const alertData = useData(selectAlert);
 
     useEffect(() => {
         if (timeoutId) {
@@ -19,12 +17,12 @@ export default function ZAlert() {
         }
         if (alertData) {
             timeoutId = setTimeout(() => {
-                dispatch(alertRemove())
+                alertRemove(api);
                 timeoutId = null;
             }, 10000)
         }
 
-    }, [alertData, dispatch])
+    }, [alertData, api])
 
 
     if (!alertData) {

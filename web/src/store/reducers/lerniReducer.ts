@@ -1,10 +1,7 @@
 import { createReducer } from "@reduxjs/toolkit";
 import { doAccessSet, doDeckAccessLoaded } from "../../model/access";
 import { doAccountDeleteEmailBegin as doAccountDeletePasswordBegin, doAccountDeleteEmailChange, doAccountDeletePasswordChange, doAccountDisplayNameUpdate } from "../../model/account";
-import { doAlertPost, doAlertRemove } from "../../model/alert";
-import {
-    doAccountDeleteEnd, doAuthEmailVerified, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailVerified, doAuthRegisterStageUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSessionNameUpdate
-} from "../../model/auth";
+import { doAuthEmailVerified, doAuthRegisterBegin, doAuthRegisterCancel, doAuthRegisterEmailVerified, doAuthRegisterStageUpdate, doAuthSessionBegin, doAuthSessionEnd, doAuthSessionNameUpdate } from "../../model/auth";
 import { doDeckAdded, doDeckModified, doDeckNameUpdate, doDeckPublishFulfilled } from "../../model/deck";
 import { doDeckeditorMount, doDeckeditorNewActiveCardDelete, doDeckeditorUnmount } from "../../model/deckEditor";
 import { doErrorDisplay } from "../../model/errorHandler";
@@ -15,15 +12,9 @@ import { LerniApp0 } from "../../model/types";
 import accessGeneralChange from "../actions/accessGeneralChange";
 import accessSet from "../actions/accessSet";
 import accountDeleteEmailChange from "../actions/accountDeleteEmailChange";
-import accountDeleteFacebook from "../actions/accountDeleteFacebook";
-import accountDeleteGoogle from "../actions/accountDeleteGoogle";
 import accountDeletePasswordBegin from "../actions/accountDeletePasswordBegin";
 import accountDeletePasswordChange from "../actions/accountDeletePasswordChange";
-import accountDeletePasswordSubmit from "../actions/accountDeletePasswordSubmit";
-import accountDeleteTwitter from "../actions/accountDeleteTwitter";
 import accountDisplayNameUpdate from "../actions/accountDisplayNameUpdate";
-import alertPost from "../actions/alertPost";
-import alertRemove from "../actions/alertRemove";
 import authEmailVerified from "../actions/authEmailVerified";
 import authRegisterBegin from "../actions/authRegisterBegin";
 import authRegisterCancel from "../actions/authRegisterCancel";
@@ -67,20 +58,10 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(accessGeneralChange.rejected, doErrorDisplay)
         .addCase(accessSet, doAccessSet)
         .addCase(accountDeleteEmailChange, doAccountDeleteEmailChange)
-        .addCase(accountDeleteFacebook.fulfilled, doAccountDeleteEnd)
-        .addCase(accountDeleteFacebook.rejected, doErrorDisplay)
-        .addCase(accountDeleteGoogle.fulfilled, doAccountDeleteEnd)
-        .addCase(accountDeleteGoogle.rejected, doErrorDisplay)
         .addCase(accountDeletePasswordBegin, doAccountDeletePasswordBegin)
         .addCase(accountDeletePasswordChange, doAccountDeletePasswordChange)
-        .addCase(accountDeletePasswordSubmit.fulfilled, doAccountDeleteEnd)
-        .addCase(accountDeletePasswordSubmit.rejected, doErrorDisplay)
-        .addCase(accountDeleteTwitter.fulfilled, doAccountDeleteEnd)
-        .addCase(accountDeleteTwitter.rejected, doErrorDisplay)
         .addCase(accountDisplayNameUpdate.fulfilled, doAccountDisplayNameUpdate)
         .addCase(accountDisplayNameUpdate.rejected, doErrorDisplay)
-        .addCase(alertRemove, doAlertRemove)
-        .addCase(alertPost, doAlertPost)
         .addCase(authEmailVerified, doAuthEmailVerified)
         .addCase(authRegisterBegin, doAuthRegisterBegin)
         .addCase(authRegisterCancel, doAuthRegisterCancel)

@@ -1,19 +1,12 @@
 
-import { Box, Button, TextField, Typography } from "@mui/material";
+import EmailIcon from '@mui/icons-material/Email';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@mui/material";
 import { EmailAuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
-import { useEffect } from 'react';
+import { useState } from 'react';
+import { useEntityApi } from "../fbase/hooks";
 import { useSessionUser } from "../hooks/customHooks";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectDeleteAccountForm } from "../model/account";
+import { deleteAccountViaEmailProvider, deleteAccountViaIdentityProvider } from "../model/auth";
 import { SessionUser } from "../model/types";
-import accountDeleteEmailChange from "../store/actions/accountDeleteEmailChange";
-import accountDeleteFacebook from "../store/actions/accountDeleteFacebook";
-import accountDeleteGoogle from "../store/actions/accountDeleteGoogle";
-import accountDeletePasswordBegin from "../store/actions/accountDeletePasswordBegin";
-import accountDeletePasswordChange from "../store/actions/accountDeletePasswordChange";
-import accountDeletePasswordSubmit from "../store/actions/accountDeletePasswordSubmit";
-import accountDeleteTwitter from "../store/actions/accountDeleteTwitter";
-import ZDialogWithTitle from "./ZDialogWithTitle";
 import ZFacebookIcon from "./ZFacebookIcon";
 import ZGoogleIcon from "./ZGoogleIcon";
 import ZTwitterIcon from "./ZTwitterIcon";
@@ -23,23 +16,18 @@ interface AccountDeleteConfirmProps {
     setOpen: (value: boolean) => void;
 }
 
-interface SetOpenProps {
-    setOpen: (value: boolean) => void;
-}
-
-interface SignInOptionsProps {
-    user: SessionUser,
-    setOpen: (value: boolean) => void;
+interface ProviderButtonProps {
+    onClose: () => void;
 }
 
 
-function ZGoogleSignIn(props: SetOpenProps) {
-    const {setOpen} = props;
-    const dispatch = useAppDispatch();
+function ZContinueWithGoogle(props: ProviderButtonProps) {
+    const {onClose} = props;
+    const api = useEntityApi();
 
     function handleProceed() {
-        dispatch(accountDeleteGoogle())
-        setOpen(false);
+        deleteAccountViaIdentityProvider(api, new GoogleAuthProvider());
+        onClose();
     }
     return (
         <Button
@@ -51,13 +39,36 @@ function ZGoogleSignIn(props: SetOpenProps) {
    )
 }
 
-function ZFacebookSignIn(props: SetOpenProps) {
-    const {setOpen} = props;
-    const dispatch = useAppDispatch();
+
+interface ContinueWithEmailProps {
+    setDialogState: (value: DeleteAccountState) => void
+}
+
+function ZContinueWithEmail(props: ContinueWithEmailProps) {
+    const {setDialogState} = props;
+
+    function handleClick() {
+        setDialogState('EmailPassword');
+    }
+
+    return (
+        <Button
+            startIcon={<EmailIcon/>}
+            onClick={handleClick}
+        >
+            Continue with Email and Password
+        </Button>
+    )
+
+}
+
+function ZContinueWithFacebook(props: ProviderButtonProps) {
+    const {onClose} = props;
+    const api = useEntityApi();
 
     function handleProceed() {
-        dispatch(accountDeleteFacebook())
-        setOpen(false);
+        deleteAccountViaIdentityProvider(api, new FacebookAuthProvider());
+        onClose();
     }
     return (
         <Button
@@ -69,13 +80,13 @@ function ZFacebookSignIn(props: SetOpenProps) {
    )
 }
 
-function ZTwitterSignIn(props: SetOpenProps) {
-    const {setOpen} = props;
-    const dispatch = useAppDispatch();
+function ZContinueWithTwitter(props: ProviderButtonProps) {
+    const {onClose} = props;
+    const api = useEntityApi();
 
     function handleProceed() {
-        dispatch(accountDeleteTwitter())
-        setOpen(false);
+        deleteAccountViaIdentityProvider(api, new TwitterAuthProvider());
+        onClose();
     }
     return (
         <Button
@@ -87,32 +98,38 @@ function ZTwitterSignIn(props: SetOpenProps) {
    )
 }
 
-function ZReauthenticateEmail() {
+interface EmailPasswordFormProps {
+    onClose: () => void;
+    showInstructions: boolean;
+}
 
-    const dispatch = useAppDispatch();
-    const form = useAppSelector(selectDeleteAccountForm);
+function ZEmailPasswordForm(props: EmailPasswordFormProps) {
 
-    useEffect(() => {
-        if (!form) {
-            dispatch(accountDeletePasswordBegin())
-        }
-    })
-    if (!form) {
-        return null;
-    }
-
-    const {email, password} = form;
+    const {onClose, showInstructions} = props;
+    
+    const api = useEntityApi();
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
 
     function handleEmailChange(event: React.ChangeEvent<HTMLInputElement>) {
-        dispatch(accountDeleteEmailChange(event.currentTarget.value));
+        setEmail(event.currentTarget.value);
     }
 
     function handlePasswordChange(event: React.ChangeEvent<HTMLInputElement>) {
-        dispatch(accountDeletePasswordChange(event.currentTarget.value));
+        setPassword(event.currentTarget.value);
+    }
+
+    function handleSubmit() {
+        deleteAccountViaEmailProvider(api, email, password).then(
+            () => onClose()
+        )
     }
 
     return (
-        <Box sx={{display: 'flex', flexDirection: 'column', gap: "2em"}}>
+        <>
+            {showInstructions && (
+                <ZDeleteAccountInstructions/>
+            )}
             <TextField sx={{marginTop: "2em"}}
                 label="Email"
                 value={email}
@@ -124,103 +141,97 @@ function ZReauthenticateEmail() {
                 type="password"
                 onChange={handlePasswordChange}
             />
-        </Box>
+            <DialogActions>
+                <Button onClick={onClose}>Cancel</Button>
+                <Button onClick={handleSubmit}>Submit</Button>
+            </DialogActions>
+        </>
     )
-}
-
-function chooseProvider(user: SessionUser) {
-    
-    const providers = user ? user.providers : [];
-    return providers.length>0 ? providers[0] : EmailAuthProvider.PROVIDER_ID;
-}
-
-function ZSignInOptions(props: SignInOptionsProps) {
-    const {user, setOpen} = props;
-
-    const providerId = chooseProvider(user);
-
-    switch (providerId) {
-        case GoogleAuthProvider.PROVIDER_ID:
-             return <ZGoogleSignIn setOpen={setOpen}/>
-
-        case FacebookAuthProvider.PROVIDER_ID:
-            return <ZFacebookSignIn setOpen={setOpen}/>
-
-        case TwitterAuthProvider.PROVIDER_ID:
-            return <ZTwitterSignIn setOpen={setOpen}/>
-
-        case EmailAuthProvider.PROVIDER_ID:
-            return <ZReauthenticateEmail/>
-
-        default:
-            return null
-
-    }
-}
-
-interface AccountDeleteActionsProps {
-    user: SessionUser,
-    setOpen: (value: boolean) => void
-}
-
-function ZAccountDeleteActions(props: AccountDeleteActionsProps) {
-
-    const {user, setOpen} = props;
-
-    const dispatch = useAppDispatch();
-    const form = useAppSelector(selectDeleteAccountForm);
-
-    const providerId = chooseProvider(user);
-
-    if (providerId !== EmailAuthProvider.PROVIDER_ID) {
-        return null;
-    }
-
-    function handleCancel() {
-        setOpen(false);
-    }
-
-    function handleSubmit() {
-        if (form) {
-            dispatch(accountDeletePasswordSubmit(form))
-        }
-        setOpen(false);
-    }
-
-    return (
-        <Box sx={{display: 'flex', gap: "1em"}}>
-            <Button onClick={handleCancel}>Cancel</Button>
-            <Button onClick={handleSubmit}>Submit</Button>
-        </Box>
-    )
-
 }
 
 export default function ZAccountDeleteConfirm(props: AccountDeleteConfirmProps) {
     const {open, setOpen} = props;
 
-    const user = useSessionUser();
-    if (!user) {
-        return null;
-    }
-    const actions = <ZAccountDeleteActions user={user} setOpen={setOpen}/>
+    const [dialogState, setDialogState] = useState<DeleteAccountState>("ChooseProvider");
 
-    if (!open) {
+    const user = useSessionUser();
+    if (!user || !open) {
         return null;
     }
+
+    function handleClose() {
+        setOpen(false);
+    }
+
+    const providers = user.providers;
+    const onlyEmail = providers.length===1 && providers[0]===EmailAuthProvider.PROVIDER_ID;
+
+    const state: DeleteAccountState = onlyEmail ? "EmailPassword" : dialogState;
 
     return (
-        <ZDialogWithTitle
-            title="Delete Account"
-            open={open}
-            setOpen={setOpen}
-            actions={actions}
-        >
-            <Typography gutterBottom>
-                For security reasons, please sign in again before we delete your account.
-            </Typography>
-            <ZSignInOptions user={user} setOpen={setOpen}/>
-        </ZDialogWithTitle>
+        <Dialog open={true} onClose={handleClose}>
+            <DialogTitle>Delete Account</DialogTitle>
+            {state === "EmailPassword" ? (
+                <ZEmailPasswordForm 
+                    showInstructions={onlyEmail}
+                    onClose={handleClose}
+                />
+            ) : (
+                <ZChooseProvider
+                    onClose={handleClose}
+                    setDialogState={setDialogState}
+                    user={user}
+                />
+            )}
+        </Dialog>
+
     )
      
+}
+
+type DeleteAccountState = 'ChooseProvider' | 'EmailPassword';
+
+interface ChooseProviderProps {
+    user: SessionUser;
+    onClose: () => void;
+    setDialogState: (value: DeleteAccountState) => void;
+}
+
+function ZDeleteAccountInstructions() {
+    return (
+        
+        <DialogContentText sx={{marginBottom: "1rem"}}>
+            For security reasons, please sign in again before we delete your account.
+        </DialogContentText>
+    )
+}
+
+function ZChooseProvider(props: ChooseProviderProps) {
+    const {user, setDialogState, onClose} = props;
+    
+    return (
+        <>
+            <DialogContent>
+                <ZDeleteAccountInstructions/>
+                
+                {user.providers.includes(GoogleAuthProvider.PROVIDER_ID) && (
+                    <ZContinueWithGoogle onClose={onClose}/>
+                )}
+                {user.providers.includes(FacebookAuthProvider.PROVIDER_ID) && (
+                    <ZContinueWithFacebook onClose={onClose}/>
+                )}
+                {user.providers.includes(TwitterAuthProvider.PROVIDER_ID) && (
+                    <ZContinueWithTwitter onClose={onClose}/>
+                )}
+                {user.providers.includes(EmailAuthProvider.EMAIL_PASSWORD_SIGN_IN_METHOD) && (
+                    <ZContinueWithEmail setDialogState={setDialogState}/>
+                )}
+
+            </DialogContent>
+            <DialogActions>
+                <Button onClick={onClose}>Cancel</Button>
+            </DialogActions>
+        </>
+    )
+
 }

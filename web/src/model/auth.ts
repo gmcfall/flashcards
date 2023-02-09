@@ -1,5 +1,5 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { AuthProvider, createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
+import { AuthProvider, createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, reauthenticateWithPopup, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { batch } from "react-redux";
 import { Action } from "redux";
@@ -13,7 +13,7 @@ import authSessionBegin from "../store/actions/authSessionBegin";
 import authSessionNameUpdate from "../store/actions/authSessionNameUpdate";
 import { AppDispatch, RootState } from "../store/store";
 import { logError } from "../util/common";
-import { alertError, alertSuccess, setSuccess } from "./alert";
+import { alertError, alertInfo, alertSuccess, setSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
@@ -41,13 +41,6 @@ export function doAuthEmailVerified(lerni: LerniApp0, action: PayloadAction) {
     }
 }
 
-export function doAccountDeleteEnd(lerni: LerniApp0, action: PayloadAction<boolean>) {
-    delete lerni.session;
-    lerni.alertData = {
-        message: "Your account has been deleted",
-        severity: INFO
-    }
-}
 
 export function doAuthSessionEnd(lerni: LerniApp0, action: Action) {
     delete lerni.session;
@@ -493,4 +486,46 @@ export function authEndSignIn(api: EntityApi) {
     api.mutate((lerni: LerniApp) => {
         delete lerni.signinActive;
     })
+}
+
+
+export async function deleteAccountViaIdentityProvider(api: EntityApi, provider: AuthProvider) {
+
+    try {
+        const auth = getAuth(firebaseApp);
+        const user = auth.currentUser;
+        if (!user) {
+            throw  new Error("user is not signed in");
+        }
+        const result = await reauthenticateWithPopup(user, provider);
+        const freshUser = result.user;
+        await deleteUserData(user.uid);
+        await deleteUser(freshUser);
+        alertInfo(api, "Your account has been deleted");
+    } catch (error) {
+        alertError(api, "An error occurred while deleting your account", error);
+    }
+}
+
+export async function deleteAccountViaEmailProvider(api: EntityApi, email: string, password: string) {
+    try {
+        const auth = getAuth(api.getClient().firebaseApp);
+        const user = auth.currentUser;
+        if (!user) {
+            throw new Error("Cannot delete account because the user is not signed in");
+        }
+        const credential = EmailAuthProvider.credential(email, password);
+
+        const result = await reauthenticateWithCredential(user, credential);
+        const freshUser = result.user;
+
+        // TODO: add error handlers for deleteUserData
+
+        await deleteUserData(freshUser.uid);
+        await deleteUser(freshUser);
+        alertInfo(api, "Your account has been deleted");
+
+    } catch (error) {
+        alertError(api, "An error occurred while deleting your account", error);
+    }
 }
