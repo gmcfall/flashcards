@@ -4,17 +4,17 @@ import {
     Alert,
     Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, TextField, Typography
 } from '@mui/material';
-import { AuthProvider, FacebookAuthProvider, getAuth, GoogleAuthProvider, TwitterAuthProvider } from 'firebase/auth';
+import { AuthProvider, createUserWithEmailAndPassword, FacebookAuthProvider, getAuth, GoogleAuthProvider, sendEmailVerification, TwitterAuthProvider, updateProfile } from 'firebase/auth';
 import { useEffect, useState } from 'react';
+import EntityApi from '../fbase/EntityApi';
+import { setAuthUser } from '../fbase/functions';
+import { useEntityApi } from '../fbase/hooks';
 import { useSessionUser } from '../hooks/customHooks';
-import { useAppDispatch, useAppSelector } from '../hooks/hooks';
-import { providerRegister0, selectRegistrationState, submitEmailRegistrationForm, submitIdentityCleanup } from '../model/auth';
+import { createSessionUser, providerRegister, submitIdentityCleanup } from '../model/auth';
 import firebaseApp from '../model/firebaseApp';
-import { replaceAnonymousUsername } from '../model/identity';
-import { ProviderNames, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_END, REGISTER_PROVIDER_USERNAME } from '../model/types';
-import authRegisterCancel from '../store/actions/authRegisterCancel';
-import authRegisterStageUpdate from '../store/actions/authRegisterStageUpdate';
-import { AppDispatch } from '../store/store';
+import { checkUsernameAvailability, createIdentity, replaceAnonymousUsername, setNewIdentity } from '../model/identity';
+import { createFirestoreLibrary, saveLibrary } from '../model/library';
+import { ProviderNames, REGISTER_EMAIL, REGISTER_PROVIDER_END } from '../model/types';
 import { dialogContentStyle } from './lerniConstants';
 import LerniTheme from './lerniTheme';
 import ZDisplayNameField, { validateDisplayName } from './ZDisplayNameField';
@@ -24,12 +24,20 @@ import ZTwitterIcon from './ZTwitterIcon';
 import ZUsernameField, { usernameNotAvailable, validateUsername } from './ZUsernameField';
 
 
+type RegisterState =  (
+    'REGISTER_BEGIN' | 
+    'REGISTER_EMAIL' |
+    'REGISTER_EMAIL_USERNAME_RETRY' |
+    'REGISTER_EMAIL_VERIFY' | 
+    'REGISTER_PROVIDER_USERNAME' |
+    'REGISTER_PROVIDER_END'
+);
 
 interface RegisterTitleProps extends RegisterWizardCloser {
     omitCloseButton: boolean;
 }
 
-export function ZRegisterTitle(props: RegisterTitleProps) {
+function ZRegisterTitle(props: RegisterTitleProps) {
     const {onClose, omitCloseButton} = props;
 
     return (
@@ -94,11 +102,16 @@ function ZRegisterProviderError(props: RegisterProviderErrorProps) {
 }
 
 function registerViaProvider(
-    dispatch: AppDispatch, 
+    api: EntityApi, 
     provider: AuthProvider,
+    setRegisterState: (value: RegisterState) => void,
     setError: (value: string | null) => void
 ) {
-    providerRegister0(dispatch, provider).catch(
+    providerRegister(api, provider).then(
+        () => {
+            setRegisterState("REGISTER_PROVIDER_USERNAME")
+        }
+    ).catch(
         error => {
             if (error instanceof Error) {
                 console.error(error.message);
@@ -109,26 +122,26 @@ function registerViaProvider(
     )
 }
 
-function ZRegisterBegin(props: RegisterWizardCloser) {
-    const {onClose} = props;
+function ZRegisterBegin(props: RegisterPageProps) {
+    const {onClose, setRegisterState} = props;
     
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const [error, setError] = useState<string | null>(null);
 
     function handleGoogleClick() {
-        registerViaProvider(dispatch, new GoogleAuthProvider(), setError);
+        registerViaProvider(api, new GoogleAuthProvider(), setRegisterState, setError);
     }
 
     function handleFacebookClick() {
-        registerViaProvider(dispatch, new FacebookAuthProvider(), setError);
+        registerViaProvider(api, new FacebookAuthProvider(), setRegisterState, setError);
     }
 
     function handleTwitterClick() {
-        registerViaProvider(dispatch, new TwitterAuthProvider(), setError);
+        registerViaProvider(api, new TwitterAuthProvider(), setRegisterState, setError);
     }
 
     function handleEmailClick() {
-        dispatch(authRegisterStageUpdate(REGISTER_EMAIL));
+        setRegisterState("REGISTER_EMAIL");
     }
 
     if (error) {
@@ -172,13 +185,15 @@ function ZRegisterBegin(props: RegisterWizardCloser) {
     )
 }
 
+interface RegisterStateSetterProps {
+    setRegisterState: (value: RegisterState) => void;
+}
 
-
-function ZEmailUsernameRetry()  {
+function ZEmailUsernameRetry(props: RegisterStateSetterProps)  {
+    const {setRegisterState} = props;
     
     const [username, setUsername] = useState<string>("");
     const [usernameError, setUsernameError] = useState<string>("");
-    const dispatch = useAppDispatch();
     const user = useSessionUser();
 
     function handleSubmit() {
@@ -189,7 +204,7 @@ function ZEmailUsernameRetry()  {
                     if (!saveOk) {
                         setUsernameError(usernameNotAvailable(username));
                     } else {
-                        dispatch(authRegisterStageUpdate(REGISTER_EMAIL_VERIFY));
+                        setRegisterState("REGISTER_EMAIL_VERIFY");
                     }
                 })
             }
@@ -233,9 +248,10 @@ function ZEmailUsernameRetry()  {
 
 
 
-function ZRegisterWithEmail() {
+function ZRegisterWithEmail(props: RegisterStateSetterProps) {
+    const {setRegisterState} = props;
     
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const [email, setEmail] = useState<string>("");
     const [password, setPassword] = useState<string>("");
     const [displayName, setDisplayName] = useState<string>("");
@@ -293,13 +309,13 @@ function ZRegisterWithEmail() {
         
         if (!hasError) {
             setSubmitDisabled(true);
-            submitEmailRegistrationForm(dispatch, email, password, displayName, username).then(
+            submitEmailRegistrationForm(api, email, password, displayName, username).then(
                 stage => {
-                    if (stage === REGISTER_EMAIL) {
+                    if (stage === 'REGISTER_EMAIL') {
                         setSubmitDisabled(false);
                         setUsernameError(usernameNotAvailable(username));
                     } else {
-                        dispatch(authRegisterStageUpdate(stage))
+                        setRegisterState(stage);
                     }
                 }
             ).catch(
@@ -414,8 +430,9 @@ function ZEmailVerify(props: RegisterWizardCloser) {
 
 
 
-function ZProviderUsername() {
-    const dispatch = useAppDispatch();
+function ZProviderUsername(props: RegisterStateSetterProps) {
+    const {setRegisterState} = props;
+    const api = useEntityApi();
     const user = useSessionUser();
     const [displayName, setDisplayName] = useState<string>("");
     const [displayNameError, setDisplayNameError] = useState<string>("");
@@ -451,10 +468,10 @@ function ZProviderUsername() {
             } else {
 
                 setSubmitDisabled(true);
-                submitIdentityCleanup(dispatch, user.uid, username, displayName).then(
+                submitIdentityCleanup(api, user.uid, username, displayName).then(
                     usernameOk => {
                         if (usernameOk) {
-                            dispatch(authRegisterStageUpdate(REGISTER_PROVIDER_END))
+                            setRegisterState('REGISTER_PROVIDER_END');
                         } else {
                             setSubmitDisabled(false);
                             setUsernameError(usernameNotAvailable(username));
@@ -560,27 +577,40 @@ interface RegisterWizardCloser {
     onClose: () => void;
 }
 
-function ZRegisterBody(props: RegisterWizardCloser) {
-    const {onClose} = props;
+interface RegisterPageProps {
+    onClose: () => void;
+    setRegisterState: (value: RegisterState) => void;
+}
 
-    const stage = useAppSelector(selectRegistrationState);
-    switch (stage) {
-        case REGISTER_BEGIN:
-            return <ZRegisterBegin onClose={onClose}/>
+interface RegisterBodyProps {
+    onClose: () => void;
+    registerState: RegisterState;
+    setRegisterState: (value: RegisterState) => void;
+}
 
-        case REGISTER_EMAIL:
-            return <ZRegisterWithEmail/>
+function ZRegisterBody(props: RegisterBodyProps) {
+    const {onClose, registerState, setRegisterState} = props;
 
-        case REGISTER_EMAIL_USERNAME_RETRY:
-            return <ZEmailUsernameRetry/>
+    switch (registerState) {
+        case 'REGISTER_BEGIN':
+            return <ZRegisterBegin 
+                onClose={onClose}
+                setRegisterState={setRegisterState}
+            />
 
-        case REGISTER_EMAIL_VERIFY:
+        case 'REGISTER_EMAIL':
+            return <ZRegisterWithEmail setRegisterState={setRegisterState}/>
+
+        case 'REGISTER_EMAIL_USERNAME_RETRY':
+            return <ZEmailUsernameRetry setRegisterState={setRegisterState}/>
+
+        case 'REGISTER_EMAIL_VERIFY':
             return <ZEmailVerify onClose={onClose}/>
 
-        case REGISTER_PROVIDER_USERNAME:
-            return <ZProviderUsername/>
+        case 'REGISTER_PROVIDER_USERNAME':
+            return <ZProviderUsername setRegisterState={setRegisterState}/>
 
-        case REGISTER_PROVIDER_END:
+        case 'REGISTER_PROVIDER_END':
             return <ZRegisterProviderEnd onClose={onClose}/>
 
         default:
@@ -589,27 +619,64 @@ function ZRegisterBody(props: RegisterWizardCloser) {
     }
     
 }
-export function ZRegisterWizard() {
 
-    const dispatch = useAppDispatch();
+interface RegisterWizardProps {
+    setOpen: (value: boolean) => void;
+}
+export function ZRegisterWizard(props: RegisterWizardProps) {
+    const {setOpen} = props;
 
-    const registerStage = useAppSelector(selectRegistrationState);
-    if (!registerStage) {
-        return null;
-    }
+    const [registerState, setRegisterState] = useState<RegisterState>("REGISTER_BEGIN");
 
     function handleClose() {
-        dispatch(authRegisterCancel());
+        setOpen(false);
     }
 
-    const omitCloseButton = registerStage === REGISTER_PROVIDER_END;
+    const omitCloseButton = registerState === REGISTER_PROVIDER_END;
 
     return (
         <Dialog open={true}>
             <ZRegisterTitle onClose={handleClose} omitCloseButton={omitCloseButton}/>
-            <ZRegisterBody onClose={handleClose}/>
+            <ZRegisterBody 
+                onClose={handleClose} 
+                registerState={registerState}
+                setRegisterState={setRegisterState}
+            />
         </Dialog>
     )
 
 
+}
+
+
+async function submitEmailRegistrationForm(
+    api: EntityApi,
+    email: string, 
+    password: string, 
+    displayName: string, 
+    username: string
+): Promise<RegisterState> {
+
+    const checkOk = await checkUsernameAvailability(username);
+    if (!checkOk) {
+        return REGISTER_EMAIL;
+    }
+
+    const auth = getAuth(firebaseApp);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    await sendEmailVerification(user);
+    if (displayName !== user.displayName) {
+        await updateProfile(user, {displayName});
+    }
+
+    const identity = createIdentity(user.uid, username, displayName);
+    const sessionUser = createSessionUser(user, identity);
+    const usernameOk = await setNewIdentity(identity);
+    const lib = createFirestoreLibrary();
+    await saveLibrary(user.uid, lib);
+    setAuthUser(api.getClient(), sessionUser);
+
+    return usernameOk ? "REGISTER_EMAIL_VERIFY" : "REGISTER_EMAIL_USERNAME_RETRY";
 }

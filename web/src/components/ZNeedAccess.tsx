@@ -1,14 +1,12 @@
 import { Alert, Box, Button, TextareaAutosize, Typography } from "@mui/material";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useEntityApi } from "../fbase/hooks";
+import { RegistrationContext } from "../fbase/ZRegistrationProvider";
 import { useSessionUser } from "../hooks/customHooks";
-import { useAppDispatch } from "../hooks/hooks";
 import { persistAccessRequest } from "../model/access";
 import { authBeginSignIn } from "../model/auth";
 import { Access, Identity } from "../model/types";
-import authRegisterBegin from "../store/actions/authRegisterBegin";
 import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
-import { ZRegisterWizard } from "./ZRegisterWizard";
 import { ZSigninWizard } from "./ZSigninWizard";
 
 interface AlertData {
@@ -78,8 +76,7 @@ function ZRequestAccess(props: NeedAccessProps) {
 
 function ZMustSignIn() {
     const api = useEntityApi();
-    const dispatch = useAppDispatch();
-    const [, setRegisterOpen] = useState<boolean>(false);
+    const setRegisterOpen = useContext(RegistrationContext);
 
     function handleSignInClick() {
         authBeginSignIn(api);
@@ -87,7 +84,6 @@ function ZMustSignIn() {
 
     function handleRegisterClick() {
         setRegisterOpen(true);
-        dispatch(authRegisterBegin());
     }
 
     return (
@@ -107,7 +103,6 @@ function ZMustSignIn() {
                 </Typography>
                 <Button onClick={handleRegisterClick}>{REGISTER_BUTTON_LABEL}</Button>
             </Box>
-            <ZRegisterWizard/>
             <ZSigninWizard/>
             
         </>

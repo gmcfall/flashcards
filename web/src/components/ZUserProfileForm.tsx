@@ -1,7 +1,7 @@
 import { Alert, Box } from "@mui/material";
 import Button from "@mui/material/Button";
 import { useState } from "react";
-import { useAppDispatch } from "../hooks/hooks";
+import { useEntityApi } from "../fbase/hooks";
 import { submitIdentityCleanup } from "../model/auth";
 import { ANONYMOUS, SessionUser } from "../model/types";
 import { HasUser } from "./lerniCommon";
@@ -22,7 +22,7 @@ function usernameErrorValue(user: SessionUser) {
 export default function ZUserProfileForm(props: HasUser) {
     const {user} = props;
 
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const [username, setUsername] = useState<string>(usernameValue(user));
     const [usernameError, setUsernameError] = useState<string>(usernameErrorValue(user));
     const [displayName, setDisplayName] = useState<string>(user.displayName);
@@ -38,7 +38,7 @@ export default function ZUserProfileForm(props: HasUser) {
 
         if (!hasError) {
             setSubmitDisabled(true);
-            submitIdentityCleanup(dispatch, user.uid, username, displayName).then(
+            submitIdentityCleanup(api, user.uid, username, displayName).then(
                 usernameOk => {
                     if (!usernameOk) {
                         setSubmitDisabled(false);

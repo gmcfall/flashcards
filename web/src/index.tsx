@@ -9,6 +9,7 @@ import ZDeckShare from './components/ZDeckShare';
 import ZHome from './components/ZHome';
 import ZLibrary from './components/ZLibrary';
 import { FirebaseProvider } from './fbase/FirebaseContext';
+import ZRegistrationProvider from './fbase/ZRegistrationProvider';
 import './index.css';
 import firebaseApp from './model/firebaseApp';
 import reportWebVitals from './reportWebVitals';
@@ -43,16 +44,18 @@ root.render(
   <Provider store={store}>
     <ThemeProvider theme={theme}>
       <FirebaseProvider firebaseApp={firebaseApp}>
-        <ZAuth/>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<ZHome/>}/>
-            <Route path="/library" element={<ZLibrary/>}/>
-            <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
-            <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
-            <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
-          </Routes>
-        </BrowserRouter>
+        <ZRegistrationProvider>
+          <ZAuth/>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<ZHome/>}/>
+              <Route path="/library" element={<ZLibrary/>}/>
+              <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
+              <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
+              <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
+            </Routes>
+          </BrowserRouter>
+        </ZRegistrationProvider>
       </FirebaseProvider>
     </ThemeProvider>
   </Provider>

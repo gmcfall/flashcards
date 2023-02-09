@@ -1,38 +1,22 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { AuthProvider, createUserWithEmailAndPassword, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, reauthenticateWithPopup, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
+import { AuthProvider, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, reauthenticateWithPopup, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
-import { batch } from "react-redux";
 import { Action } from "redux";
 import EntityApi from "../fbase/EntityApi";
 import EntityClient from "../fbase/EntityClient";
 import { mutate, setAuthUser } from "../fbase/functions";
 import LeaseeApi from "../fbase/LeaseeApi";
 import authEmailVerified from "../store/actions/authEmailVerified";
-import authRegisterStageUpdate from "../store/actions/authRegisterStageUpdate";
-import authSessionBegin from "../store/actions/authSessionBegin";
-import authSessionNameUpdate from "../store/actions/authSessionNameUpdate";
 import { AppDispatch, RootState } from "../store/store";
 import { logError } from "../util/common";
 import { alertError, alertInfo, alertSuccess, setSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
-import { checkUsernameAvailability, createIdentity, deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName, setAnonymousIdentity, setNewIdentity, watchCurrentUserIdentity } from "./identity";
+import { deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName, setAnonymousIdentity, watchCurrentUserIdentity } from "./identity";
 import { appGetState } from "./lerni";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, INFO, LerniApp, LerniApp0, SignInResult, SIGNIN_OK, RegisterStage, REGISTER_BEGIN, REGISTER_EMAIL, REGISTER_EMAIL_USERNAME_RETRY, REGISTER_EMAIL_VERIFY, REGISTER_PROVIDER_USERNAME, Session, SessionUser, SIGNIN_FAILED, UserNames } from "./types";
-
-export function doAuthRegisterBegin(lerni: LerniApp0, action: Action<string>) {
-    lerni.authRegisterStage = REGISTER_BEGIN;
-}
-
-export function doAuthRegisterCancel(lerni: LerniApp0, action: Action<string>) {
-    endRegistration(lerni);
-}
-
-function endRegistration(lerni: LerniApp0) {
-    delete lerni.authRegisterStage;
-}
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK } from "./types";
 
 export function doAuthEmailVerified(lerni: LerniApp0, action: PayloadAction) {
     const user = lerni.session?.user;
@@ -46,33 +30,15 @@ export function doAuthSessionEnd(lerni: LerniApp0, action: Action) {
     delete lerni.session;
 }
 
-
-export function doAuthRegisterStageUpdate(lerni: LerniApp0, action: PayloadAction<RegisterStage>) {
-    lerni.authRegisterStage = action.payload;
-}
-
-export function doAuthSessionNameUpdate(lerni: LerniApp0, action: PayloadAction<UserNames>) {
-
-    const session = lerni.session;
-    if (session) {
-        const user = session.user;
-        if (user) {
-            const payload = action.payload;
-            user.displayName = payload.displayName;
-            user.username = payload.username;
-        }
-    }
-}
-
 export async function submitIdentityCleanup(
-    dispatch: AppDispatch,
+    api: EntityApi,
     userUid: string,
     username: string,
     displayName: string
 ) {
     const usernameOk = await replaceAnonymousUsernameAndDisplayName(userUid, username, displayName);
     if (usernameOk) { 
-        const auth = getAuth(firebaseApp);
+        const auth = getAuth(api.getClient().firebaseApp);
         const user = auth.currentUser;
         if (!user) {
             throw new Error("submitIdentityCleanup failed: user is not signed in");
@@ -80,7 +46,6 @@ export async function submitIdentityCleanup(
         if (displayName && displayName !== user.displayName) {
             await updateProfile(auth.currentUser, {displayName});
         }
-        dispatch(authSessionNameUpdate({username, displayName}));
     }
 
     return usernameOk;
@@ -94,39 +59,6 @@ export async function resendEmailVerification() {
     }
 }
 
-export async function submitEmailRegistrationForm(
-    dispatch: AppDispatch,
-    email: string, 
-    password: string, 
-    displayName: string, 
-    username: string
-) {
-
-    const checkOk = await checkUsernameAvailability(username);
-    if (!checkOk) {
-        return REGISTER_EMAIL;
-    }
-
-    const auth = getAuth(firebaseApp);
-    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-    const user = userCredential.user;
-
-    await sendEmailVerification(user);
-    if (displayName !== user.displayName) {
-        await updateProfile(user, {displayName});
-    }
-
-    const requiresVerification = getRequiresVerification(user);
-    const providers = getProviders(user);
-    const session = createSession(user.uid, providers, username, displayName, requiresVerification);
-    const identity = createIdentity(user.uid, username, displayName);
-    const usernameOk = await setNewIdentity(identity);
-    const lib = createFirestoreLibrary();
-    await saveLibrary(user.uid, lib);
-    dispatch(authSessionBegin(session));
-
-    return usernameOk ? REGISTER_EMAIL_VERIFY : REGISTER_EMAIL_USERNAME_RETRY;
-}
 
 
 export async function deleteUserData(userUid: string) {
@@ -138,17 +70,6 @@ export async function deleteUserData(userUid: string) {
     ];
 
     return Promise.all(promises);
-}
-
-
-
-
-export function doAuthRegisterEmailVerified(lerni: LerniApp0, action: PayloadAction) {
-    endRegistration(lerni);
-    lerni.alertData = {
-        severity: INFO,
-        message: "Your email has been verified"
-    }
 }
 
 export function selectRegistrationState(state: RootState) {
@@ -241,63 +162,26 @@ export function getProviders(user: User) {
     return user.providerData.map(data => data.providerId);
 }
 
-export async function providerRegister(client: EntityClient, provider: AuthProvider) {
-    const auth = getAuth(firebaseApp);
+export async function providerRegister(api: EntityApi, provider: AuthProvider) {
+    const auth = getAuth(api.getClient().firebaseApp);
 
     // `signInWithPopup` throws an exception if sign-in fails.
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
     const uid = user.uid;
     const displayName = user.displayName || ANONYMOUS;
-    // const username = ANONYMOUS;
-
-    // const identity: Identity = {
-    //     uid,
-    //     username,
-    //     displayName
-    // }
-
-    // const sessionUser = createSessionUser(user, identity)
    
     const lib = createFirestoreLibrary();
-    await Promise.all([
+    const resolved = await Promise.all([
         saveLibrary(uid, lib),
         setAnonymousIdentity(uid, displayName)
     ])
 
-    mutate(client, (lerni: LerniApp) => {
-        lerni.authRegisterStage = REGISTER_PROVIDER_USERNAME;
-    })
-
+    const identity = resolved[1];
+    const sessionUser = createSessionUser(user, identity);
+    setAuthUser(api.getClient(), sessionUser);
 }
 
-
-export async function providerRegister0(dispatch: AppDispatch, provider: AuthProvider) {
-    
-    const auth = getAuth(firebaseApp);
-
-    // `signInWithPopup` throws an exception if sign-in fails.
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const uid = user.uid;
-    const displayName = user.displayName || ANONYMOUS;
-    const username = ANONYMOUS;
-    const providers = getProviders(user);
-    const requiresVerification = getRequiresVerification(user);
-
-    const session = createSession(uid, providers, username, displayName, requiresVerification);
-   
-    const lib = createFirestoreLibrary();
-    await Promise.all([
-        saveLibrary(uid, lib),
-        setAnonymousIdentity(uid, displayName)
-    ])
-    
-    batch(()=> {
-        dispatch(authSessionBegin(session));
-        dispatch(authRegisterStageUpdate(REGISTER_PROVIDER_USERNAME));
-    })
-}
 
 export async function emailPasswordSignIn(api: EntityApi, email: string, password: string) {
     

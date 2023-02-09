@@ -728,8 +728,7 @@ export interface DeckEditor {
 
 export interface LerniApp {
 
-    /** The state of the Registration dialog */
-    authRegisterStage?: RegisterStage,
+    authUser?: SessionUser;
     
     /**
      * A flag which specifies whether the user is actively signing in.
@@ -738,7 +737,7 @@ export interface LerniApp {
     signinActive?: boolean;
     
     /** Data used to display a transient Alert */
-    alertData?: AlertData,
+    alertData?: AlertData;
 
 }
 

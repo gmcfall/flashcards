@@ -1,5 +1,4 @@
 import { PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "../store/store";
 import { LerniApp0 } from "./types";
 
 
@@ -15,18 +14,4 @@ export function doAccountDeleteEmailBegin(lerni: LerniApp0, action: PayloadActio
         email: '',
         password: ''
     }
-}
-
-export function doAccountDeleteEmailChange(lerni: LerniApp0, action: PayloadAction<string>) {
-    const form = lerni.deleteAccountForm!
-    form.email = action.payload;
-}
-
-export function doAccountDeletePasswordChange(lerni: LerniApp0, action: PayloadAction<string>) {
-    const form = lerni.deleteAccountForm!
-    form.password = action.payload;
-}
-
-export function selectDeleteAccountForm(state: RootState) {
-    return state.lerni.deleteAccountForm;
 }

@@ -1,14 +1,12 @@
-import { deleteUser, getAuth } from "firebase/auth";
+import { getAuth } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, limit, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { ListenerOptions } from "../fbase/common";
+import { setAuthUser, watchEntity } from "../fbase/functions";
 import LeaseeApi from "../fbase/LeaseeApi";
-import { mutate, setAuthUser, watchEntity } from "../fbase/functions";
-import { last as lastElement } from "../util/common";
 import { createSessionUser, endSignIn } from "./auth";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
-import { appGetState } from "./lerni";
-import { ANONYMOUS, Identity, LerniApp, SessionUser } from "./types";
+import { ANONYMOUS, Identity, SessionUser } from "./types";
 
 export function createIdentity(uid: string, username: string, displayName: string) : Identity {
     return {uid, username, displayName}
@@ -51,6 +49,7 @@ export async function setAnonymousIdentity(uid: string, displayName: string) {
     const identity = createIdentity(uid, ANONYMOUS, displayName);
     const identityRef = doc(db, IDENTITIES, uid);
     await setDoc(identityRef, identity);
+    return identity;
 }
 
 /**
@@ -195,28 +194,10 @@ function identityTransform(api: LeaseeApi, identity: Identity, path: string[]) {
     return identity;
 }
 
-function onIdentityError(api: LeaseeApi, error: Error, path: string[]) {
-    const client = api.getClient();
-    const auth = getAuth(client.firebaseApp);
-    const user = auth.currentUser;
-    if (user) {
-        const lerni = appGetState(client);
-        const uid = lastElement(path);
-        if (uid === user.uid && !lerni.authRegisterStage) {
-            if (lerni.signinActive) {
-                deleteUser(user);
-                mutate(client, (lerni: LerniApp) => {
-                    delete lerni.signinActive;
-                })
-            }
-        }
-    }
-}
 
 export function watchCurrentUserIdentity(api: LeaseeApi, userUid: string) {
     const options: ListenerOptions<Identity> = {
         transform: identityTransform,
-        onError: onIdentityError,
         leaseOptions: {
             cacheTime: Number.POSITIVE_INFINITY
         }
