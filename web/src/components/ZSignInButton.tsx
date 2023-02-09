@@ -1,18 +1,17 @@
 import { Button } from "@mui/material";
-import { useEntityApi } from "../fbase/hooks";
+import { useContext } from "react";
 import { useSessionUser } from "../hooks/customHooks";
-import { authBeginSignIn } from "../model/auth";
 import { SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
-import { ZSigninWizard } from "./ZSigninWizard";
+import { SigninContext } from "./ZSigninProvider";
 
 export default function ZSignInButton() {
-    const api = useEntityApi();
     const user = useSessionUser();
+    const [,setSigninOpen] = useContext(SigninContext);
     // Don't display the sign in button if the user is already signed in
     
 
     function handleClick() {
-        authBeginSignIn(api);
+        setSigninOpen(true);
     }
 
     return (
@@ -24,7 +23,6 @@ export default function ZSignInButton() {
                     {SIGN_IN_BUTTON_LABEL}
                 </Button>
             )}
-            <ZSigninWizard/>
         </>
     )
 }

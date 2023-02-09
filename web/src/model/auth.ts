@@ -3,20 +3,18 @@ import { AuthProvider, deleteUser, EmailAuthProvider, getAuth, reauthenticateWit
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import { Action } from "redux";
 import EntityApi from "../fbase/EntityApi";
-import EntityClient from "../fbase/EntityClient";
-import { mutate, setAuthUser } from "../fbase/functions";
+import { setAuthUser } from "../fbase/functions";
 import LeaseeApi from "../fbase/LeaseeApi";
 import authEmailVerified from "../store/actions/authEmailVerified";
 import { AppDispatch, RootState } from "../store/store";
 import { logError } from "../util/common";
-import { alertError, alertInfo, alertSuccess, setSuccess } from "./alert";
+import { alertError, alertInfo, alertSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
 import { deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName, setAnonymousIdentity, watchCurrentUserIdentity } from "./identity";
-import { appGetState } from "./lerni";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK } from "./types";
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK } from "./types";
 
 export function doAuthEmailVerified(lerni: LerniApp0, action: PayloadAction) {
     const user = lerni.session?.user;
@@ -74,10 +72,6 @@ export async function deleteUserData(userUid: string) {
 
 export function selectRegistrationState(state: RootState) {
     return state.lerni.authRegisterStage;
-}
-
-export function selectSigninActive(lerni: LerniApp) {
-    return Boolean(lerni.signinActive);
 }
 
 export function selectAccountIsIncomplete(state: RootState) {
@@ -239,16 +233,6 @@ export async function emailPasswordSignIn0(email: string, password: string) {
     return createSession(user.uid, providers, identity.username, identity.displayName, requiresVerification);
 }
 
-export function endSignIn(client: EntityClient) {
-    const lerni = appGetState(client);
-    if (lerni.signinActive) {
-        mutate(client, (lerni: LerniApp) => {
-            delete lerni.signinActive;
-            setSuccess(lerni, "Welcome back!");
-        })
-    }
-}
-
 
 export async function providerSignIn(api: EntityApi, provider: AuthProvider) : Promise<SignInResult> {
     const firebaseApp = api.getClient().firebaseApp;
@@ -358,18 +342,6 @@ export async function authSignOut(api: EntityApi) {
     } catch (error) {
         alertError(api, "An error occurred during sign out", error);
     }
-}
-
-export function authBeginSignIn(api: EntityApi) {
-    api.mutate((lerni: LerniApp) => {
-        lerni.signinActive = true;
-    })
-}
-
-export function authEndSignIn(api: EntityApi) {
-    api.mutate((lerni: LerniApp) => {
-        delete lerni.signinActive;
-    })
 }
 
 

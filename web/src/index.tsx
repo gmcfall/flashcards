@@ -9,11 +9,12 @@ import ZDeckShare from './components/ZDeckShare';
 import ZHome from './components/ZHome';
 import ZLibrary from './components/ZLibrary';
 import { FirebaseProvider } from './fbase/FirebaseContext';
-import ZRegistrationProvider from './fbase/ZRegistrationProvider';
+import ZRegistrationProvider from './components/ZRegistrationProvider';
 import './index.css';
 import firebaseApp from './model/firebaseApp';
 import reportWebVitals from './reportWebVitals';
 import store from './store/store';
+import ZSigninProvider from './components/ZSigninProvider';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -45,16 +46,18 @@ root.render(
     <ThemeProvider theme={theme}>
       <FirebaseProvider firebaseApp={firebaseApp}>
         <ZRegistrationProvider>
-          <ZAuth/>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<ZHome/>}/>
-              <Route path="/library" element={<ZLibrary/>}/>
-              <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
-              <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
-              <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
-            </Routes>
-          </BrowserRouter>
+          <ZSigninProvider>
+            <ZAuth/>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<ZHome/>}/>
+                <Route path="/library" element={<ZLibrary/>}/>
+                <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
+                <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
+                <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
+              </Routes>
+            </BrowserRouter>
+          </ZSigninProvider>
         </ZRegistrationProvider>
       </FirebaseProvider>
     </ThemeProvider>

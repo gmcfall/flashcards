@@ -1,10 +1,9 @@
 
 import { Box, Button, Divider, Typography } from "@mui/material";
 import { useContext } from "react";
-import { useEntityApi } from "../fbase/hooks";
-import { RegistrationContext } from "../fbase/ZRegistrationProvider";
-import { authBeginSignIn } from "../model/auth";
 import { REGISTER_BUTTON_LABEL, SIGN_IN_BUTTON_LABEL } from "./lerniConstants";
+import { RegistrationContext } from "./ZRegistrationProvider";
+import { SigninContext } from "./ZSigninProvider";
 interface AccessDeniedMessage {
     title: string
 }
@@ -12,10 +11,10 @@ export function ZAccessDeniedMessage(props: AccessDeniedMessage) {
     const {title} = props;
 
     const [,setRegisterOpen] = useContext(RegistrationContext);
-    const api = useEntityApi();
+    const [,setSigninOpen] = useContext(SigninContext);
 
     function handleSignInClick() {
-        authBeginSignIn(api);
+        setSigninOpen(true);
     }
 
     function handleRegisterClick() {

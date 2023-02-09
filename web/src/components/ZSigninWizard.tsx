@@ -1,14 +1,15 @@
 import EmailIcon from '@mui/icons-material/Email';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import { AuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
-import { useState } from "react";
-import { useData, useEntityApi } from '../fbase/hooks';
-import { authEndSignIn, emailPasswordSignIn, providerSignIn, selectSigninActive } from '../model/auth';
+import { useContext, useState } from "react";
+import { useEntityApi } from '../fbase/hooks';
+import { emailPasswordSignIn, providerSignIn } from '../model/auth';
 import { GET_IDENTITY_FAILED, IDENTITY_NOT_FOUND, ProviderNames, SignInResult, SIGNIN_FAILED, SIGNIN_OK } from '../model/types';
 import { dialogContentStyle } from './lerniConstants';
 import LerniTheme from './lerniTheme';
 import ZFacebookIcon from './ZFacebookIcon';
 import ZGoogleIcon from './ZGoogleIcon';
+import { SigninContext } from './ZSigninProvider';
 import ZTwitterIcon from './ZTwitterIcon';
 
 
@@ -60,7 +61,7 @@ function ZSigninBegin(props: SigninBeginProps) {
         providerSignIn(api, provider).then(
             result => {
                 switch (result) {
-                    case SIGNIN_OK: 
+                    case SIGNIN_OK:
                         onClose();
                         break;
 
@@ -329,34 +330,34 @@ function ZProviderError(props: ProviderErrorProps) {
     )
 }
 
+interface SigninBodyProps {
+    onClose: () => void
+}
 
-function ZSigninBody() {
-    const api = useEntityApi();
+function ZSigninBody(props: SigninBodyProps) {
+    const {onClose} = props;
     const [stage, setStage] = useState<SigninStage>(SigninStage.begin);
     const [providerError, setProviderError] = useState<ProviderError | null>(null);
     
-    function handleClose() {
-        authEndSignIn(api);
-    }
 
     switch (stage) {
         case SigninStage.begin:
             return <ZSigninBegin
-                onClose={handleClose}
+                onClose={onClose}
                 setStage={setStage}
                 setProviderError={setProviderError}
             />
 
         case SigninStage.providerError:
             return <ZProviderError
-                onClose={handleClose}
+                onClose={onClose}
                 providerError={providerError}
                 setStage={setStage}
             />
 
         case SigninStage.email:
             return <ZSigninEmail
-                onClose={handleClose}
+                onClose={onClose}
             />
     }
 
@@ -365,13 +366,18 @@ function ZSigninBody() {
 
 export function ZSigninWizard() {
 
-    const signinActive = useData(selectSigninActive);
-    if (!signinActive) {
+    const [open, setOpen] = useContext(SigninContext);
+
+    if (!open) {
         return null;
+    }
+
+    function handleClose() {
+        setOpen(false);
     }
     
     return (
-        <Dialog open={true}>
+        <Dialog open={true} onClose={handleClose}>
             <DialogTitle sx={{
                 margin: 0, 
                 padding: 2,
@@ -381,7 +387,7 @@ export function ZSigninWizard() {
             }}>
                 Sign in
             </DialogTitle>
-            <ZSigninBody/>
+            <ZSigninBody onClose={handleClose}/>
 
         </Dialog>
     );

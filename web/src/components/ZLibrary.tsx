@@ -5,14 +5,14 @@ import {
     Alert, Box, Button, CircularProgress, FormControl, IconButton, List, ListItem, ListItemButton,
     ListItemText, MenuItem, Paper, Select, SelectChangeEvent, Tooltip, Typography
 } from "@mui/material";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { useData, useEntityApi } from '../fbase/hooks';
+import { useEntityApi } from '../fbase/hooks';
 import { useSessionUser } from '../hooks/customHooks';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
 import { alertError, alertSuccess } from '../model/alert';
-import { selectAccountIsIncomplete, selectRegistrationState, selectSigninActive } from "../model/auth";
+import { selectAccountIsIncomplete, selectRegistrationState } from "../model/auth";
 import { libraryUnsubscribe, removeNotification, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import {
@@ -26,6 +26,7 @@ import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
 import ZAccountIncomplete from './ZAccountIncomplete';
 import ZAlert from "./ZAlert";
 import ZAuthTools from './ZAuthTools';
+import { SigninContext } from './ZSigninProvider';
 
 
 function ZLibraryHeader() {
@@ -381,7 +382,7 @@ function ZLibraryContent() {
     const dispatch = useAppDispatch();
     const user = useSessionUser();
     const registrationState = useAppSelector(selectRegistrationState);
-    const signinActive = useData(selectSigninActive);
+    const [signinActive] = useContext(SigninContext);
     const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
     const navigate = useNavigate();
 

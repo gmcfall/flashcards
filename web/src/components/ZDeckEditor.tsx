@@ -1,13 +1,12 @@
 import { Box, Button, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import { useData } from "../fbase/hooks";
 import { useAccessControl, useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { checkPrivilege } from "../model/access";
-import { selectAccountIsIncomplete, selectRegistrationState, selectSigninActive } from "../model/auth";
+import { selectAccountIsIncomplete, selectRegistrationState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectNewActiveCard } from "../model/deckEditor";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
@@ -30,6 +29,7 @@ import ZDeckEditorHeader from "./ZDeckEditorHeader";
 import ZFlashcard from "./ZFlashcard";
 import ZNeedAccess from "./ZNeedAccess";
 import ZNotFound from "./ZNotFound";
+import { SigninContext } from "./ZSigninProvider";
 
 const HEIGHT_WIDTH_RATIO = 0.6;
 const MAX_FONT_SIZE = 200; // %
@@ -153,7 +153,7 @@ function ZDeckEditorContent(props: TiptapProps) {
     const dispatch = useAppDispatch();
     const user = useSessionUser();
     const registrationState = useAppSelector(selectRegistrationState);
-    const signinActive = useData(selectSigninActive);
+    const [signinActive] = useContext(SigninContext);
     const deck = useAppSelector(selectDeck);
     const activeCard = useAppSelector(selectActiveCard);
 

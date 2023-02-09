@@ -1,15 +1,11 @@
 import React, { useState } from "react";
-import { ZRegisterWizard } from "../components/ZRegisterWizard";
+import { ZRegisterWizard } from "./ZRegisterWizard";
 import { BooleanState } from "../model/types";
 
 
-function dummy(value: boolean) {
+function dummy(value: boolean) {}
 
-}
-
-let registrationValue: BooleanState = [false, dummy];
-
-export const RegistrationContext = React.createContext<BooleanState>(registrationValue);
+export const RegistrationContext = React.createContext<BooleanState>([false, dummy]);
 
 interface RegistrationProviderProps {
     children?: React.ReactNode;

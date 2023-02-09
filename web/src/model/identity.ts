@@ -3,7 +3,7 @@ import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, limit, query
 import { ListenerOptions } from "../fbase/common";
 import { setAuthUser, watchEntity } from "../fbase/functions";
 import LeaseeApi from "../fbase/LeaseeApi";
-import { createSessionUser, endSignIn } from "./auth";
+import { createSessionUser } from "./auth";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
 import { ANONYMOUS, Identity, SessionUser } from "./types";
@@ -188,7 +188,6 @@ function identityTransform(api: LeaseeApi, identity: Identity, path: string[]) {
         if (uid === user.uid) {
             const sessionUser = createSessionUser(user, identity);
             setAuthUser(client, sessionUser);
-            endSignIn(client);
         }
     }
     return identity;

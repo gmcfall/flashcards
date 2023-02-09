@@ -15,7 +15,6 @@ import accountDisplayNameUpdate from "../actions/accountDisplayNameUpdate";
 import authEmailVerified from "../actions/authEmailVerified";
 import authSessionBegin from "../actions/authSessionBegin";
 import authSessionEnd from "../actions/authSessionEnd";
-import authStateChanged from "../actions/authStateChanged";
 import deckAccessLoaded from "../actions/deckAccessLoaded";
 import deckAdd from "../actions/deckAdd";
 import deckAdded from "../actions/deckAdded";
@@ -54,7 +53,6 @@ const lerniReducer = createReducer(initialState, builder => {
         .addCase(authEmailVerified, doAuthEmailVerified)
         .addCase(authSessionBegin, doAuthSessionBegin)
         .addCase(authSessionEnd, doAuthSessionEnd)
-        .addCase(authStateChanged.rejected, doErrorDisplay)
         .addCase(deckDelete.rejected, doErrorDisplay)
         .addCase(deckAdd.rejected, doErrorDisplay)
         .addCase(deckNameUpdate, doDeckNameUpdate)

@@ -731,13 +731,7 @@ export type BooleanState = [boolean, (value: boolean) => void]
 export interface LerniApp {
 
     authUser?: SessionUser;
-    
-    /**
-     * A flag which specifies whether the user is actively signing in.
-     * When true, the ZSigninWizard is open.
-     */
-    signinActive?: boolean;
-    
+        
     /** Data used to display a transient Alert */
     alertData?: AlertData;
 
