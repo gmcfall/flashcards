@@ -1,23 +1,29 @@
 import React, { useState } from "react";
 import { ZRegisterWizard } from "../components/ZRegisterWizard";
+import { BooleanState } from "../model/types";
 
 
 function dummy(value: boolean) {
 
 }
 
-export const RegistrationContext = React.createContext(dummy);
+let registrationValue: BooleanState = [false, dummy];
+
+export const RegistrationContext = React.createContext<BooleanState>(registrationValue);
 
 interface RegistrationProviderProps {
     children?: React.ReactNode;
 }
 
+
 export default function ZRegistrationProvider(props: RegistrationProviderProps) {
     const {children} = props;
-    const [open, setOpen] = useState(false);
+    const value = useState(false);
+    const open = value[0];
+    const setOpen = value[1];
 
     return (
-        <RegistrationContext.Provider value={setOpen}>
+        <RegistrationContext.Provider value={value}>
             {children}
             {open && (
                 <ZRegisterWizard

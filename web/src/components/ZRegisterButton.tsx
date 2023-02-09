@@ -7,7 +7,7 @@ import { REGISTER_BUTTON_LABEL } from "./lerniConstants";
 
 export default function ZRegisterButton() {
 
-    const setRegisterOpen = useContext(RegistrationContext);
+    const [,setRegisterOpen] = useContext(RegistrationContext);
     const user = useSessionUser();
    
 

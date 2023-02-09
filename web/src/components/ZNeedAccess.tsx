@@ -76,7 +76,7 @@ function ZRequestAccess(props: NeedAccessProps) {
 
 function ZMustSignIn() {
     const api = useEntityApi();
-    const setRegisterOpen = useContext(RegistrationContext);
+    const [,setRegisterOpen] = useContext(RegistrationContext);
 
     function handleSignInClick() {
         authBeginSignIn(api);

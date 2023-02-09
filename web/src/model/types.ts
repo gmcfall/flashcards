@@ -726,6 +726,8 @@ export interface DeckEditor {
 
 }
 
+export type BooleanState = [boolean, (value: boolean) => void]
+
 export interface LerniApp {
 
     authUser?: SessionUser;

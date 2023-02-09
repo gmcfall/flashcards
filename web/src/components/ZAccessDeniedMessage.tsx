@@ -11,7 +11,7 @@ interface AccessDeniedMessage {
 export function ZAccessDeniedMessage(props: AccessDeniedMessage) {
     const {title} = props;
 
-    const setRegisterOpen = useContext(RegistrationContext);
+    const [,setRegisterOpen] = useContext(RegistrationContext);
     const api = useEntityApi();
 
     function handleSignInClick() {
