@@ -1,9 +1,7 @@
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
 import { Box, Button, Link as Anchor, Typography } from "@mui/material";
 import { Link } from 'react-router-dom';
-import { useSessionUser } from '../hooks/customHooks';
-import { useAppSelector } from '../hooks/hooks';
-import { selectAccountIsIncomplete } from '../model/auth';
+import { useAccountIsIncomplete, useSessionUser } from '../hooks/customHooks';
 import { libraryRoute } from '../model/routes';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
 import LerniTheme from './lerniTheme';
@@ -52,7 +50,7 @@ function ZHomeFooter() {
 }
 
 export default function ZHome() {
-    const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
+    const accountIsIncomplete = useAccountIsIncomplete();
     if (accountIsIncomplete) {
         return <ZAccountIncomplete/>
     }

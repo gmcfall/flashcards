@@ -14,7 +14,7 @@ import { createSessionUser, providerRegister, submitIdentityCleanup } from '../m
 import firebaseApp from '../model/firebaseApp';
 import { checkUsernameAvailability, createIdentity, replaceAnonymousUsername, setNewIdentity } from '../model/identity';
 import { createFirestoreLibrary, saveLibrary } from '../model/library';
-import { ProviderNames, REGISTER_EMAIL, REGISTER_PROVIDER_END } from '../model/types';
+import { ProviderNames } from '../model/types';
 import { dialogContentStyle } from './lerniConstants';
 import LerniTheme from './lerniTheme';
 import ZDisplayNameField, { validateDisplayName } from './ZDisplayNameField';
@@ -632,7 +632,7 @@ export function ZRegisterWizard(props: RegisterWizardProps) {
         setOpen(false);
     }
 
-    const omitCloseButton = registerState === REGISTER_PROVIDER_END;
+    const omitCloseButton = registerState === 'REGISTER_PROVIDER_END';
 
     return (
         <Dialog open={true}>
@@ -659,7 +659,7 @@ async function submitEmailRegistrationForm(
 
     const checkOk = await checkUsernameAvailability(username);
     if (!checkOk) {
-        return REGISTER_EMAIL;
+        return 'REGISTER_EMAIL';
     }
 
     const auth = getAuth(firebaseApp);

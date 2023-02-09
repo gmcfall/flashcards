@@ -361,56 +361,6 @@ export interface ErrorInfo {
     cause?: string
 }
 
-export type RegisterStage =  (
-    'REGISTER_BEGIN' | 
-    'REGISTER_EMAIL' |
-    'REGISTER_EMAIL_USERNAME_RETRY' |
-    'REGISTER_EMAIL_VERIFY' | 
-    'REGISTER_PROVIDER_USERNAME' |
-    'REGISTER_PROVIDER_END'
-);
-
-/**
- * The stage at the beginning of the registration workflow.
- * This is where the user must choose an identity provider.
- */
-export const REGISTER_BEGIN: RegisterStage = 'REGISTER_BEGIN';
-
-/**
- * The stage immediately after the user chooses to use the "password" identity
- * provider. At this point the form for entering the `email`, `password` and
- * `displayName` is rendered.
- */
-export const REGISTER_EMAIL: RegisterStage = 'REGISTER_EMAIL';
-
-/**
- * The stage immediately after the user submits the email/password credentials
- * and the local `Identity` document has been persisted. At this point, the user 
- * is presented with a notice that the verification email was sent.
- */
-export const REGISTER_EMAIL_VERIFY: RegisterStage = 'REGISTER_EMAIL_VERIFY';
-
-
-/**
- * The stage immediately after registering via an identity provider (Google, Facebook, or Twitter).
- * At this stage, the user must enter a `username` and optionally update the `displayName`
- */
-export const REGISTER_PROVIDER_USERNAME: RegisterStage = 'REGISTER_PROVIDER_USERNAME';
-
-/**
- * This stage occurs after the entire workflow for registering via an identity provider
- * (Google, Facebook, or Twitter) is complete. The user is presented with an
- * Alert announcing that the account is ready for use.
- */
-export const REGISTER_PROVIDER_END: RegisterStage = 'REGISTER_PROVIDER_END';
-
-/**
- * This stage occurs if an account was created but the requested `username`
- * is not availabe. The user is presented with a form to request a different
- * `username`
- */
-export const REGISTER_EMAIL_USERNAME_RETRY: RegisterStage = 'REGISTER_EMAIL_USERNAME_RETRY';
-
 /**
  * A possible return value from the `providerSignIn` and `emailPasswordSignIn` functions.
  */
@@ -742,21 +692,12 @@ export interface LerniApp0 {
     /** Details about the current session */
     session?: Session,
 
-    /** The state of the Registration dialog */
-    authRegisterStage?: RegisterStage,
-
     /** 
      * The form used to reauthenticate during the `Delete Account`
      * workflow if the user is authenticated by email/password
      */
     deleteAccountForm?: PasswordCredentials,
 
-
-    /**
-     * A flag which specifies whether the user is actively signing in.
-     * When true, the ZSigninWizard is open.
-     */
-    signinActive?: boolean;
 
     /** Data used to display a transient Alert */
     alertData?: AlertData,

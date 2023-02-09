@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
+import { RegistrationContext } from "../components/ZRegistrationProvider";
+import { SigninContext } from "../components/ZSigninProvider";
 import { AuthOptions, useAuthListener } from "../fbase/hooks";
 import { createAccessEnvelope, selectDeckAccessEnvelope } from "../model/access";
-import { userTransform } from "../model/auth";
+import { userProfileIsIncomplete, userTransform } from "../model/auth";
 import { ACCESS_DENIED, NOT_FOUND, SessionUser, UNKNOWN_ERROR } from "../model/types";
 import accessGet from "../store/actions/accessGet";
 import accessSet from "../store/actions/accessSet";
@@ -68,4 +70,19 @@ const sessionUserOptions: AuthOptions<SessionUser> = {
 export function useSessionUser() {
     const [, user] = useAuthListener(sessionUserOptions);
     return user;
+}
+
+export function useAccountIsIncomplete() {
+    const [registerWizardIsOpen] = useContext(RegistrationContext);
+    const [signinWizardIsOpen] = useContext(SigninContext);
+    const user = useSessionUser();
+    return Boolean(
+        !registerWizardIsOpen &&
+        !signinWizardIsOpen &&
+        user &&
+        (
+            userProfileIsIncomplete(user) ||
+            user.requiresEmailVerification
+        )
+    )
 }

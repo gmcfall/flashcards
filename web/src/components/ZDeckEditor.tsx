@@ -3,10 +3,9 @@ import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import { useContext, useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { useParams } from "react-router-dom";
-import { useAccessControl, useSessionUser } from "../hooks/customHooks";
+import { useAccessControl, useAccountIsIncomplete, useSessionUser } from "../hooks/customHooks";
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { checkPrivilege } from "../model/access";
-import { selectAccountIsIncomplete, selectRegistrationState } from "../model/auth";
 import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
 import { selectNewActiveCard } from "../model/deckEditor";
 import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
@@ -29,6 +28,7 @@ import ZDeckEditorHeader from "./ZDeckEditorHeader";
 import ZFlashcard from "./ZFlashcard";
 import ZNeedAccess from "./ZNeedAccess";
 import ZNotFound from "./ZNotFound";
+import { RegistrationContext } from "./ZRegistrationProvider";
 import { SigninContext } from "./ZSigninProvider";
 
 const HEIGHT_WIDTH_RATIO = 0.6;
@@ -152,7 +152,7 @@ function ZDeckEditorContent(props: TiptapProps) {
     
     const dispatch = useAppDispatch();
     const user = useSessionUser();
-    const registrationState = useAppSelector(selectRegistrationState);
+    const [registerActive] = useContext(RegistrationContext);
     const [signinActive] = useContext(SigninContext);
     const deck = useAppSelector(selectDeck);
     const activeCard = useAppSelector(selectActiveCard);
@@ -173,7 +173,7 @@ function ZDeckEditorContent(props: TiptapProps) {
     }, [userUid, activeCard]);
 
     
-    if (registrationState || signinActive || !editor) {
+    if (registerActive || signinActive || !editor) {
         return null;
     }
 
@@ -323,7 +323,7 @@ export default function ZDeckEditor() {
     const dispatch = useAppDispatch();
     const {deckId} = useParams();
     const newActiveCard = useSelector(selectNewActiveCard);
-    const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
+    const accountIsIncomplete = useAccountIsIncomplete();
     const user = useSessionUser();
     const deckAccess = useAccessControl(deckId);
     const [editor, setEditor] = useState<Editor | null>(null);

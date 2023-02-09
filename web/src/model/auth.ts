@@ -6,7 +6,7 @@ import EntityApi from "../fbase/EntityApi";
 import { setAuthUser } from "../fbase/functions";
 import LeaseeApi from "../fbase/LeaseeApi";
 import authEmailVerified from "../store/actions/authEmailVerified";
-import { AppDispatch, RootState } from "../store/store";
+import { AppDispatch } from "../store/store";
 import { logError } from "../util/common";
 import { alertError, alertInfo, alertSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
@@ -68,24 +68,6 @@ export async function deleteUserData(userUid: string) {
     ];
 
     return Promise.all(promises);
-}
-
-export function selectRegistrationState(state: RootState) {
-    return state.lerni.authRegisterStage;
-}
-
-export function selectAccountIsIncomplete(state: RootState) {
-    const lerni = state.lerni;
-    const user = lerni.session?.user;
-    return Boolean(
-        !lerni.authRegisterStage &&
-        !lerni.signinActive &&
-        user &&
-        (
-            userProfileIsIncomplete(user) ||
-            user.requiresEmailVerification
-        )
-    )
 }
 
 export function userProfileIsIncomplete(user: SessionUser) {

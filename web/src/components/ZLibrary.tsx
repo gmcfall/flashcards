@@ -8,11 +8,10 @@ import {
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { useEntityApi } from '../fbase/hooks';
-import { useSessionUser } from '../hooks/customHooks';
+import { useAccountIsIncomplete, useSessionUser } from '../hooks/customHooks';
 import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
 import { alertError, alertSuccess } from '../model/alert';
-import { selectAccountIsIncomplete, selectRegistrationState } from "../model/auth";
 import { libraryUnsubscribe, removeNotification, selectLibrary, subscribeLibrary } from '../model/library';
 import { deckEditRoute } from '../model/routes';
 import {
@@ -26,6 +25,7 @@ import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
 import ZAccountIncomplete from './ZAccountIncomplete';
 import ZAlert from "./ZAlert";
 import ZAuthTools from './ZAuthTools';
+import { RegistrationContext } from './ZRegistrationProvider';
 import { SigninContext } from './ZSigninProvider';
 
 
@@ -381,9 +381,9 @@ function ZLibraryNotifications(props: LibraryNotificationsProps) {
 function ZLibraryContent() {
     const dispatch = useAppDispatch();
     const user = useSessionUser();
-    const registrationState = useAppSelector(selectRegistrationState);
+    const [registrationActive] = useContext(RegistrationContext);
     const [signinActive] = useContext(SigninContext);
-    const accountIsIncomplete = useAppSelector(selectAccountIsIncomplete);
+    const accountIsIncomplete = useAccountIsIncomplete();
     const navigate = useNavigate();
 
     const lib = useAppSelector(selectLibrary);
@@ -401,7 +401,7 @@ function ZLibraryContent() {
 
     }, [dispatch, userUid, accountIsIncomplete])
 
-    if (registrationState || signinActive || user===undefined) {
+    if (registrationActive || signinActive || user===undefined) {
         return null;
     }
     
