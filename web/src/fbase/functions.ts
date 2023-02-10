@@ -1,5 +1,6 @@
 import produce from "immer";
 import { ListenerOptions, lookupEntityTuple, startDocListener, validateKey, validatePath } from "./common";
+import EntityApi from "./EntityApi";
 import EntityClient, { claimLease, putEntity, removeLeaseeFromLease } from "./EntityClient";
 import { AUTH_USER } from "./hooks";
 import Lease from "./Lease";
@@ -101,6 +102,7 @@ export function setAuthUser(client: EntityClient, value: unknown) {
 function resolveCache(value: Object) {
     return (
         value.hasOwnProperty('cache') ? (value as EntityClient).cache :
+        value.hasOwnProperty('getClient') ? (value as EntityApi).getClient().cache :
         value as EntityCache
     )
 }
@@ -121,7 +123,7 @@ export function mutate<StateType>(client: EntityClient, recipe: (state: StateTyp
  * @param entityKey The key under which the entity is stored in the cache
  * @returns A tuple describing the requested entity.
  */
-export function getEntity<Type>(clientOrCache: EntityClient | Object, key: string | EntityKey) {
+export function getEntity<Type>(clientOrCache: EntityClient | EntityApi | Object, key: string | EntityKey) {
     const hashValue = toHashValue(key);
     const cache = resolveCache(clientOrCache);
     return lookupEntityTuple<Type>(cache, hashValue);
@@ -199,5 +201,10 @@ export function releaseClaim(client: EntityClient, leasee: string, key: EntityKe
             }
         }
     }
+}
+
+
+export function disownAllLeases(api: EntityApi, leasee: string) {
+    api.getClient().disownAllLeases(leasee);
 }
 

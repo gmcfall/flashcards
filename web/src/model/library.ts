@@ -1,45 +1,93 @@
-import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, deleteDoc, deleteField, doc, documentId, FieldPath, getDoc, getFirestore, onSnapshot, query, setDoc, Timestamp, Unsubscribe, updateDoc, where } from "firebase/firestore";
-import libraryReceive from "../store/actions/libraryReceive";
-import metadataReceived from "../store/actions/metadataReceived";
-import metadataRemoved from "../store/actions/metadataRemoved";
-import { AppDispatch, RootState } from "../store/store";
-import { compareTimestamps, toClientTimestamp } from "../util/time";
+import { deleteDoc, deleteField, doc, FieldPath, getDoc, getFirestore, setDoc, updateDoc } from "firebase/firestore";
+import { watchEntity } from "../fbase/functions";
+import LeaseeApi from "../fbase/LeaseeApi";
+import { compareTimestamps } from "../util/time";
 import { deleteDeck } from "./deck";
 import firebaseApp from "./firebaseApp";
-import { LIBRARIES, METADATA } from "./firestoreConstants";
-import { AccessNotification, ClientLibrary, FirestoreLibrary, LerniApp0, Metadata, MetadataEnvelope } from "./types";
+import { LIBRARIES } from "./firestoreConstants";
+import { createMetadataTransform, createRemoveMetadataCallback, metadataPath } from "./metadata";
+import { ClientLibrary, FirestoreLibrary, PartialMetadata, SessionUser, UNKNOWN_RESOURCE_TYPE } from "./types";
 
-export function doLibraryReceive(lerni: LerniApp0, action: PayloadAction<FirestoreLibrary>) {
 
-    const clientLibrary = toClientLibrary(action.payload);
-    if (!lerni.library) {
-        lerni.library = clientLibrary;
-    } else {
-        const lib = lerni.library;
-        lib.resources = clientLibrary.resources;
-        lib.notifications = clientLibrary.notifications;
+export function libraryPath(user: string | SessionUser | null | undefined) {
+    const userUid = (
+        !user ? undefined : (
+            (typeof(user) === "string" && user) ||
+            (user as SessionUser).uid
+        )
+    )
+    return [LIBRARIES, userUid];
+}
+
+export function libraryTransform(api: LeaseeApi, raw: FirestoreLibrary, path: string[]): ClientLibrary {
+
+    const userUid = path[1];
+    const resources = libResources(api, raw, userUid);
+    const notifications = libNotifications(raw);
+
+    return {
+        resources,
+        notifications
     }
 }
 
-export function doMetadataReceived(lerni: LerniApp0, action: PayloadAction<MetadataEnvelope>) {
-    const lib = lerni.library;
-    if (!lib) {
-        console.log("ERROR:doMetadataReceived: expected `lerni.library` to be defined");
-    } else {
-        const envelope = action.payload;
-        const metadata = lib.metadata;
-        metadata[envelope.id] = envelope.metadata;
-    }
+function libNotifications(raw: FirestoreLibrary) {
+    const result = Object.values(raw.notifications);
+    result.sort((a, b) => -1*compareTimestamps(a.createdAt, b.createdAt));
+
+    return result;
 }
 
-export function doMetadataRemoved(lerni: LerniApp0, action: PayloadAction<string>) {
+function libResources(api: LeaseeApi, raw: FirestoreLibrary, userUid: string) {
+    const idList = Object.keys(raw.resources);
+    const result: PartialMetadata[] = [];
+    const missing: string[] = [];
+    const client = api.getClient();
+    const leasee = api.leasee;
 
-    const lib = lerni.library;
-    if (lib) {
-        const id = action.payload;
-        delete lib.metadata[id];
+    const options = {
+        transform: createMetadataTransform(userUid),
+        onRemove: createRemoveMetadataCallback(userUid)
     }
+
+    idList.forEach(id => {
+        const path = metadataPath(id);
+        const [, value, error] = watchEntity(client, leasee, path, options);
+        if (error) {
+            const message = error.message.toLowerCase();
+            if (message.includes("missing or insufficient permissions")) {
+                missing.push(id);
+            } else {
+                console.warn(`Ignoring error while getting metadata for resource(id=${id})`, error);
+            }
+        } else if (value) {
+            result.push(value);
+        } else {
+            result.push({id, name: "Loading...", type: UNKNOWN_RESOURCE_TYPE});
+        }
+    })
+
+    if (missing.length > 0) {
+        // Remove missing resources from the Library
+        const resources: Record<string, any> = {};
+        missing.forEach(resourceId => {
+            resources[resourceId] = deleteField()
+        })
+        const db = getFirestore(api.getClient().firebaseApp);
+        const libRef = doc(db, LIBRARIES, userUid);
+        updateDoc(libRef, {resources}).catch(
+            error => {
+                console.error(`Failed to removing missing resources from library (userUid: ${userUid})`, missing);
+            }
+        )
+    }
+
+    sortResources(result);
+    return result;
+}
+
+export function sortResources(resources: PartialMetadata[]) {
+    resources.sort((a, b) => a.name.localeCompare(b.name))
 }
 
 /**
@@ -67,100 +115,8 @@ export async function saveLibrary(userUid: string, lib: FirestoreLibrary) {
     return setDoc(docRef, lib);
 }
 
-export function selectLibrary(state: RootState) {
-    return state.lerni.library;
-}
 
-let unsubscribe: Unsubscribe | null = null;
-let libraryUser: string | null = null;
-export function subscribeLibrary(dispatch: AppDispatch, userUid: string) {
 
-    if (libraryUser === userUid) {
-        // Already subscribed
-        return;
-    }
-    if (unsubscribe) {
-        unsubscribe();
-    }
-
-    const db = getFirestore(firebaseApp);
-    const docRef = doc(db, LIBRARIES, userUid);
-
-    unsubscribe = onSnapshot(docRef, (document) => {
-        const lib = toFirestoreLibrary(document.data() as FirestoreLibrary);
-        dispatch(libraryReceive(lib));
-        updateMetadataSubscriptions(dispatch, lib);
-    })
-}
-
-function updateMetadataSubscriptions(dispatch: AppDispatch, lib: FirestoreLibrary) {
-    const resources = Object.keys(lib.resources);
-    const set = new Set<string>(resources);
-    const map = metadataUnsubscribeFunctions;
-    for (const id in map) {
-        if (!set.has(id)) {
-            const unsubscribe = map[id];
-            unsubscribe();
-            delete map[id];
-        }
-    }
-    subscribeMetadata(dispatch, resources);
-}
-
-export function libraryUnsubscribe() {
-    if (unsubscribe) {
-        unsubscribe();
-        unsubscribeAllMetadata();
-        libraryUser = null;
-        unsubscribe = null;
-    }
-}
-
-const metadataUnsubscribeFunctions: Record<string, Unsubscribe> = {};
-export function subscribeMetadata(dispatch: AppDispatch, resources: string[]) {
-
-    const db = getFirestore(firebaseApp);
-    const collectionRef = collection(db, METADATA);
-
-    resources.forEach(id => {
-        if (!metadataUnsubscribeFunctions[id]) {
-            const q = query(collectionRef, where(documentId(), "==", id));
-            const unsubscribe = onSnapshot(q, snapshot => {
-                snapshot.docChanges().forEach( change => {
-                    const metadata = change.doc.data() as Metadata;
-                    switch (change.type) {
-                        case 'added' :
-                        case 'modified' :
-                            dispatch(metadataReceived({id, metadata}));
-                            break;
-
-                        case 'removed' :
-                            dispatch(metadataRemoved(id));
-                            unsubscribeMetadata(id);
-                            break;
-                    }
-                })
-            })
-            metadataUnsubscribeFunctions[id] = unsubscribe;
-        }
-    })
-}
-
-function unsubscribeMetadata(id: string) {
-    
-    const unsubscribe = metadataUnsubscribeFunctions[id];
-    if (unsubscribe) {
-        unsubscribe();
-        delete metadataUnsubscribeFunctions[id];
-    }
-}
-
-function unsubscribeAllMetadata() {
-
-    for (const id in metadataUnsubscribeFunctions) {
-        unsubscribeMetadata(id);
-    }
-}
 
 export async function deleteLibrary(userUid: string) {
     const db = getFirestore(firebaseApp);
@@ -183,62 +139,3 @@ export async function removeNotification(userUid: string, notificationId: string
     const path = new FieldPath("notifications", notificationId);
     await updateDoc(libRef, path, deleteField());
 }
-
-function toClientLibrary(lib: FirestoreLibrary) {
-
-    const resources = Object.keys(lib.resources);
-    const notifications = Object.values(lib.notifications);
-
-    notifications.sort( (a, b) => compareTimestamps(a.createdAt, b.createdAt) );
-    const result: ClientLibrary = {
-        resources,
-        notifications,
-        metadata: {}
-    }
-
-    return result;
-}
-
-function toFirestoreLibrary(lib: FirestoreLibrary): FirestoreLibrary {
-    const resources = lib.resources;
-    const notifications: Record<string, AccessNotification> = {}
-    const map = lib.notifications;
-    for (const key in map) {
-        const value = map[key];
-        const newValue: AccessNotification = {
-            ...value,
-            createdAt: toClientTimestamp(value.createdAt as Timestamp)
-        }
-        notifications[value.id] = newValue;
-    }
-
-    return {
-        resources,
-        notifications
-    }
-}
-
-// export function libraryTransform(client: EntityClient, lib: FirestoreLibrary) : ClientLibrary {
-//     const clientLib = toClientLibrary(lib);
-
-//     const map : Record<string, string> = {};
-
-//     // Fetch metadata for each resource listed in the Library,
-//     // and put the resource name into the map.
-
-//     clientLib.resources.forEach( resourceId => {
-//         const path = [METADATA, resourceId];
-//         const [status, data] = fetchEntity<Metadata>(client, path);
-//         const name = status === 'success' ? data.name : "Loading...";
-//         map[resourceId] = name;
-//     })
-
-//     clientLib.resources.sort((a, b) => {
-//         const aName = map[a];
-//         const bName = map[b];
-
-//         return aName.localeCompare(bName);
-//     })
-
-//     return clientLib;
-// }

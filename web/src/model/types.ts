@@ -98,14 +98,20 @@ export interface Metadata {
     /** The `id` of the resource */
     id: string;
 
+    /** A friendly name for the resource suitable for display to users */
+    name: string
+
     /** The type of resource */
     type: ResourceType,
 
     /** The uid of the User who owns this resource */
     owner: string;
+}
 
-    /** A friendly name for the resource suitable for display to users */
-    name: string
+export interface PartialMetadata extends ResourceRef {
+
+    /** The uid of the User who owns this resource */
+    owner?: string;
 }
 
 export interface MetadataEnvelope {
@@ -340,20 +346,13 @@ export interface ResourceSearchClientData extends ResourceSearchRequest {
     resources: ResourceRef[];
 }
 
-/**
- * A client-side representation of a user's library of resources.
- * In this representation, the map from the {@link FirestoreLibrary} is
- * converted to an array sorted alphabetically.
- */
 export interface ClientLibrary {
-    /** The list of `id` values for resources in the library */
-    resources: string[];
+    
+    /** The list of (possibly incomplete) metadata for resources in the library */
+    resources: PartialMetadata[];
 
     /** The list of access notifications */
     notifications: AccessNotification[];
-
-    /** A map where the key is the `id` for a resource and the value is its metadata */
-    metadata: Record<string, Metadata>;
 }
 
 export interface ErrorInfo {
@@ -701,9 +700,6 @@ export interface LerniApp0 {
 
     /** Data used to display a transient Alert */
     alertData?: AlertData,
-
-    /** The user's Library of resources */
-    library?: ClientLibrary,
 
     /** The status of the process to load the current deck */
     deckLoadStatus?: LoadStatus,

@@ -118,7 +118,7 @@ export function startDocListener<
                             transform(new LeaseeApi(leasee, entityApi), data, validPath) :
                             data;
 
-                        putEntity(client, hashValue, {data: finalData});
+                        putEntity(client, hashValue, finalData);
                         break;
                     }
                     case 'removed': {

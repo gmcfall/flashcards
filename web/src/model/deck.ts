@@ -5,6 +5,8 @@ import {
     collection, deleteField, doc, documentId, FieldPath, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, runTransaction,
     setDoc, Unsubscribe, updateDoc, where, writeBatch
 } from "firebase/firestore";
+import { NavigateFunction } from "react-router-dom";
+import EntityApi from "../fbase/EntityApi";
 import deckAdded from "../store/actions/deckAdded";
 import deckModified from "../store/actions/deckModified";
 import { AppDispatch, RootState } from "../store/store";
@@ -12,13 +14,14 @@ import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
 import { enableGeneralViewer, subscribeAccess } from "./access";
-import { setAlert } from "./alert";
+import { alertError, setAlert } from "./alert";
 import { deckEditorReceiveAddedDeck, deckEditorReceiveModifiedDeck } from "./deckEditor";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DeckField, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
-import { subscribeCard } from "./flashcard";
+import { createFlashcardRef, createServerFlashCard, subscribeCard } from "./flashcard";
 import { createMetadata } from "./metadata";
-import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp0, LOCK_CLOSED, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SharingIconType, Tags, UNTITLED_DECK } from "./types";
+import { deckEditRoute } from "./routes";
+import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp0, LOCK_CLOSED, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SessionUser, SharingIconType, Tags, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -27,6 +30,21 @@ export function createDeck() : Deck {
         name: UNTITLED_DECK,
         cards: [],
         isPublished: false
+    }
+}
+
+export async function addDeck(api: EntityApi, navigate: NavigateFunction, user: SessionUser) {
+    try {
+        const deck = createDeck();
+        const card = createServerFlashCard(deck.id);
+        const cardRef = createFlashcardRef(card.id);
+        deck.cards.push(cardRef);
+
+        await saveDeck(user.uid, deck, card);
+
+        navigate(deckEditRoute(deck.id));
+    } catch (error) {
+        alertError(api, "An error occurred while saving the new Deck", error);
     }
 }
 
@@ -333,6 +351,14 @@ export async function deleteOwnedDecks(userUid: string) {
     })
 
     return Promise.all(promiseList);
+}
+
+export async function deleteDeckWithErrorAlert(api: EntityApi, deckId: string, userUid: string) {
+    try {
+        await deleteDeck(deckId, userUid, true);
+    } catch (error) {
+        alertError(api, "An error occurred while deleting the deck", error);
+    }
 }
 
 

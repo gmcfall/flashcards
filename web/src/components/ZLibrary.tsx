@@ -7,18 +7,18 @@ import {
 } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { useEntityApi } from '../fbase/hooks';
+import { disownAllLeases } from '../fbase/functions';
+import { useDocListener, useEntity, useEntityApi } from '../fbase/hooks';
 import { useAccountIsIncomplete, useSessionUser } from '../hooks/customHooks';
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
 import { alertError, alertSuccess } from '../model/alert';
-import { libraryUnsubscribe, removeNotification, selectLibrary, subscribeLibrary } from '../model/library';
+import { addDeck, deleteDeckWithErrorAlert } from '../model/deck';
+import { libraryPath, libraryTransform, removeNotification } from '../model/library';
+import { metadataPath } from '../model/metadata';
 import { deckEditRoute } from '../model/routes';
 import {
-    AccessNotification, AccessRequest, AccessResponse, ClientLibrary, EDITOR, Metadata, ResourceRef, Role, RoleName, UNKNOWN_RESOURCE_TYPE, VIEWER
+    AccessNotification, AccessRequest, AccessResponse, ClientLibrary, EDITOR, Metadata, PartialMetadata, Role, RoleName, VIEWER
 } from '../model/types';
-import deckAdd from '../store/actions/deckAdd';
-import deckDelete from '../store/actions/deckDelete';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
 import ZAccessDeniedAlert from './ZAccessDeniedAlert';
 import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
@@ -28,17 +28,17 @@ import ZAuthTools from './ZAuthTools';
 import { RegistrationContext } from './ZRegistrationProvider';
 import { SigninContext } from './ZSigninProvider';
 
+const LIBRARY = "library";
 
 function ZLibraryHeader() {
 
     const api = useEntityApi();
-    const dispatch = useAppDispatch();
     const user = useSessionUser();
     const navigate = useNavigate();
 
     function handleNewDeckButtonClick() {
         if (user) {
-            dispatch(deckAdd({navigate, user}));
+            addDeck(api, navigate, user);
         } else {
             alertError(api, "You must be signed in to create a new Deck");
         }
@@ -67,12 +67,12 @@ function ZLibraryHeader() {
 }
 
 interface LibResourceProps {
-    resource: ResourceRef
+    resource: PartialMetadata
 }
 
 function ZLibResource(props: LibResourceProps) {
     const {resource} = props;
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const navigate = useNavigate();
     const user = useSessionUser();
 
@@ -87,7 +87,7 @@ function ZLibResource(props: LibResourceProps) {
     }
 
     function handleDelete() {
-        dispatch(deckDelete({deckId, userUid}))
+        deleteDeckWithErrorAlert(api, deckId, userUid);
     }
 
     return (
@@ -112,32 +112,18 @@ function ZLibResource(props: LibResourceProps) {
     )
 }
 
-function resourceRef(id: string, map: Record<string, Metadata>) : ResourceRef {
-    const metadata = map[id];
-    return (metadata) ? {
-        id,
-        type: metadata.type,
-        name: metadata.name
-    } : {
-        id,
-        type: UNKNOWN_RESOURCE_TYPE,
-        name: "Loading..."
-    }
-}
-
 interface LibraryContentProps {
     lib: ClientLibrary
 }
 function ZLibraryResourceList(props: LibraryContentProps) {
     const {lib} = props;
 
-    const metadata = lib.metadata;
 
     return (
         <List sx={{maxWidth: "50rem", minWidth: "20rem"}}>
             {
-                lib.resources.map(id => (
-                    <ZLibResource key={id} resource={resourceRef(id, metadata)}/>
+                lib.resources.map(metadata => (
+                    <ZLibResource key={metadata.id} resource={metadata}/>
                 ))
             }
         </List>
@@ -147,13 +133,13 @@ function ZLibraryResourceList(props: LibraryContentProps) {
 interface AccessNotificationProps {
     userUid: string;
     notification: AccessNotification;
-    metadata: Record<string, Metadata>;
 }
 
 function ZAccessNotification(props: AccessNotificationProps) {
-    const {userUid, notification, metadata} = props;
+    const {userUid, notification} = props;
 
-    const meta = metadata[notification.resourceId];
+    const [, meta] = useEntity<Metadata>(metadataPath(notification.resourceId));
+
 
     if (notification.hasOwnProperty("requester")) {
         return (
@@ -179,7 +165,7 @@ function ZAccessNotification(props: AccessNotificationProps) {
 interface AccessResponseProps {
     userUid: string;
     notification: AccessResponse;
-    metadata?: Metadata;
+    metadata?: PartialMetadata;
 }
 
 function ZAccessResponse(props: AccessResponseProps) {
@@ -315,7 +301,7 @@ function ZAccessRequest(props: AccessRequestProps) {
                     </FormControl>
                     <Box>
                         <Button
-                            disabled={submitDisabled || !metadata}
+                            disabled={submitDisabled || !metadata?.owner}
                             variant='contained'
                             onClick={handleSubmit}
                         >
@@ -331,7 +317,7 @@ function ZAccessRequest(props: AccessRequestProps) {
    
 }
 
-function resourceName(metadata?: Metadata) {
+function resourceName(metadata?: PartialMetadata) {
     return metadata ? metadata.name : "Loading...";
 }
 
@@ -366,7 +352,6 @@ function ZLibraryNotifications(props: LibraryNotificationsProps) {
                 <ZAccessNotification
                     userUid={userUid}
                     notification={n}
-                    metadata={lib.metadata}
                 />
                 
             
@@ -377,29 +362,28 @@ function ZLibraryNotifications(props: LibraryNotificationsProps) {
     )
 }
 
-
 function ZLibraryContent() {
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const user = useSessionUser();
     const [registrationActive] = useContext(RegistrationContext);
     const [signinActive] = useContext(SigninContext);
     const accountIsIncomplete = useAccountIsIncomplete();
     const navigate = useNavigate();
 
-    const lib = useAppSelector(selectLibrary);
+    const path = libraryPath(user);
+
+    const options = {
+        transform: libraryTransform
+    }
+
+    const [, lib, libError] = useDocListener(LIBRARY, path, options);
+
+    if (libError) {
+        alertError(api, "An error occurred while loading your library", libError);
+        return null;
+    }
 
     const userUid = user?.uid;
-
-    useEffect(() => {
-        if (userUid && !accountIsIncomplete) {
-            subscribeLibrary(dispatch, userUid);
-        }
-
-        return () => {
-            libraryUnsubscribe();
-        }
-
-    }, [dispatch, userUid, accountIsIncomplete])
 
     if (registrationActive || signinActive || user===undefined) {
         return null;
@@ -429,7 +413,9 @@ function ZLibraryContent() {
     }
 
     function handleNewDeck() {
-        dispatch(deckAdd({navigate, user}));
+        if (user) {
+            addDeck(api, navigate, user);
+        }
     }
     if (lib.resources.length===0) {
         return (
@@ -467,6 +453,12 @@ function ZLibraryContent() {
 
 
 export default function ZLibrary() {
+
+    const api = useEntityApi();
+
+    useEffect(
+        () => () => disownAllLeases(api, LIBRARY), [api]
+    )
 
     return (
         <Box sx={{display: "flex", flexDirection: "column"}}>
