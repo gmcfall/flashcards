@@ -1,12 +1,12 @@
-import { PayloadAction } from "@reduxjs/toolkit";
-import { collection, deleteField, doc, documentId, FieldPath, getDoc, getFirestore, onSnapshot, query, runTransaction, serverTimestamp, Unsubscribe, updateDoc, where, writeBatch } from "firebase/firestore";
-import deckAccessLoaded from "../store/actions/deckAccessLoaded";
-import { AppDispatch, RootState } from "../store/store";
+import { deleteField, doc, FieldPath, getFirestore, runTransaction, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
+import EntityApi from "../fbase/EntityApi";
+import LeaseeApi from "../fbase/LeaseeApi";
 import { isEmpty } from "../util/common";
 import generateUid from "../util/uid";
+import { alertError } from "./alert";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, AccessField, LIBRARIES } from "./firestoreConstants";
-import { Access, AccessEnvelope, ACCESS_DENIED, EDIT, Identity, IdentityRole, LerniApp0, NOT_FOUND, OWNER, Permission, ProtoAccessRequest, ProtoAccessResponse, Role, SHARE, UNKNOWN_ERROR, VIEW, VIEWER } from "./types";
+import { Access, AccessTuple, ClientAccess, EDIT, GLOBE, Identity, IdentityRole, LOCK_CLOSED, LOCK_OPEN, OWNER, Permission, ProtoAccessRequest, ProtoAccessResponse, Role, SHARE, VIEW, VIEWER } from "./types";
 
 /**
  * A mapping from roles to permissions granted to the role
@@ -27,26 +27,21 @@ const PRIVILEGES: Record<Role, Set<Permission>> = {
  */
 export function checkPrivilege(
     permission: Permission,
-    accessEnvelope: AccessEnvelope | undefined,
+    accessTuple: AccessTuple,
     resourceId: string | undefined, 
     userUid: string | undefined
 ) {
-    // console.log("checkPrivilege", {
-    //     permission,
-    //     accessEnvelope,
-    //     resourceId,
-    //     userUid
-    // })
+
+    const [,access] = accessTuple;
     if (
-        !accessEnvelope ||
-        accessEnvelope.resourceId !== resourceId || 
-        !accessEnvelope.payload ||
+        !access ||
+        access.resourceId !== resourceId || 
         !userUid
     ) {
         return false;
     }
 
-    const role = getRole(accessEnvelope, resourceId, userUid);
+    const role = getRole(access, userUid);
     
     if (!role) {
         return false;
@@ -56,58 +51,10 @@ export function checkPrivilege(
 
 }
 
-
-export function doDeckAccessLoaded(lerni: LerniApp0, action: PayloadAction<AccessEnvelope>) {
-    lerni.deckAccess = action.payload;
-}
-
-interface AccessUnsubscribeData {
-    resourceId: string;
-    unsubscribe: Unsubscribe;
-}
-
-let unsubscribeData: AccessUnsubscribeData | null = null;
-
-export function subscribeAccess(dispatch: AppDispatch, resourceId: string)  {
-
-    if (unsubscribeData?.resourceId === resourceId) {
-        // Already subscribed
-        return;
-    }
-
-    const db = getFirestore(firebaseApp);
-    const accessRef = collection(db, ACCESS);
-    const q = query(accessRef, where(documentId(), "==", resourceId));
-    const unsubscribe = onSnapshot(q, snapshot => {
-        snapshot.docChanges().forEach( change => {
-            switch (change.type) {
-                case 'added':
-                case 'modified':
-                    const payload = change.doc.data() as Access;
-                    const envelope: AccessEnvelope = {
-                        resourceId,
-                        payload
-                    }
-                    dispatch(deckAccessLoaded(envelope));
-                    break;
-            }
-        })
-    })
-
-    unsubscribeData = {
-        resourceId,
-        unsubscribe
-    }
-}
-
-
-export function getRole(accessEnvelope: AccessEnvelope, resourceId: string | undefined, userUid: string | undefined) : Role | undefined {
-    const access = accessEnvelope.payload;
+export function getRole(access: ClientAccess | undefined, userUid: string | undefined) : Role | undefined {
     if (
         !access ||
-        !resourceId ||
-        !userUid ||
-        resourceId !== accessEnvelope.resourceId
+        !userUid
     ) {
         return undefined;
     }
@@ -128,56 +75,17 @@ export function getRole(accessEnvelope: AccessEnvelope, resourceId: string | und
     return undefined;
 }
 
-export async function getAccess(dispatch: AppDispatch, resourceId: string, withUser?: string) {
-    const db = getFirestore(firebaseApp);
-    const ref = doc(db, ACCESS, resourceId);
-    const envelope = createAccessEnvelope(resourceId);
-    try {
-        const accessDoc = await getDoc(ref);
-    
-        if (accessDoc.exists()) {
-            envelope.payload = accessDoc.data() as Access;
-            subscribeAccess(dispatch, resourceId);
-        } else {
-            envelope.error = NOT_FOUND;
-        }
 
-    } catch (error) {
-        
-        if (error instanceof Error) {
-            const message = error.message;
-            if (message.indexOf("insufficient permissions") >=0) {
-                envelope.error = ACCESS_DENIED;
-            }
-        } else {
-            envelope.error = UNKNOWN_ERROR;
-        }
+export function getSharingIconType(accessTuple: AccessTuple) {
+    const [, access] = accessTuple;
+    if (access) {
+        return (
+           (access.general && GLOBE) ||
+           (isEmpty(access.collaborators) && LOCK_CLOSED) ||
+           LOCK_OPEN
+        )
     }
-    if (envelope.error && withUser) {
-        envelope.withUser = withUser;
-    }
-    return envelope;
-
-}
-
-export function createAccessEnvelope(resourceId: string) {
-    const result: AccessEnvelope = {resourceId};
-    return result;
-}
-
-export function doAccessSet(lerni: LerniApp0, action: PayloadAction<AccessEnvelope>) {
-    lerni.deckAccess = action.payload;
-}
-
-export function selectDeckAccessEnvelope(state: RootState) {
-    return state.lerni.deckAccess;
-}
-
-export function unsubscribeAccess() {
-    if (unsubscribeData) {
-        unsubscribeData.unsubscribe();
-        unsubscribeData = null;
-    }
+    return LOCK_CLOSED
 }
 
 export async function enableGeneralViewer(resourceId: string) {
@@ -198,12 +106,16 @@ export async function enableGeneralViewer(resourceId: string) {
     })
 }
 
-export async function updateAcccess(resourceId: string, generalRole: Role | undefined) {
+export async function updateGeneralRole(api: EntityApi, resourceId: string, generalRole?: Role) {
 
-    const db = getFirestore(firebaseApp);
-    const accessRef = doc(db, ACCESS, resourceId);
-    const value = generalRole || deleteField();
-    updateDoc(accessRef, AccessField.general, value);
+    try {
+        const db = getFirestore(api.getClient().firebaseApp);
+        const accessRef = doc(db, ACCESS, resourceId);
+        const value = generalRole || deleteField();
+        await updateDoc(accessRef, AccessField.general, value);
+    } catch (error) {
+        alertError(api, "An error occurred while saving the sharing settings", error);
+    }
 
 }
 
@@ -347,4 +259,24 @@ export function createIdentityRole(identity: Identity, role: Role) : IdentityRol
         identity,
         role
     }
+}
+
+export function accessPath(resourceId?: string) {
+    return [ACCESS, resourceId];
+}
+
+function accessTransform(api: LeaseeApi, access: Access, path: string[]) : ClientAccess {
+    return {
+        ...access,
+        resourceId: path[1]
+    }
+}
+
+export const accessOptions = {
+    transform: accessTransform
+}
+
+export function resourceNotFound(tuple: AccessTuple) {
+    const [,,error] = tuple;
+    return Boolean(error && error.message.includes("Missing or insufficient permissions"));
 }

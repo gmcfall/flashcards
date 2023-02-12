@@ -1,9 +1,10 @@
 
-import {JSONContent} from "@tiptap/core";
+import { JSONContent } from "@tiptap/core";
 import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { FieldValue } from "firebase/firestore";
+import { EntityTuple } from "../fbase/types";
 
-export type {JSONContent} from "@tiptap/core";
+export type { JSONContent } from "@tiptap/core";
 
 export interface ClientTimestamp {
     seconds: number,
@@ -41,7 +42,7 @@ export const ITALIC='italic';
 
 export type FlashCardType = 'flashcard';
 /** The "flashcard" value of the FlashCardType */
-export const FLASHCARD = 'flashcard';
+export const FLASHCARD: FlashCardType = 'flashcard';
 
 export interface FlashcardBase {    
     type: FlashCardType,
@@ -69,13 +70,6 @@ export interface ClientFlashcard extends FlashcardBase {
 export interface UserNames {
     displayName: string;
     username: string;
-}
-
-/**
- * A ClientFlashcard plus additional information related to the card.
- */
-export interface CardInfo {
-    card: ClientFlashcard
 }
 
 /**
@@ -530,13 +524,13 @@ export interface Access {
 export type SharingIconType = 'lockClosed' | 'lockOpen' | 'globe';
 
 /** The `closedLock` element of the `SharingIcon` type */
-export const LOCK_CLOSED = 'lockClosed';
+export const LOCK_CLOSED: SharingIconType = 'lockClosed';
 
 /** The `openLock` element of the `SharingIcon` type */
-export const LOCK_OPEN = 'lockOpen';
+export const LOCK_OPEN: SharingIconType = 'lockOpen';
 
 /** The `globe` element of the `SharingIcon` type */
-export const GLOBE = 'globe';
+export const GLOBE: SharingIconType = 'globe';
 
 /** An error code that may occur when trying to access a resource */
 export type ResourceError = 'notFound' | 'accessDenied' | 'unknownError';
@@ -555,40 +549,11 @@ export const EDIT: Permission = 'edit';
 export const VIEW: Permission ='view';
 export const SHARE: Permission = 'share';
 
-
-/** 
- * Encapsulates information about an Access document from Firestore.
- * 
- * We derive the following load status values from this information: 
- * - *pending*: `!payload && (!error || !withUser || error==="accessDenied")`
- * - *fulfilled*: `!!payload`
- * - *failed* : `!payload && withUser`
- */
-export interface AccessEnvelope {
-    /** The id of the resource governed by the Access document */
+export interface ClientAccess extends Access {
     resourceId: string;
-    
-
-    /**
-     * The uid of the user who was signed in at the time of the
-     * last get request, or undefined if no user was signed in.
-     */
-    withUser?: string;
-
-
-    /** 
-     * The reason why the latest attempt to get the Access document
-     * failed. If the reason is "notFound", there will be no further
-     * attempts.
-     */
-    error?: ResourceError;
-
-    /**
-     * The Access document that was received for the specified
-     * `resourceId`, if any
-     */
-    payload?: Access;
 }
+
+export type AccessTuple = EntityTuple<ClientAccess>;
 
 /** The status of a loading process */
 export type LoadStatus = 'pending' | 'fulfilled' | 'failed';
@@ -602,78 +567,6 @@ export const FULFILLED ='fulfilled';
 /** The 'failed' value of the LoadStatus type */
 export const FAILED = 'failed';
 
-
-/**
- * Maintains state during the process of loading the initial
- * snapshot of a Deck and its cards.
- */
-interface DeckBootstrap {
-
-    /** The id of the deck received */
-    deckId?: string;
-
-    /** The number of cards received */
-    cardCount: number;
-}
-
-
-/**
- * State used during the process of removing a card from the deck.
- */
-export interface CardRemove {
-    /** The Deck state before the Card was removed. */
-    oldDeck: Deck; 
-}
-
-/**
- * State used during the process of adding a new card to the Deck
- * after the bootstrap process ends.
- * 
- * The `cardId` field is set when the Firestore listener receives an "added" Flashcard.
- * The `deckId` field is set when the Firestore listener receives a "modified" Deck
- * containing a reference to the added card.
- * 
- * When both fields are set, the `activeCard` is updated and the CardAdd record
- * is deleted from `lerni.deckEditor`
- */
-export interface CardAdd {
-
-    /** The id of the Flashcard that was added */
-    cardId?: string;
-
-    /** The id of the Deck that was modified reference the added card */
-    deckId?: string;
-}
-
-export interface DeckEditor {
-
-    /** The id of the deck being edited */
-    deckId?: string;
-
-    /**
-     * The id of the "active" card, i.e. the one currently
-     * loaded into the rich text editor.
-     */
-    activeCard?: string;
-
-    /**
-     * A flag indicating that the `activeCard` was newly changed by an asynchronous process. 
-     * If this flag is present, ZEditor will set the card content into the TipTap editor and 
-     * then dispatch an action to delete the flag.
-     */
-    newActiveCard?: boolean;
-
-    /**
-     * State used during the process of adding a card to the deck.
-     */
-    cardAdd?: CardAdd;
-
-    /**
-     * State used during the process of removing a card from the deck.
-     */
-    cardRemove?: CardRemove;
-
-}
 
 export type BooleanState = [boolean, (value: boolean) => void]
 
@@ -707,23 +600,8 @@ export interface LerniApp0 {
     /** The current deck being edited or viewed */
     deck?: Deck,
 
-    /** A map containing the cards within the current deck */
-    cards: Record<string, CardInfo>,
-
     resourceSearch?: ResourceSearchClientData;
-
-    /** An envelope encapsulating the access control list for the active Deck */
-    deckAccess?: AccessEnvelope;
     
-    /** 
-     * A structure that tracks the number of cards received from Firestore during the
-     * bootstrap process. This record is added when ZDeckEditor mounts and is deleted
-     * after the Deck and all cards have been received from Firestore.
-     */
-    deckBootstrap?: DeckBootstrap;
-
-    /** Details about the DeckEditor currently active */
-    deckEditor?: DeckEditor;
 
 }
 

@@ -1,27 +1,24 @@
 // This file provides features that span multiple parts of the app
 
-import { PayloadAction } from "@reduxjs/toolkit";
 import {
-    collection, deleteField, doc, documentId, FieldPath, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, runTransaction,
-    setDoc, Unsubscribe, updateDoc, where, writeBatch
+    collection, deleteField, doc, FieldPath, Firestore, getDoc, getDocs, getFirestore, query, runTransaction,
+    setDoc, updateDoc, where, writeBatch
 } from "firebase/firestore";
 import { NavigateFunction } from "react-router-dom";
 import EntityApi from "../fbase/EntityApi";
-import deckAdded from "../store/actions/deckAdded";
-import deckModified from "../store/actions/deckModified";
-import { AppDispatch, RootState } from "../store/store";
+import { getEntity, watchEntity } from "../fbase/functions";
+import LeaseeApi from "../fbase/LeaseeApi";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
-import { enableGeneralViewer, subscribeAccess } from "./access";
-import { alertError, setAlert } from "./alert";
-import { deckEditorReceiveAddedDeck, deckEditorReceiveModifiedDeck } from "./deckEditor";
+import { enableGeneralViewer } from "./access";
+import { alertError, alertInfo } from "./alert";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DeckField, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
-import { createFlashcardRef, createServerFlashCard, subscribeCard } from "./flashcard";
+import { cardPath, createCardTransform, createFlashcardRef, createServerFlashCard } from "./flashcard";
 import { createMetadata } from "./metadata";
 import { deckEditRoute } from "./routes";
-import { Access, DECK, Deck, GLOBE, INFO, JSONContent, LerniApp0, LOCK_CLOSED, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SessionUser, SharingIconType, Tags, UNTITLED_DECK } from "./types";
+import { Access, ClientFlashcard, DECK, Deck, JSONContent, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SessionUser, Tags, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -59,25 +56,38 @@ function createDeckAccess(owner: string) : Access {
     }
 }
 
-export function doDeckPublishFulfilled(lerni: LerniApp0, action: PayloadAction) {
-    setAlert(lerni, {
-        severity: INFO,
-        message: "The deck has been published"
-    })
+export function getCardList(api: EntityApi, deck: Deck) {
+    const list: ClientFlashcard[] = [];
+    for (const cardRef of deck.cards) {
+        const path = cardPath(cardRef.id);
+        const [, card, error] = getEntity<ClientFlashcard>(api, path);
+        if (error) {
+            return null;
+        }
+        if (!card) {
+            return null;
+        }
+        list.push(card);
+    }
+    return list;
 }
 
 // TODO: move this to a Firebase function
-export async function publishDeck(lerni: LerniApp0) {
+export async function publishDeck(
+    api:EntityApi, 
+    deckId: string, 
+    deckName: string, 
+    cardList: ClientFlashcard[]
+) {
 
-    const deck = lerni.deck;
-    if (deck) {
-        const tags = getDeckTags(lerni);
+    try {
+        const tags = getDeckTags(deckName, cardList);
         const db = getFirestore(firebaseApp);
-        const tagsRef = doc(db, TAGS, deck.id);
+        const tagsRef = doc(db, TAGS, deckId);
         const newTagsData: Tags = {
             tags
         };
-
+    
         const [remove, add] = await runTransaction(db, async txn => {
             const tagsDoc = await txn.get(tagsRef);
             if (!tagsDoc.exists()) {
@@ -90,30 +100,25 @@ export async function publishDeck(lerni: LerniApp0) {
         })
         const ref: ResourceRef = {
             type: DECK,
-            id: deck.id,
-            name: deck.name
+            id: deckId,
+            name: deckName
         }
-        addSearchResources(db, ref, add);
-        removeSearchResources(db, deck.id, remove);
-        updateIsPublishedFlag(db, deck.id, true);
-        enableGeneralViewer(deck.id);
-        
+    
+        await Promise.all([
+            addSearchResources(db, ref, add),
+            removeSearchResources(db, deckId, remove),
+            updateIsPublishedFlag(db, deckId, true),
+            enableGeneralViewer(deckId)
+        ])
+    
+        alertInfo(api, "The deck has been published");
+    } catch (error) {
+        alertError(api, "An error occurred while publishing the deck", error);
     }
+
+        
 }
 
-export function selectSharingIcon(state: RootState): SharingIconType {
-    const lerni = state.lerni;
-    const accessEnvelope = lerni.deckAccess;
-    if (accessEnvelope) {
-        const access = accessEnvelope.payload;
-        return (
-           (Boolean(access?.general) && GLOBE) ||
-           LOCK_CLOSED
-        )
-    } else {
-        return LOCK_CLOSED;
-    }
-}
 
 async function updateIsPublishedFlag(db: Firestore, deckId: string, value: boolean) {
     const deckRef = doc(db, DECK, deckId);
@@ -180,17 +185,13 @@ async function addSearchResources(db: Firestore, resourceRef: ResourceRef, tags:
 }
 
 
-function getDeckTags(lerni: LerniApp0) {
+function getDeckTags(deckName: string, cards: ClientFlashcard[]) {
     const set = new Set<string>();
-    const deck = lerni.deck;
-    if (deck) {
-        addTextTags(set, deck.name);
-    }
-    const cards = lerni.cards;
-    for (const cardId in cards) {
-        const card = cards[cardId].card;
+    addTextTags(set, deckName);
+
+    cards.forEach(card => {
         addTicTapContentTags(set, card.content);
-    }
+    })
 
     return Array.from(set);
 }
@@ -250,90 +251,6 @@ export async function saveDeck(userUid: string, deck: Deck, card: ServerFlashcar
     // the existence of the `deckAccess` record. Therefore, we do it now, outside the batch.
 
     setDoc(cardRef, card);
-}
-
-
-let unsubscribe: Unsubscribe | null = null;
-let subscribedDeck: string | null = null;
-export function deckSubscribe(dispatch: AppDispatch, deckId: string) {
-
-    if (subscribedDeck === deckId) {
-        // Already subscribed
-        return;
-    }
-    if (unsubscribe) {
-        unsubscribe();
-    }
-    subscribedDeck = deckId;
-    const db = getFirestore(firebaseApp);
-    const decksRef = collection(db, DECKS);
-
-    const q = query(decksRef, where(documentId(), "==", deckId));
-    unsubscribe = onSnapshot(q, snapshot => {
-        snapshot.docChanges().forEach(change => {
-            switch (change.type) {
-                case 'added' : {
-                    const data = change.doc.data() as Deck;
-                    dispatch(deckAdded(data));
-                    subscribeAllCards(dispatch, data);
-                    subscribeAccess(dispatch, deckId);
-                    break;
-                }
-                case 'modified' : {
-                    const data = change.doc.data() as Deck;
-                    dispatch(deckModified(data));
-                    subscribeAllCards(dispatch, data);
-                    break;
-                }
-            }
-        })
-    }, (error) => {
-        console.error("error", error);
-    })
-
-}
-
-function subscribeAllCards(dispatch: AppDispatch, deck: Deck) {
-    deck.cards.forEach(cardRef => subscribeCard(dispatch, cardRef.id))
-}
-
-export function deckUnsubscribe() {
-    if (unsubscribe) {
-        unsubscribe();
-        subscribedDeck=null;
-        unsubscribe=null;
-    }
-}
-
-export function doDeckModified(lerni: LerniApp0, action: PayloadAction<Deck>) {
-    const newDeck = action.payload;
-    // The deck may have been modified for two reasons:
-    // 1. To update the `name`
-    // 2. To update the `cards` array.
-
-    const oldDeck = lerni.deck;
-    lerni.deck = newDeck;
-    deckEditorReceiveModifiedDeck(lerni, oldDeck, newDeck);
-}
-
-export function doDeckAdded(lerni: LerniApp0, action: PayloadAction<Deck>) {
-    const deck = action.payload;
-    lerni.deck = deck;
-    if (lerni.deckEditor) {
-        deckEditorReceiveAddedDeck(lerni, lerni.deckEditor, deck.id);
-    }
-}
-
-export function doDeckNameUpdate(lerni: LerniApp0, action: PayloadAction<string>) {
-    const deck = lerni.deck;
-    if (deck) {
-        deck.name = action.payload;
-    }
-}
-
-/** Select the current deck being edited or viewed */
-export function selectDeck(state: RootState) {
-    return state.lerni.deck;
 }
 
 export async function deleteOwnedDecks(userUid: string) {
@@ -400,4 +317,52 @@ export async function deleteDeck(deckId: string, userUid: string, updateLibrary:
     })
     promiseList.push(lastPromise);
     return Promise.all(promiseList);
+}
+
+export function deckPath(deckId: string | undefined) {
+    return [DECKS, deckId];
+}
+
+function deckTransform(api: LeaseeApi, deck: Deck, path: string[]) {
+    const cards = deck.cards;
+    const client = api.getClient();
+    const leasee = api.leasee;
+
+    const options = {
+        transform: createCardTransform(deck.id)
+    }
+
+    cards.forEach(cardRef => {
+        const path = cardPath(cardRef.id);
+        watchEntity(client, leasee, path, options);
+    })
+
+    return deck;
+}
+
+export const DECK_LISTENER_OPTIONS = {
+    transform: deckTransform
+}
+
+export async function updateDeckName(api: EntityApi, deckId: string, name: string) {
+
+    try {
+        const db = getFirestore(firebaseApp);
+    
+        const deckRef = doc(db, DECKS, deckId);
+        const metaRef = doc(db, METADATA, deckId);
+    
+        const nameRecord = {name};
+    
+        const batch = writeBatch(db);
+        batch.update(deckRef, nameRecord);
+        batch.update(metaRef, nameRecord);
+    
+        await batch.commit();
+    } catch (error) {
+        alertError(api, "An error occurred while saving the deck name", error);
+    }
+    
+
+  
 }

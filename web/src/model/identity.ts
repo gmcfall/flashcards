@@ -174,7 +174,7 @@ function trimAtSign(username: string) {
     return username;
 }
 
-export function identityPath(userUid: string) {
+export function identityPath(userUid: string | undefined) {
     return [IDENTITIES, userUid];
 }
 

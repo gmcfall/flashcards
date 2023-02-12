@@ -1,28 +1,19 @@
 import { Box, Button, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
-import { useContext, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
-import { useAccessControl, useAccountIsIncomplete, useSessionUser } from "../hooks/customHooks";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { checkPrivilege } from "../model/access";
-import { deckSubscribe, deckUnsubscribe, selectDeck } from "../model/deck";
-import { selectNewActiveCard } from "../model/deckEditor";
-import { selectActiveCard, selectCards, unsubscribeAllCards } from "../model/flashcard";
+import { useCallback, useContext, useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { disownAllLeases } from "../fbase/functions";
+import { useDocListener, useEntityApi } from "../fbase/hooks";
+import { useAccessControl, useAccountIsIncomplete, useFlashcard, useSessionUser } from "../hooks/customHooks";
+import { checkPrivilege, resourceNotFound } from "../model/access";
+import { deckPath, DECK_LISTENER_OPTIONS } from "../model/deck";
+import { addFlashcard, deleteFlashcardByIndex, saveFlashcardContent, updateFlashcardContent } from "../model/flashcard";
 import { userToIdentity } from "../model/identity";
-import { EDIT, NOT_FOUND } from "../model/types";
-import deckeditorMount from "../store/actions/deckeditorMount";
-import deckeditorNewActiveCardDelete from "../store/actions/deckeditorNewActiveCardDelete";
-import deckeditorUnmount from "../store/actions/deckeditorUnmount";
-import flashcardAdd from "../store/actions/flashcardAdd";
-import flashcardContentSave from "../store/actions/flashcardContentSave";
-import flashcardContentUpdate from "../store/actions/flashcardContentUpdate";
-import flashcardDelete from "../store/actions/flashcardDelete";
+import { deckEditRoute } from "../model/routes";
+import { ClientFlashcard, Deck, EDIT } from "../model/types";
 import { TIP_TAP_EXTENSIONS } from "./deckEditorConstants";
 import { CARD_CONTAINER, DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
 import LerniTheme from "./lerniTheme";
-import ZAccessDeniedAlert from "./ZAccessDeniedAlert";
-import { ZAccessDeniedMessage } from "./ZAccessDeniedMessage";
 import ZAccountIncomplete from "./ZAccountIncomplete";
 import ZDeckEditorHeader from "./ZDeckEditorHeader";
 import ZFlashcard from "./ZFlashcard";
@@ -36,6 +27,12 @@ const MAX_FONT_SIZE = 200; // %
 const MAX_WIDTH = 1500;
 const MAX_HEIGHT = HEIGHT_WIDTH_RATIO*MAX_WIDTH;
 const MARGIN = 40;
+export const DECK_EDITOR = 'DeckEditor';
+
+const NO_CARDS = -1;
+const NOT_READY = -2;
+const NO_REDIRECT = -3;
+const REDIRECTING = -4;
 
 export interface TiptapProps {
     editor: Editor | null;
@@ -137,63 +134,114 @@ function updateCardFontSize() {
                     }
                 }
             }
-            
-            
-
-           
-            
         }
     }
 }
 
-function ZDeckEditorContent(props: TiptapProps) {
+interface FlashcardEditorProps {
+    setEditor: (editor: Editor) => void;
+    card: ClientFlashcard;
+}
 
-    const {editor} = props;
-    
-    const dispatch = useAppDispatch();
-    const user = useSessionUser();
-    const [registerActive] = useContext(RegistrationContext);
-    const [signinActive] = useContext(SigninContext);
-    const deck = useAppSelector(selectDeck);
-    const activeCard = useAppSelector(selectActiveCard);
+function ZFlashcardEditor(props: FlashcardEditorProps) {
+    const {setEditor, card} = props;
 
-    const userUid = user?.uid;
+    const api = useEntityApi();
+
+    const editor = useEditor({
+        content: card.content,     
+        editorProps: {
+            attributes: {
+                class: DECK_EDITOR_TIPTAP
+            }
+        },
+        onUpdate({editor}) {
+            const json = editor.getJSON();
+            updateFlashcardContent(api, card.id, json);
+            updateCardFontSize();
+        },
+        extensions: TIP_TAP_EXTENSIONS
+    })
+
+    // The first effect sets the editor so that it is available to the header
+    // and produces a timer for saving the content every 5 seconds
+    const cardId = card.id;
+    useEffect(() => {
+        let token: ReturnType<typeof setInterval> | null = null;
+        if (editor) {
+            setEditor(editor);
+            token = setInterval(() => {
+                saveFlashcardContent(api, cardId);
+            }, 5000)
+        }
+
+        return () => {
+            if (token && cardId) {
+                saveFlashcardContent(api, cardId);
+                clearInterval(token);
+            }
+        }
+    }, [api, editor, setEditor, cardId])
+
+    // The next effect resizes the editor content once the actual
+    // (not virtual) DOM node exists. To that end, we utilize a combination
+    // of `useState` and `useCallback`. This way `setCardContainerEl` 
+    // will trigger a rerender.
+    const [cardContainerEl, setCardContainerEl] = useState<HTMLElement | null>(null);
+    const cardContainerRef = useCallback((node: HTMLElement) => {
+        setCardContainerEl(node);
+    }, [])
 
     useEffect(() => {
-        const ok = Boolean(userUid && activeCard);
-        if (ok) {
+        
+        if (cardContainerEl) {
             resizeEditorContent();
             window.addEventListener("resize", resizeEditorContent);
         }
         return () => {
-            if (ok) {
+            if (cardContainerEl) {
                 window.removeEventListener("resize", resizeEditorContent);
             }
         }
-    }, [userUid, activeCard]);
-
+    }, [cardContainerEl]);
     
-    if (registerActive || signinActive || !editor) {
-        return null;
-    }
-
-    if (!user) {
-       return (
-        <Box sx={{
-            display: 'flex', 
-            marginTop: "2rem", 
-            justifyContent: "center", 
-            alignItems: "center",
-            width: "100%",
-            alignSelf: "flex-start"
-        }}>
-                <ZAccessDeniedAlert>
-                    <ZAccessDeniedMessage title='You must be signed in to access this Deck'/>
-                </ZAccessDeniedAlert>
-            
+    return (
+        <Box 
+            id={CARD_CONTAINER}
+            className={CARD_CONTAINER}
+            ref={cardContainerRef}
+            sx={{
+                display: "block", 
+                position: "relative",
+                width: "100%",
+                background: LerniTheme.contrastBackground
+            }}
+        >
+            <EditorContent editor={editor}/>
         </Box>
-       )
+    )
 
+
+}
+
+interface DeckEditorContentProps {
+    setEditor: (editor: Editor) => void;
+    deck: Deck | undefined;
+    cardId: string | undefined;
+}
+
+function ZDeckEditorContent(props: DeckEditorContentProps) {
+
+    const {deck, cardId, setEditor} = props;
+    const navigate = useNavigate();
+    const api = useEntityApi();
+    const user = useSessionUser();
+    const [registerActive] = useContext(RegistrationContext);
+    const [signinActive] = useContext(SigninContext);
+    const [,card] = useFlashcard(cardId);
+
+    if (registerActive || signinActive || !user) {
+        return null;
     }
     if (!deck) {
         return (
@@ -204,7 +252,9 @@ function ZDeckEditorContent(props: TiptapProps) {
     }
 
     function handleClick() {
-        dispatch(flashcardAdd());
+        if (deck) {
+            addFlashcard(api, navigate, deck.id);
+        }
     }
     if (deck.cards.length===0) {
         return (
@@ -223,28 +273,27 @@ function ZDeckEditorContent(props: TiptapProps) {
         )
     }
 
+    if (!card) {
+        return null;
+    }
+
     return (
-        <Box 
-            id={CARD_CONTAINER}
-            className={CARD_CONTAINER} 
-            sx={{
-                display: "block", 
-                position: "relative",
-                width: "100%",
-                background: LerniTheme.contrastBackground
-            }}
-        >
-            <EditorContent editor={editor}/>
-        </Box>
+        <ZFlashcardEditor
+            key={card.id}
+            card={card}
+            setEditor={setEditor}
+        />
     )
 }
 
-function ZCardList(props: TiptapProps) {
-    const {editor} = props;
-    const deck = useAppSelector(selectDeck);
-    const cards = useSelector(selectCards);
+interface CardListProps {
+    deck: Deck | undefined;
+    activeCardId: string | undefined;
+}
+function ZCardList(props: CardListProps) {
+    const {deck, activeCardId} = props;
     
-    if (!deck || !editor) {
+    if (!deck) {
         return null;
     }
     
@@ -261,16 +310,15 @@ function ZCardList(props: TiptapProps) {
             paddingLeft: "20px",
             paddingRight: "20px",
         }}>
-        {deck.cards.map(ref => {
-            const cardInfo = cards[ref.id];
-            if (!cardInfo) {
-                return null;
-            }
+        {deck.cards.map((ref, index) => {
+          
             return (
                 <ZFlashcard 
                     key={ref.id}
-                    editor={editor}
-                    cardInfo={cardInfo}
+                    deckId={deck.id}
+                    activeCardId={activeCardId}
+                    cardIndex={index}
+                    cardId={ref.id}
                 />
             )
         })}
@@ -279,137 +327,135 @@ function ZCardList(props: TiptapProps) {
 }
 
 
+interface DeckEditorBodyProps {
+    setEditor: (editor: Editor) => void;
+    deck: Deck | undefined;
+    cardId: string | undefined;
+}
 
-function ZDeckBody(props: TiptapProps) {
-    const {editor} = props;
+function ZDeckBody(props: DeckEditorBodyProps) {
+    const {setEditor, deck, cardId} = props;
 
     return (
         <Box id="deck-body" sx={{display: "flex", height: "100%", width: "100%"}}>
-            <ZCardList editor={editor}/>
-            <ZDeckEditorContent editor={editor}/>
+            <ZCardList 
+                deck={deck}
+                activeCardId={cardId}
+            />
+            <ZDeckEditorContent
+                setEditor={setEditor}
+                deck={deck}
+                cardId={cardId}
+            />
         </Box>
     )
 }
 
+function parseCardIndex(deck: Deck | undefined, cardIndexParam: string | undefined) {
+    if (deck === undefined) {
+        return [NOT_READY, NO_REDIRECT];
+    }
 
-interface UseTipTapProps {
-    setEditor: (editor: Editor | null) => void;
-}
+    const cardCount = deck.cards.length;
+    const cardIndex = cardIndexParam===undefined ? NaN : parseInt(cardIndexParam);
+    if (Number.isNaN(cardIndex)) {
+        return (
+            cardCount === 0 ? 
+                [NO_CARDS, NO_REDIRECT] : 
+                [REDIRECTING, 0]
+        )
 
-/**
- * A renderless component that initializes the TipTapEditor.
- * It is designed to be used conditionally so the TipTap Editor is created
- * only if needed.
- */
-function ZUseTipTap(props: UseTipTapProps) {
-    const {setEditor} = props;
-    const editor = useEditor({        
-        editorProps: {
-            attributes: {
-                class: DECK_EDITOR_TIPTAP
-            }
-        },
-        extensions: TIP_TAP_EXTENSIONS,
-        content: '',
-    })
-    useEffect(()=> {
-        setEditor(editor);
-    }, [editor, setEditor])
-
-    return null;
+    } else if (cardCount === 0) {
+        return [REDIRECTING, NO_CARDS];
+    } else if (cardIndex < 0) {
+        return [REDIRECTING, 0];
+    } else if (cardIndex >= cardCount) {
+        return [REDIRECTING, cardCount-1];
+    } else {
+        return [cardIndex, NO_REDIRECT];
+    }
+    
 }
 
 export default function ZDeckEditor() {
-    const dispatch = useAppDispatch();
-    const {deckId} = useParams();
-    const newActiveCard = useSelector(selectNewActiveCard);
+    const navigate = useNavigate();
+    const api = useEntityApi();
+    const {deckId, cardIndex} = useParams();
     const accountIsIncomplete = useAccountIsIncomplete();
     const user = useSessionUser();
-    const deckAccess = useAccessControl(deckId);
+    const [, deck, deckError] = useDocListener(DECK_EDITOR, deckPath(deckId), DECK_LISTENER_OPTIONS);
+    const accessTuple = useAccessControl(DECK_EDITOR, deckId);
     const [editor, setEditor] = useState<Editor | null>(null);
+
+    const [cardIndexNum, cardRedirect] = parseCardIndex(deck, cardIndex);
+    const cardId = (cardIndexNum>=0 && deck) ? deck.cards[cardIndexNum].id : undefined;
 
     const userUid = user?.uid;
     
-    const canEdit = checkPrivilege(EDIT, deckAccess, deckId, userUid);
+    const canEdit = deckError ? false : checkPrivilege(EDIT, accessTuple, deckId, userUid);
 
+    useEffect(
+        () => () => disownAllLeases(api, DECK_EDITOR), [api]
+    )
+    
     useEffect(() => {
-        function handleKeyup(event: KeyboardEvent) {
-            const target = event.target as any;
-            const classList = target.classList;
-            if (
-                classList.contains(DECK_EDITOR_TIPTAP) ||
-                classList.contains(DECK_NAME_INPUT)
-            ) {
-                return;
-            }
-            switch (event.key) {
-                case 'Delete': 
-                    dispatch(flashcardDelete())
-                    break;
-            }
-        }
         if (deckId) {
+            if (cardRedirect === NO_CARDS) {
+                navigate(deckEditRoute(deckId))
+            } else if (cardRedirect>=0) {
+                navigate(deckEditRoute(deckId, cardRedirect))
+            }
+        }
+
+    }, [navigate, deckId, cardRedirect])
+
+    useEffect(() => {
+        const handleKeyup = (!deckId || cardIndexNum<0) ? undefined : (
+            (event: KeyboardEvent) => {
+                const target = event.target as any;
+                const classList = target.classList;
+                if (
+                    classList.contains(DECK_EDITOR_TIPTAP) ||
+                    classList.contains(DECK_NAME_INPUT)
+                ) {
+                    return;
+                }
+                switch (event.key) {
+                    case 'Delete':
+                        if (deckId && cardIndexNum >= 0) {
+                            deleteFlashcardByIndex(api, deckId, cardIndexNum);
+                        }
+                        break;
+                }
+            }
+        )
+
+        if (handleKeyup) {
             document.addEventListener('keyup', handleKeyup);
-            dispatch(deckeditorMount(deckId))
         }
 
         return () => {
-            if (deckId) {
+            if (handleKeyup) {
                 document.removeEventListener('keyup', handleKeyup);
-                dispatch(deckeditorUnmount())
             }
         }
 
-    }, [dispatch, deckId]);
+    }, [api, deckId, cardIndexNum]);
+  
 
     
-    useEffect(() => {
-        const ok = deckId && userUid;
-        if (ok) {
-            deckSubscribe(dispatch, deckId);
-        }
+    if (resourceNotFound(accessTuple)) {
+        return (
+            <ZNotFound message="The deck you are trying to access was not found."/>
+        )
+    }
 
-        return () => {
-            if (ok) {
-                unsubscribeAllCards();
-                deckUnsubscribe();
-            }
-        }
+    const [, access] = accessTuple;
 
-    }, [dispatch, deckId, userUid])
-
-    useEffect(() => {
-        const token = setInterval(() => {
-            dispatch(flashcardContentSave(null));
-        }, 5000)
-
-        return () => {
-            dispatch(flashcardContentSave(null));
-            clearInterval(token);
-        }
-    }, [dispatch]);
-
-    useEffect(() => {
-        if (editor) {
-            editor.on('update', () => {
-                const json = editor.getJSON();
-                dispatch(flashcardContentUpdate(json));
-                updateCardFontSize();
-            })
-        }
-    }, [editor, dispatch])
-
-    useEffect(() => {
-        if (newActiveCard && editor) {
-            editor.commands.setContent(newActiveCard.content);
-            dispatch(deckeditorNewActiveCardDelete());
-        }
-    }, [newActiveCard, editor, dispatch])
-    
-    const access = deckAccess?.payload;
-    if (!deckId || !access || !user) {
+    if (!deckId || !access|| !user || cardIndexNum===REDIRECTING) {
         return null;
     }
+
 
     
     if (accountIsIncomplete) {
@@ -418,7 +464,6 @@ export default function ZDeckEditor() {
 
     return (
         (!user && <Box/>) ||
-        ((deckAccess?.error === NOT_FOUND) && <ZNotFound message="The deck you are trying to access was not found."/>) ||
         ((!canEdit) && (
             <ZNeedAccess 
                 resourceId={deckId} 
@@ -426,9 +471,12 @@ export default function ZDeckEditor() {
                 requester={userToIdentity(user)}/>
         )) || (
             <Box id="deck-editor" sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%"}}>
-                {canEdit && <ZUseTipTap setEditor={setEditor}/>}
-                <ZDeckEditorHeader editor={editor}/>
-                <ZDeckBody editor={editor}/>
+                <ZDeckEditorHeader editor={editor} deck={deck} accessTuple={accessTuple}/>
+                <ZDeckBody
+                    setEditor={setEditor}
+                    deck={deck}
+                    cardId={cardId}
+                />
             </Box>
         )
 

@@ -1,6 +1,9 @@
 
-export function deckEditRoute(deckId: string) {
-    return `/decks/${deckId}/edit`;
+export function deckEditRoute(deckId: string, cardIndex?: number) {
+
+    return cardIndex===undefined ? 
+        `/decks/${deckId}/edit` :
+        `/decks/${deckId}/edit/${cardIndex}`;
 }
 
 export function deckViewRoute(deckId: string) {

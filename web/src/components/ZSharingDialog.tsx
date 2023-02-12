@@ -9,14 +9,15 @@ import {
     FormHelperText, IconButton, InputBase, Menu, MenuItem, Select, SelectChangeEvent, TextField, Tooltip, Typography
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useSessionUser } from '../hooks/customHooks';
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { changeCollaboratorRole, createIdentityRole, injectCollaborators, removeAcess, selectDeckAccessEnvelope } from '../model/access';
-import { selectDeck } from "../model/deck";
-import { createIdentity, getIdentity, getIdentityByUsername } from '../model/identity';
-import { Access, AccessEnvelope, ANONYMOUS, Deck, EDITOR, Identity, IdentityRole, NOT_FOUND, Role, RoleName, SessionUser, VIEWER } from "../model/types";
-import accessGeneralChange from "../store/actions/accessGeneralChange";
-import deckNameUpdate from "../store/actions/deckNameUpdate";
+import { useParams } from 'react-router-dom';
+import { disownAllLeases } from '../fbase/functions';
+import { useEntityApi } from '../fbase/hooks';
+import { useIdentity, useSessionUser } from '../hooks/customHooks';
+import { changeCollaboratorRole, createIdentityRole, injectCollaborators, removeAcess, updateGeneralRole } from '../model/access';
+import { alertError } from '../model/alert';
+import { updateDeckName } from '../model/deck';
+import { createIdentity, getIdentityByUsername } from '../model/identity';
+import { Access, AccessTuple, ANONYMOUS, Deck, EDITOR, Identity, IdentityRole, Role, RoleName, VIEWER } from "../model/types";
 import { toUsername } from './lerniCommon';
 import LerniTheme from './lerniTheme';
 import { invalidDeckName } from "./ZDeckEditorHeader";
@@ -208,7 +209,8 @@ function ZCollaboratorsField(props: CollaboratorsFieldProps) {
 export function ZSharingDialogName(props: SharingDialogNameProps) {
     const {oldName, onNextState} = props;
     
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
+    const {deckId} = useParams();
     const [nameError, setNameError] = useState<boolean>(false);
     const [newName, setNewName] = useState<string>(oldName);
     const [wasSubmitted, setWasSubmitted] = useState<boolean>(false)
@@ -227,7 +229,9 @@ export function ZSharingDialogName(props: SharingDialogNameProps) {
             setNameError(true);
             setWasSubmitted(true);
         } else {
-            dispatch(deckNameUpdate(newName));
+            if (deckId) {
+                updateDeckName(api, deckId, newName);
+            }
             onNextState();
         }
     }
@@ -598,7 +602,7 @@ function listCollaborators(access: Access) {
     return list;
 }
 
-function nonNullIdentity(identity: null | Identity) {
+function nonNullIdentity(identity: undefined | Identity) {
     return identity || createIdentity(
         ANONYMOUS,
         ANONYMOUS,
@@ -607,21 +611,21 @@ function nonNullIdentity(identity: null | Identity) {
 }
 
 interface SharingDialogMainProps {
-    resourceId: string;
+    deck: Deck;
     access: Access;
-    owner: null | Identity;
+    owner: undefined | Identity;
     onClose: () => void;
     setDialogStage: (value: SharingDialogStage) => void
     setNewCollaborators: (value: Identity[]) => void
 }
 export function ZSharingDialogMain(props: SharingDialogMainProps) {
-    const {resourceId, access, owner, onClose, setDialogStage, setNewCollaborators} = props;
+    const {deck, access, owner, onClose, setDialogStage, setNewCollaborators} = props;
 
+    const resourceId = deck.id;
     const ownerIdentity = nonNullIdentity(owner);
     const general = access.general;
 
-    const dispatch = useAppDispatch();
-    const deck = useAppSelector(selectDeck);
+    const api = useEntityApi();
     const [message, setMessage] = useState<string>('');
     const [messageVisible, setMessageVisible] = useState<boolean>(false);
     const [username, setUsername] = useState<string>('');
@@ -646,17 +650,16 @@ export function ZSharingDialogMain(props: SharingDialogMainProps) {
     function handleGeneralAccessChange(event: SelectChangeEvent) {
         const targetValue = event.target.value as string;
         if (targetValue === RESTRICTED) {
-            dispatch(accessGeneralChange({resourceId}))
+            updateGeneralRole(api, resourceId);
         } else {
-            dispatch(accessGeneralChange({resourceId, generalRole: VIEWER}));
+            updateGeneralRole(api, resourceId, VIEWER);
         }
         
     }
 
     function handleGeneralRoleChange(event: SelectChangeEvent) {
-        const value = event.target.value as Role;
-        
-        dispatch(accessGeneralChange({resourceId, generalRole: value}));
+        const role = event.target.value as Role;
+        updateGeneralRole(api, resourceId, role);
     }
 
     function handleDoneClick() {
@@ -859,37 +862,24 @@ export function ZSharingDialogMain(props: SharingDialogMainProps) {
     )
 }
  
-
-
-async function getOwnerIdentity(currentUser: SessionUser, accessEnvelope: AccessEnvelope) {
-    const access = accessEnvelope.payload;
-    if (access) {
-        const ownerUid = access.owner;
-        if (ownerUid === currentUser.uid) {
-            return createIdentity(currentUser.uid, currentUser.username, currentUser.displayName);
-        }
-        return getIdentity(ownerUid);
-    } else {
-        throw new Error(NOT_FOUND);
-    }
-
-    
-}
-
 interface SharingDialogProps {
     open: boolean;
     onClose: () => void;
+    accessTuple: AccessTuple;
+    deck: Deck | undefined
 }
+
+const SHARING_DIALOG = "SharingDialog";
+
 export function ZSharingDialog(props: SharingDialogProps) {
-    const {open, onClose} = props;
+    const {open, onClose, accessTuple, deck} = props;
+    const api = useEntityApi();
     const [dialogStage, setDialogStage] = useState<SharingDialogStage>(SharingDialogStage.Begin);
     const [newCollaborators, setNewCollaborators] = useState<Identity[]>([]);
-    const [owner, setOwner] = useState<null | Identity>(null);
-
+    const [, access, accessError] = accessTuple;
+    const [, owner, ownerError] = useIdentity(SHARING_DIALOG, access?.owner);
 
     const user = useSessionUser();
-    const deck = useAppSelector(selectDeck);
-    const accessEnvelope = useAppSelector(selectDeckAccessEnvelope);
     
     useEffect(() => {
 
@@ -897,8 +887,7 @@ export function ZSharingDialog(props: SharingDialogProps) {
             dialogStage === SharingDialogStage.Begin &&
             deck &&
             user &&
-            accessEnvelope &&
-            accessEnvelope.payload
+            access
         );
 
         if (ready) {
@@ -906,25 +895,32 @@ export function ZSharingDialog(props: SharingDialogProps) {
                 SharingDialogStage.NameForm :
                 SharingDialogStage.ShareForm;
 
-            getOwnerIdentity(user, accessEnvelope).then(
-                (identity) => {
-                    setOwner(identity)
-                }
-            ).catch(
-                error => {
-                    console.error("Failed to get owner Identity", error);
-                }
-            )
 
             setDialogStage(nextState);
         }
 
         
-    }, [dialogStage, deck, accessEnvelope, user])
+    }, [dialogStage, deck, access, user])
 
-    const access = accessEnvelope?.payload;
+    
+    useEffect(
+        () => () => disownAllLeases(api, SHARING_DIALOG), [api]
+    )
 
-    if (!deck || !access) {
+    useEffect(() => {
+        if (accessError || ownerError) {
+            alertError(api, "An error occurred while accessing sharing options");
+            if (accessError) {
+                console.error("Failed to get access document", accessError)
+            }
+            if (ownerError) {
+                console.error("Failed to get owner identity", ownerError);
+            }
+        }
+    }, [api, accessError, ownerError])
+
+
+    if (!deck || !access || !user || !owner) {
         return null;
     }
 
@@ -943,7 +939,7 @@ export function ZSharingDialog(props: SharingDialogProps) {
             case SharingDialogStage.ShareForm:
                 return <ZSharingDialogMain
                     owner={owner}
-                    resourceId={deck.id}
+                    deck={deck}
                     access={access}
                     onClose={onClose}
                     setDialogStage={setDialogStage}

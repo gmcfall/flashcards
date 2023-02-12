@@ -1,26 +1,33 @@
 import { TextField } from "@mui/material";
+import { useEffect, useState } from "react";
+import { useEntityApi } from "../fbase/hooks";
 import { useSessionUser } from "../hooks/customHooks";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectDeck } from "../model/deck";
-import deckNameSubmit from "../store/actions/deckNameSubmit";
-import deckNameUpdate from "../store/actions/deckNameUpdate";
+import { updateDeckName } from "../model/deck";
+import { Deck } from "../model/types";
 import { DECK_NAME_INPUT } from "./lerniConstants";
 
-export default function ZDeckNameInput() {
-    const dispatch = useAppDispatch();
-    const deck = useAppSelector(selectDeck);
+
+interface DeckNameInputProps {
+    deck: Deck | undefined;
+}
+export default function ZDeckNameInput(props: DeckNameInputProps) {
+    const {deck} = props;
+    const api = useEntityApi();
     const user = useSessionUser();
+    const [name, setName] = useState("");
 
-    if (!deck || !user) {
-        return null;
-    }
-    const deckId = deck.id;
+    useEffect(()=>{
+        if (deck) {
+            setName(deck.name)
+        }
+    }, [deck])
 
-    const name = deck.name;
+    const deckId = deck?.id;
+
     const size = Math.max(name.length+1, 30);
 
     function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-        dispatch(deckNameUpdate(e.currentTarget.value));
+        setName(e.currentTarget.value);
     }
 
     function handleKeyUp(e: React.KeyboardEvent) {
@@ -36,17 +43,20 @@ export default function ZDeckNameInput() {
     }
 
     function handleBlur() {
-        dispatch(deckNameSubmit({name, deckId}))
+        if (deckId) {
+            updateDeckName(api, deckId, name);
+        }
     }
 
     return (
         
         <TextField
+            disabled={!deck || !user}
             className={DECK_NAME_INPUT}
             inputProps={{size}}
             size="small"
             variant="outlined"
-            value={deck.name}
+            value={name}
             onChange={handleChange}
             onKeyUp={handleKeyUp}
             onBlur={handleBlur}

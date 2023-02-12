@@ -1,40 +1,43 @@
 import { useTheme } from "@mui/material";
-import { Editor } from '@tiptap/react';
-import { useEffect, useRef } from "react";
-import { useAppDispatch, useAppSelector } from "../hooks/hooks";
-import { selectActiveCard } from "../model/flashcard";
-import { CardInfo } from "../model/types";
-import flashcardContentSave from "../store/actions/flashcardContentSave";
-import flashcardSelect from "../store/actions/flashcardSelect";
 import { generateHTML } from "@tiptap/html";
+import { useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { useEntity } from "../fbase/hooks";
+import { cardPath } from "../model/flashcard";
+import { deckEditRoute } from "../model/routes";
+import { ClientFlashcard } from "../model/types";
 import { TIP_TAP_EXTENSIONS } from "./deckEditorConstants";
 
 interface FlashcardProps {
-    cardInfo: CardInfo,
-    editor: Editor
+    activeCardId: string | undefined;
+    deckId: string;
+    cardId: string;
+    cardIndex: number;
 }
 export default function ZFlashcard(props: FlashcardProps) {
-    const {cardInfo, editor} = props;
-
-    const dispatch = useAppDispatch();
+    const {activeCardId, deckId, cardId, cardIndex} = props;
+    const navigate = useNavigate();
     const theme = useTheme();
-    const activeCard = useAppSelector(selectActiveCard);
     const buttonEl = useRef<HTMLButtonElement>(null);
-
-    const card = cardInfo.card;
-    const isActive = activeCard === card.id;
-    const content = card.content;
+    const path = cardPath(cardId);
+    const [, card, cardError] = useEntity<ClientFlashcard>(path);
+    const isActive = activeCardId === cardId;
+    const content = card && card.content;
 
     useEffect(()=> {
 
         const current = buttonEl.current;
 
-        if (current) {
+        if (current && content) {
             const htmlContent = generateHTML(content, TIP_TAP_EXTENSIONS);
             current.innerHTML = htmlContent;
         }
+        if (current && cardError) {
+            console.error(`An error occurred while loading Flashcard(id=${cardId})`);
+            current.innerHTML = '<p style="color: red">ERROR!</p>';
+        }
 
-    }, [buttonEl, content])
+    }, [buttonEl, content, cardId, cardError])
 
     const style = isActive ? {
         borderColor: theme.palette.warning.main,
@@ -44,13 +47,11 @@ export default function ZFlashcard(props: FlashcardProps) {
     }
 
     function handleClick() {
-        if (activeCard !== card.id) {
-            if (activeCard) {
-                dispatch(flashcardContentSave(activeCard))
-            }
-            dispatch(flashcardSelect(card.id));
-            
-            editor.commands.setContent(content);
+        if (activeCardId !== cardId) {
+            // if (content) {
+            //     editor.commands.setContent(content);
+            // }
+            navigate(deckEditRoute(deckId, cardIndex));
         }
     }
 

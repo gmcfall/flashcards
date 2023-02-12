@@ -102,7 +102,7 @@ export function setAuthUser(client: EntityClient, value: unknown) {
 function resolveCache(value: Object) {
     return (
         value.hasOwnProperty('cache') ? (value as EntityClient).cache :
-        value.hasOwnProperty('getClient') ? (value as EntityApi).getClient().cache :
+        (value as any).getClient ? (value as EntityApi).getClient().cache :
         value as EntityCache
     )
 }

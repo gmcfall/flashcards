@@ -41,6 +41,10 @@ const theme = createTheme({
 //
 // For more information see https://reactjs.org/blog/2022/03/08/react-18-upgrade-guide.html#updates-to-strict-mode
 
+const DeckEditor = <ZDeckEditor/>;
+const DeckPlayer = <ZDeckPlayer/>;
+const DeckShare = <ZDeckShare/>;
+
 root.render(
   <Provider store={store}>
     <ThemeProvider theme={theme}>
@@ -52,9 +56,11 @@ root.render(
               <Routes>
                 <Route path="/" element={<ZHome/>}/>
                 <Route path="/library" element={<ZLibrary/>}/>
-                <Route path="/decks/:deckId/edit" element={<ZDeckEditor/>}/>
-                <Route path="/decks/:deckId/view" element={<ZDeckPlayer/>}/>
-                <Route path="/decks/:deckId/share" element={<ZDeckShare/>}/>
+                <Route path="/decks/:deckId/edit" element={DeckEditor}/>
+                <Route path="/decks/:deckId/edit/:cardIndex" element={DeckEditor}/>
+                <Route path="/decks/:deckId/view" element={DeckPlayer}/>
+                <Route path="/decks/:deckId/view/:cardIndex" element={DeckPlayer}/>
+                <Route path="/decks/:deckId/share" element={DeckShare}/>
               </Routes>
             </BrowserRouter>
           </ZSigninProvider>

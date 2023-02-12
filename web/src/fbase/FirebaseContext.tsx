@@ -19,7 +19,7 @@ interface FirebaseProviderProps {
 export function FirebaseProvider(props: FirebaseProviderProps) {
     const {firebaseApp, children} = props;
 
-    const [cache, setCache] = useState<EntityCache>({entities: {}})
+    const [cache, setCache] = useState<EntityCache>({})
     const [client] = useState<EntityClient>(createEntityClient(firebaseApp, cache, setCache));
 
     const clientValue = updateEntityClient(client, cache);

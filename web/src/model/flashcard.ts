@@ -1,79 +1,63 @@
-import { Dispatch, PayloadAction } from "@reduxjs/toolkit";
 import { JSONContent } from "@tiptap/core";
-import { collection, doc, documentId, getFirestore, onSnapshot, query, runTransaction, Unsubscribe, updateDoc, where, writeBatch } from "firebase/firestore";
-import flashcardAdded from "../store/actions/flashcardAdded";
-import flashcardModified from "../store/actions/flashcardModified";
-import flashcardRemoved from "../store/actions/flashcardRemoved";
-import { RootState } from "../store/store";
+import { doc, getFirestore, runTransaction, updateDoc } from "firebase/firestore";
+import { NavigateFunction } from "react-router-dom";
+import EntityApi from "../fbase/EntityApi";
+import { getEntity } from "../fbase/functions";
+import LeaseeApi from "../fbase/LeaseeApi";
 import generateUid from "../util/uid";
-import { deckEditorReceiveAddedCard } from "./deckEditor";
+import { alertError } from "./alert";
+import { deckPath } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { CardField, CARDS, DeckField, DECKS } from "./firestoreConstants";
-import { CardRef, ClientFlashcard, Deck, FLASHCARD, LerniApp0, ServerFlashcard } from "./types";
+import { deckEditRoute } from "./routes";
+import { CardRef, ClientFlashcard, Deck, FLASHCARD, ServerFlashcard } from "./types";
 
-export function doFlashcardSelect(lerni: LerniApp0, action: PayloadAction<string>) {
-    if (lerni.deckEditor) {
-        lerni.deckEditor.activeCard = action.payload;
-    }
+export function updateFlashcardContent(api: EntityApi, cardId: string, content: JSONContent) {
+    const path = cardPath(cardId);
+    api.mutate((cache: Object) => {
+        const [, card] = getEntity<ClientFlashcard>(cache, path);
+        if (card) {
+            card.content = content
+        } else {
+            console.warn("Cannot update flashcard content. Card not found: " + cardId);
+        }
+    })
 }
 
-export function doFlashcardContentUpdate(lerni: LerniApp0, action: PayloadAction<JSONContent>) {
-
-    const activeId = getActiveCardId(lerni);
-    if (activeId) {
-        const cardInfo = lerni.cards[activeId];
-        if (cardInfo) {
-            cardInfo.card.content = action.payload;
+export function deleteFlashcardByIndex(api: EntityApi, deckId: string, cardIndex: number) {
+    const [, deck] = getEntity<Deck>(api, deckPath(deckId));
+    if (deck) {
+        const cards = deck.cards;
+        if (cardIndex<cards.length) {
+            const cardRef = cards[cardIndex];
+            deleteFlashcard(deckId, cardRef.id);
         }
     }
 }
 
-export function doFlashcardRemoved(lerni: LerniApp0, action: PayloadAction<string>) {
-    const cardId = action.payload;
-    delete lerni.cards[cardId];
-    if (lerni.deckEditor) {
-        
-    }
-}
-
-export async function deleteFlashcard(deck: Deck, cardId: string) {
-
-    let updateDeck = true;
-    const cardList = [...deck.cards];
-    for (let i=0; i<cardList.length; i++) {
-        const ref = cardList[i];
-        if (ref.id === cardId) {
-            cardList.splice(i, 1);
-            updateDeck = true;
-            break;
-        }
-    }
+async function deleteFlashcard(deckId: string, cardId: string) {
 
     const db = getFirestore(firebaseApp);
     const cardRef = doc(db, CARDS, cardId);
-    const deckRef = doc(db, DECKS, deck.id);
+    const deckRef = doc(db, DECKS, deckId);
 
-    const batch = writeBatch(db);
-    if (updateDeck) {
-        batch.update(deckRef, DeckField.cards, cardList);
-    }
-    batch.delete(cardRef);
-    await batch.commit();
+    await runTransaction(db, async txn => {
+        const deckDoc = await txn.get(deckRef);
+        if (deckDoc.exists()) {
+            const deck = deckDoc.data() as Deck;
+            const cardList = [...deck.cards];
+            for (let i=0; i<cardList.length; i++) {
+                const ref = cardList[i];
+                if (ref.id === cardId) {
+                    cardList.splice(i, 1);
+                    txn.update(deckRef, DeckField.cards, cardList);
+                    break;
+                }
+            }
+        }
+        txn.delete(cardRef);
+    })
 
-}
-
-export function doFlashcardAddFulfilled(lerni: LerniApp0, action: PayloadAction<string>) {
-    if (lerni.deckEditor) {
-        lerni.deckEditor.activeCard = action.payload;
-    }
-}
-
-export function selectActiveCard(state: RootState) {
-    return getActiveCardId(state.lerni);
-}
-
-export function selectCards(state: RootState) {
-    return state.lerni.cards;
 }
 
 export function createServerFlashCard(access: string) : ServerFlashcard {
@@ -86,49 +70,18 @@ export function createServerFlashCard(access: string) : ServerFlashcard {
     }
 }
 
-const unsubscribeFunctions: Record<string, Unsubscribe> = {}
-
-export function subscribeCard(dispatch: Dispatch, cardId: string) {
-    if (unsubscribeFunctions[cardId]) {
-        // We are already subscribed
-        return;
-    }
-
-    const db = getFirestore(firebaseApp);
-    const cardsRef = collection(db, CARDS);
-    const q = query(cardsRef, where(documentId(), "==", cardId));
-    const unsubscribe = onSnapshot(q, snapshot => {
-        snapshot.docChanges().forEach( change => {
-            const data = change.doc.data() as ServerFlashcard;
-            switch (change.type) {
-                case 'added' :
-                    dispatch(flashcardAdded(data));
-                    break;
-
-                case 'modified':
-                    dispatch(flashcardModified(data));
-                    break;
-
-                case 'removed':
-                    dispatch(flashcardRemoved(data.id));
-                    break;
-            }
-        })
-    })
-
-    unsubscribeFunctions[cardId] = unsubscribe;
-}
-
 let lastSavedId = '';
 let lastSavedContent = '';
-export async function saveFlashcardContent(lerni: LerniApp0, activeIdArg: string | null) {
-    
-    const activeId = activeIdArg || getActiveCardId(lerni);
-    const cards = lerni.cards;
-    if (activeId) {
-        const cardInfo = cards[activeId];
-        if (cardInfo) {
-            const card = cardInfo.card;
+export async function saveFlashcardContent(api: EntityApi, cardId: string) {
+
+    if (lastSavedId && lastSavedId !== cardId) {
+        saveFlashcardContent(api, lastSavedId);
+    }
+
+    try {
+        const path = cardPath(cardId);
+        const [, card] = getEntity<ClientFlashcard>(api, path);
+        if (card) {
             const content = JSON.stringify(card.content);
             
             if (lastSavedId !== card.id || lastSavedContent !== content) {
@@ -139,50 +92,9 @@ export async function saveFlashcardContent(lerni: LerniApp0, activeIdArg: string
                 await updateDoc(cardRef, CardField.content, content);
             }
         }
+    } catch (error) {
+        alertError(api, "An error occurred while saving flashcard edits", error);
     }
-    return true;
-}
-
-function getActiveCardId(lerni: LerniApp0) {
-    const id = lerni.deckEditor ? lerni.deckEditor.activeCard : null;
-    if (id) {
-        // Verify that the card exists
-        if (!lerni.cards[id]) {
-            return null;
-        }
-    }
-    return id;
-}
-
-export function unsubscribeAllCards() {
-    for (const key in unsubscribeFunctions) {
-        const unsubscribe = unsubscribeFunctions[key];
-        unsubscribe();
-        delete unsubscribeFunctions[key];
-    }
-}
-
-/**
- * Handle a newly added Flashcard.
- */
-export function doFlashcardAdded(lerni: LerniApp0, action: PayloadAction<ServerFlashcard>) {
-    const card = toClientFlashcard(action.payload);
-    lerni.cards[card.id] = {card};
-
-    deckEditorReceiveAddedCard(lerni, card);
-}
-
-function toClientFlashcard(serverCard: ServerFlashcard) : ClientFlashcard {
-    return {
-        ...serverCard,
-        content: JSON.parse(serverCard.content)
-    }
-}
-
-export function doFlashcardModified(lerni: LerniApp0, action: PayloadAction<ServerFlashcard>) {
-    const card = toClientFlashcard(action.payload);    
-    lerni.cards[card.id] = {card};
-
 }
 
 export function createFlashcardRef(cardId: string) : CardRef {
@@ -193,7 +105,7 @@ export function createFlashcardRef(cardId: string) : CardRef {
 }
 
 
-export async function saveFlashcard(card: ServerFlashcard) {
+async function saveFlashcard(card: ServerFlashcard) {
 
     const db = getFirestore(firebaseApp);
 
@@ -214,6 +126,52 @@ export async function saveFlashcard(card: ServerFlashcard) {
 
         txn.update(deckRef, DeckField.cards, cardList);
         txn.set(cardDocRef, card);
+
+        return cardList.length-1;
     })
 
+}
+
+export async function addFlashcard(api: EntityApi, navigate: NavigateFunction, deckId: string) {
+
+    try {
+        const card = createServerFlashCard(deckId);
+        const cardIndex = await saveFlashcard(card);
+        // We want to navigate to the new card, but there may
+        // be some latency in the update to the deck and hence the navigation
+        // could fail if the new card is not included in the local instance of the
+        // deck during the next render. To address this issue, we update the
+        // deck instance in the local cache now
+        api.mutate((cache: Object) => {
+            const [,deck] = getEntity<Deck>(cache, deckPath(deckId));
+            if (deck) {
+                const cards = deck.cards;
+                if (cards.length === cardIndex) {
+                    const cardRef = createFlashcardRef(card.id);
+                    cards.push(cardRef);
+                }
+            }
+        })
+
+        const newRoute = deckEditRoute(deckId, cardIndex);
+        navigate(newRoute);
+    } catch (error) {
+        alertError(api, "An error occurred while saving the new Flashcard")
+    }
+}
+
+export function cardPath(cardId: string | undefined) {
+    return [CARDS, cardId];
+}
+
+export function createCardTransform(deckId: string) {
+    return (api: LeaseeApi, serverCard: ServerFlashcard, path: string[]) => {
+        const result: ClientFlashcard = {
+            type: FLASHCARD,
+            id: path[1],
+            access: deckId,
+            content: JSON.parse(serverCard.content)
+        }
+        return result;
+    };
 }
