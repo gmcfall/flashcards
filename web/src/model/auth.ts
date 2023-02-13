@@ -1,4 +1,3 @@
-import { PayloadAction } from "@reduxjs/toolkit";
 import { AuthProvider, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, reauthenticateWithPopup, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
 import EntityApi from "../fbase/EntityApi";
@@ -11,7 +10,7 @@ import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
 import { deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName as saveUserProfile, setAnonymousIdentity, watchCurrentUserIdentity } from "./identity";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK, UserProfile } from "./types";
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK, UserProfile } from "./types";
 
 export async function updateUserProfile(
     api: EntityApi,
@@ -112,12 +111,6 @@ export function createSession(
         user.requiresEmailVerification = true;
     }
     return {user}
-}
-
-
-
-export function doAuthSessionBegin(lerni: LerniApp0, action: PayloadAction<Session>) {
-    lerni.session = action.payload;
 }
 
 export function getProviders(user: User) {

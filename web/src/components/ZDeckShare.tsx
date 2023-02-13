@@ -4,7 +4,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { disownAllLeases } from "../fbase/functions";
 import { useEntityApi } from "../fbase/hooks";
 import { useAccessControl, useSessionUser } from "../hooks/customHooks";
-import { useAppDispatch } from "../hooks/hooks";
 import { checkPrivilege } from "../model/access";
 import { deckEditRoute, deckViewRoute } from "../model/routes";
 import { EDIT } from "../model/types";
@@ -14,7 +13,6 @@ const DECK_SHARE = "DeckShare";
 export default function ZDeckShare() {
     const {deckId} = useParams();
     const api = useEntityApi();
-    const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const accessControl = useAccessControl(DECK_SHARE, deckId);
     const user = useSessionUser();
@@ -36,7 +34,7 @@ export default function ZDeckShare() {
             }
         }
 
-    }, [deckId, user, accessControl, dispatch, navigate])
+    }, [deckId, user, accessControl, navigate])
 
     return (
         <Box sx={{display: "flex", justifyContent: "center", marginTop: "50px"}}>

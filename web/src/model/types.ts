@@ -418,12 +418,6 @@ export interface Identity extends UserProfile {
  */
 export const ANONYMOUS = "Anonymous";
 
-
-export interface PasswordCredentials {
-    email: string,
-    password: string
-}
-
 export type AlertSeverity = 'error' | 'warning' | 'info' | 'success';
 export const ERROR = 'error';
 export const WARNING = 'warning';
@@ -548,23 +542,5 @@ export interface LerniApp {
 
     /** The request and reponse for the current search request */
     resourceSearch?: ResourceSearch;
-}
-
-
-export interface LerniApp0 {
-
-    /** Details about the current session */
-    session?: Session,
-
-    /** 
-     * The form used to reauthenticate during the `Delete Account`
-     * workflow if the user is authenticated by email/password
-     */
-    deleteAccountForm?: PasswordCredentials,
-
-    /** The current deck being edited or viewed */
-    deck?: Deck
-    
-
 }
 

@@ -1,6 +1,5 @@
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import ReactDOM from 'react-dom/client';
-import { Provider } from 'react-redux';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import ZAuth from './components/ZAuth';
 import ZDeckEditor from './components/ZDeckEditor';
@@ -8,13 +7,12 @@ import ZDeckPlayer from './components/ZDeckPlayer';
 import ZDeckShare from './components/ZDeckShare';
 import ZHome from './components/ZHome';
 import ZLibrary from './components/ZLibrary';
-import { FirebaseProvider } from './fbase/FirebaseContext';
 import ZRegistrationProvider from './components/ZRegistrationProvider';
+import ZSigninProvider from './components/ZSigninProvider';
+import { FirebaseProvider } from './fbase/FirebaseContext';
 import './index.css';
 import firebaseApp from './model/firebaseApp';
 import reportWebVitals from './reportWebVitals';
-import store from './store/store';
-import ZSigninProvider from './components/ZSigninProvider';
 
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
@@ -46,28 +44,26 @@ const DeckPlayer = <ZDeckPlayer/>;
 const DeckShare = <ZDeckShare/>;
 
 root.render(
-  <Provider store={store}>
-    <ThemeProvider theme={theme}>
-      <FirebaseProvider firebaseApp={firebaseApp}>
-        <ZRegistrationProvider>
-          <ZSigninProvider>
-            <ZAuth/>
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<ZHome/>}/>
-                <Route path="/library" element={<ZLibrary/>}/>
-                <Route path="/decks/:deckId/edit" element={DeckEditor}/>
-                <Route path="/decks/:deckId/edit/:cardIndex" element={DeckEditor}/>
-                <Route path="/decks/:deckId/view" element={DeckPlayer}/>
-                <Route path="/decks/:deckId/view/:cardIndex" element={DeckPlayer}/>
-                <Route path="/decks/:deckId/share" element={DeckShare}/>
-              </Routes>
-            </BrowserRouter>
-          </ZSigninProvider>
-        </ZRegistrationProvider>
-      </FirebaseProvider>
-    </ThemeProvider>
-  </Provider>
+  <ThemeProvider theme={theme}>
+    <FirebaseProvider firebaseApp={firebaseApp}>
+      <ZRegistrationProvider>
+        <ZSigninProvider>
+          <ZAuth/>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<ZHome/>}/>
+              <Route path="/library" element={<ZLibrary/>}/>
+              <Route path="/decks/:deckId/edit" element={DeckEditor}/>
+              <Route path="/decks/:deckId/edit/:cardIndex" element={DeckEditor}/>
+              <Route path="/decks/:deckId/view" element={DeckPlayer}/>
+              <Route path="/decks/:deckId/view/:cardIndex" element={DeckPlayer}/>
+              <Route path="/decks/:deckId/share" element={DeckShare}/>
+            </Routes>
+          </BrowserRouter>
+        </ZSigninProvider>
+      </ZRegistrationProvider>
+    </FirebaseProvider>
+  </ThemeProvider>
 );
 
 // If you want to start measuring performance in your app, pass a function
