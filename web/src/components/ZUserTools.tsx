@@ -71,13 +71,15 @@ export default function ZUserTools() {
                 }}
             >
                 <MenuItem onClick={handleSignOut}>Sign out</MenuItem>
-                <MenuItem onClick={handleAccountSettingsOpen}>Account Settings</MenuItem>
+                <MenuItem onClick={handleAccountSettingsOpen}>User Profile</MenuItem>
                 <MenuItem onClick={openDeleteAccountConfirmationDialog}>Delete Account</MenuItem>
             </Menu>
-            <ZAccountSettings
-                open={accountSettingsOpen}
-                setOpen={setAccountSettingsOpen}
-            />
+            {accountSettingsOpen && (
+                <ZAccountSettings
+                    setOpen={setAccountSettingsOpen}
+                />
+            )}
+            
             <ZAccountDeleteConfirm
                 open={confirmDeleteOpen}
                 setOpen={setConfirmDeleteOpen}

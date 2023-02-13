@@ -1,63 +1,34 @@
-import Button from '@mui/material/Button';
-import DialogContentText from '@mui/material/DialogContentText';
-import TextField from '@mui/material/TextField';
-import React, { useState } from 'react';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
 import { useSessionUser } from "../hooks/customHooks";
-import { useAppDispatch } from "../hooks/hooks";
-import accountDisplayNameUpdate from "../store/actions/accountDisplayNameUpdate";
-import ZDialogWithTitle from "./ZDialogWithTitle";
+import ZUserProfileForm from './ZUserProfileForm';
 
 interface AccountSettingsProps {
-    open: boolean;
     setOpen: (value: boolean) => void;
 }
 
 export default function ZAccountSettings(props: AccountSettingsProps) {
-    const {open, setOpen} = props;
+    const {setOpen} = props;
 
-    const dispatch = useAppDispatch();
     const user = useSessionUser();
 
-    const [displayName, setDisplayName] = useState<string>(
-        user?.displayName || 'Anonymous'
-    )
-
-    function handleSaveChanges() {
+    function handleClose() {
         setOpen(false);
-        dispatch(accountDisplayNameUpdate(displayName));
     }
 
-    const actions = (
-        <Button onClick={handleSaveChanges}>Save Changes</Button>
-    )
-
-    function handleDisplayNameChange(event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>) {
-        const value = event.currentTarget.value;
-        setDisplayName(value);
+    if (!user) {
+        return null;
     }
 
     return (
-        <ZDialogWithTitle
-            title="Account Settings"
-            open={open}
-            setOpen={setOpen}
-            actions={actions}
+        <Dialog
+                open={true}
+                onClose={handleClose}
         >
-            <DialogContentText sx={{marginBottom: "2rem"}}>
-                Your display name will appear on decks shared with other people.
-                You can set it to your real name or an alias.
-            </DialogContentText>
-            <TextField
-                autoFocus
-                margin="dense"
-                id="displayName"
-                label="Display Name"
-                fullWidth
-                variant="outlined"
-                value={displayName}
-                onChange={handleDisplayNameChange}
-            />
-
-        </ZDialogWithTitle>
+            <DialogTitle>
+                Update User Profile
+            </DialogTitle>
+            <ZUserProfileForm user={user} onClose={handleClose}/>
+       </Dialog>
     )
 }

@@ -10,7 +10,7 @@ import EntityApi from '../fbase/EntityApi';
 import { setAuthUser } from '../fbase/functions';
 import { useEntityApi } from '../fbase/hooks';
 import { useSessionUser } from '../hooks/customHooks';
-import { createSessionUser, providerRegister, submitIdentityCleanup } from '../model/auth';
+import { createSessionUser, providerRegister, updateUserProfile } from '../model/auth';
 import firebaseApp from '../model/firebaseApp';
 import { checkUsernameAvailability, createIdentity, replaceAnonymousUsername, setNewIdentity } from '../model/identity';
 import { createFirestoreLibrary, saveLibrary } from '../model/library';
@@ -194,11 +194,12 @@ function ZEmailUsernameRetry(props: RegisterStateSetterProps)  {
     
     const [username, setUsername] = useState<string>("");
     const [usernameError, setUsernameError] = useState<string>("");
-    const user = useSessionUser();
 
     function handleSubmit() {
         const ok = validateUsername(username, setUsernameError);
         if (ok) {
+            const auth = getAuth(firebaseApp);
+            const user = auth.currentUser;
             if (user) {
                 replaceAnonymousUsername(user.uid, username).then((saveOk)=>{
                     if (!saveOk) {
@@ -468,7 +469,7 @@ function ZProviderUsername(props: RegisterStateSetterProps) {
             } else {
 
                 setSubmitDisabled(true);
-                submitIdentityCleanup(api, user.uid, username, displayName).then(
+                updateUserProfile(api, user, {username, displayName}).then(
                     usernameOk => {
                         if (usernameOk) {
                             setRegisterState('REGISTER_PROVIDER_END');
@@ -599,7 +600,7 @@ function ZRegisterBody(props: RegisterBodyProps) {
             />
 
         case 'REGISTER_EMAIL':
-            return <ZRegisterWithEmail setRegisterState={setRegisterState}/>
+            return <ZRegisterWithEmail setRegisterState={setRegisterState} />
 
         case 'REGISTER_EMAIL_USERNAME_RETRY':
             return <ZEmailUsernameRetry setRegisterState={setRegisterState}/>
@@ -637,7 +638,7 @@ export function ZRegisterWizard(props: RegisterWizardProps) {
     return (
         <Dialog open={true}>
             <ZRegisterTitle onClose={handleClose} omitCloseButton={omitCloseButton}/>
-            <ZRegisterBody 
+            <ZRegisterBody
                 onClose={handleClose} 
                 registerState={registerState}
                 setRegisterState={setRegisterState}

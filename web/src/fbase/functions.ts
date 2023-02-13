@@ -95,6 +95,10 @@ export function setLeasedEntity(
     }
 }
 
+export function getAuthUser<Type>(client: EntityClient | EntityApi | Object) {
+    return getEntity<Type>(client, AUTH_USER);
+}
+
 export function setAuthUser(client: EntityClient, value: unknown) {
     putEntity(client, AUTH_USER, value);
 }

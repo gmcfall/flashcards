@@ -6,7 +6,7 @@ import LeaseeApi from "../fbase/LeaseeApi";
 import { createSessionUser } from "./auth";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
-import { ANONYMOUS, Identity, SessionUser } from "./types";
+import { ANONYMOUS, Identity, SessionUser, UserProfile } from "./types";
 
 export function createIdentity(uid: string, username: string, displayName: string) : Identity {
     return {uid, username, displayName}
@@ -110,29 +110,36 @@ export async function replaceAnonymousUsername(uid: string, username: string) {
     return ok;
 }
 
-export async function replaceAnonymousUsernameAndDisplayName(uid: string, username: string, displayName: string) {
+export async function replaceAnonymousUsernameAndDisplayName(user: SessionUser, profile: UserProfile) {
     // TODO: move this operation to a Firestore function
     // On the client-side we don't have the ability to run a query in a transaction.
     // But it is possible using the admin SDK in a cloud function.
     // See https://googleapis.dev/nodejs/firestore/latest/Transaction.html
 
+    const {username, displayName} = profile;
+    
     if (username === ANONYMOUS) {
         return false;
     }
 
-    const db = getFirestore(firebaseApp);
-    const identitiesRef = collection(db, IDENTITIES);
-    const q = query(identitiesRef, where("username", "==", username), limit(1));
+    const updateUsername = username !== user.username;
+    const updateDisplayName = displayName !== user.displayName;
 
-    const snapshot = await getDocs(q);
-    const ok = snapshot.size===0;
-    if (ok) {
-        const docRef = doc(db, IDENTITIES, uid);
+    if (updateUsername || updateDisplayName) {
+
+    }
+
+    const usernameOk = !updateUsername || await checkUsernameAvailability(username);
+
+    if (usernameOk) {
+        const db = getFirestore(firebaseApp);
+        const docRef = doc(db, IDENTITIES, user.uid);
         await updateDoc(docRef, {username, displayName});
     }
 
-    return ok;
+    return usernameOk;
 }
+
 
 export async function getIdentityByUsername(username: string) {
     username = trimAtSign(username);

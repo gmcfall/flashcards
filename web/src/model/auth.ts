@@ -12,9 +12,9 @@ import { alertError, alertInfo, alertSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
-import { deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName, setAnonymousIdentity, watchCurrentUserIdentity } from "./identity";
+import { deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName as saveUserProfile, setAnonymousIdentity, watchCurrentUserIdentity } from "./identity";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK } from "./types";
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK, UserProfile } from "./types";
 
 export function doAuthEmailVerified(lerni: LerniApp0, action: PayloadAction) {
     const user = lerni.session?.user;
@@ -28,21 +28,22 @@ export function doAuthSessionEnd(lerni: LerniApp0, action: Action) {
     delete lerni.session;
 }
 
-export async function submitIdentityCleanup(
+export async function updateUserProfile(
     api: EntityApi,
-    userUid: string,
-    username: string,
-    displayName: string
+    user: SessionUser,
+    profile: UserProfile
 ) {
-    const usernameOk = await replaceAnonymousUsernameAndDisplayName(userUid, username, displayName);
-    if (usernameOk) { 
-        const auth = getAuth(api.getClient().firebaseApp);
-        const user = auth.currentUser;
-        if (!user) {
-            throw new Error("submitIdentityCleanup failed: user is not signed in");
-        }
-        if (displayName && displayName !== user.displayName) {
-            await updateProfile(auth.currentUser, {displayName});
+
+    const usernameOk = await saveUserProfile(user, profile);
+    if (usernameOk) {
+        const displayName = profile.displayName;
+        if (displayName !== user.displayName) {
+            const auth = getAuth(api.getClient().firebaseApp);
+            const authUser = auth.currentUser;
+            if (!authUser) {
+                throw new Error("updateUserProfile failed: user is not signed in");
+            }
+            await updateProfile(authUser, {displayName});
         }
     }
 

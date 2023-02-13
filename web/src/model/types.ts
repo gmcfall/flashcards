@@ -385,15 +385,7 @@ export interface Session {
     user?: SessionUser
 }
 
-/** 
- * A Firestore document that stores information about a person's identity 
- * 
- * Firestore Path: `/identities/{user.uid}`
- */
-export interface Identity {
-
-    /** The unique, immutable identifier assigned by Firebase Authentication */
-    uid: string;
+export interface UserProfile {
 
     /**
      * The person's username, without the leading `@`
@@ -405,6 +397,19 @@ export interface Identity {
      * an alias.
      */
     displayName: string;
+}
+
+export type PartialUserProfile = Partial<UserProfile>;
+
+/** 
+ * A Firestore document that stores information about a person's identity 
+ * 
+ * Firestore Path: `/identities/{user.uid}`
+ */
+export interface Identity extends UserProfile {
+
+    /** The unique, immutable identifier assigned by Firebase Authentication */
+    uid: string;
 }
 
 
@@ -515,18 +520,6 @@ export interface ClientAccess extends Access {
 
 export type AccessTuple = EntityTuple<ClientAccess>;
 
-/** The status of a loading process */
-export type LoadStatus = 'pending' | 'fulfilled' | 'failed';
-
-/** The 'pending' value of the LoadStatus type*/
-export const PENDING = 'pending';
-
-/** The 'fullfilled' value of the LoadStatus type*/
-export const FULFILLED ='fulfilled';
-
-/** The 'failed' value of the LoadStatus type */
-export const FAILED = 'failed';
-
 
 export type BooleanState = [boolean, (value: boolean) => void]
 
@@ -568,13 +561,6 @@ export interface LerniApp0 {
      * workflow if the user is authenticated by email/password
      */
     deleteAccountForm?: PasswordCredentials,
-
-
-    /** Data used to display a transient Alert */
-    alertData?: AlertData,
-
-    /** The status of the process to load the current deck */
-    deckLoadStatus?: LoadStatus,
 
     /** The current deck being edited or viewed */
     deck?: Deck

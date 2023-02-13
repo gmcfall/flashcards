@@ -1,9 +1,6 @@
 import EntityApi from "../fbase/EntityApi";
-import { AlertData, ERROR, INFO, LerniApp, LerniApp0, SUCCESS } from "./types";
+import { ERROR, INFO, LerniApp, SUCCESS } from "./types";
 
-export function setAlert(lerni: LerniApp0, data: AlertData) {
-    lerni.alertData = data;
-}
 
 export function selectAlert(lerni: LerniApp) {
     return lerni.alertData;
