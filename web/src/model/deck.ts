@@ -90,14 +90,16 @@ export async function publishDeck(
     
         const [remove, add] = await runTransaction(db, async txn => {
             const tagsDoc = await txn.get(tagsRef);
+            txn.set(tagsRef, newTagsData);
             if (!tagsDoc.exists()) {
-                txn.set(tagsRef, newTagsData);
                 return [[], newTagsData.tags]
-            } else { 
+            } else {
                 const oldTagsData = tagsDoc.data() as Tags;
                 return computeSearchDelta(oldTagsData.tags, newTagsData.tags);
             }
         })
+        
+        console.log('publishDeck', tags, add, remove)
         const ref: ResourceRef = {
             type: DECK,
             id: deckId,
@@ -121,24 +123,34 @@ export async function publishDeck(
 
 
 async function updateIsPublishedFlag(db: Firestore, deckId: string, value: boolean) {
-    const deckRef = doc(db, DECK, deckId);
-    await updateDoc(deckRef, {
-        [DeckField.isPublished]: value
-    })
+    const deckRef = doc(db, DECKS, deckId);
+    try {
+        await updateDoc(deckRef, {
+            [DeckField.isPublished]: value
+        })
+    } catch (error) {
+        console.error("updateIsPublishedFlag failed", error);
+        throw error;
+    }
 }
 
 async function removeSearchResources(db: Firestore, resourceId: string, tags: string[]) {
     for (const tag of tags) {
         const docRef = doc(db, SEARCH, tag);
         const path = new FieldPath(SearchField.resources, resourceId);
-        await runTransaction(db, async txn => {
-            const searchDoc = await txn.get(docRef);
-            if (!searchDoc.exists()) {
-                // Do nothing
-            } else {
-                txn.update(docRef, path, deleteField());
-            }
-        })
+        try {
+            await runTransaction(db, async txn => {
+                const searchDoc = await txn.get(docRef);
+                if (!searchDoc.exists()) {
+                    // Do nothing
+                } else {
+                    txn.update(docRef, path, deleteField());
+                }
+            })
+        } catch (error) {
+            console.error("removeSearchResources failed", error);
+            throw error;
+        }
     }
 }
 
@@ -165,22 +177,27 @@ function computeSearchDelta(oldTags: string[], newTags: string[]) {
 
 async function addSearchResources(db: Firestore, resourceRef: ResourceRef, tags: string[]) {
 
-    for (const tag of tags) {
-        const docRef = doc(db, SEARCH, tag);
-        const path = new FieldPath(SearchField.resources, resourceRef.id);
-        await runTransaction(db, async txn => {
-            const searchDoc = await txn.get(docRef);
-            if (!searchDoc.exists()) {
-                const searchData: ResourceSearchServerData = {
-                    resources: {
-                        [resourceRef.id]: resourceRef
+    try {
+        for (const tag of tags) {
+            const docRef = doc(db, SEARCH, tag);
+            const path = new FieldPath(SearchField.resources, resourceRef.id);
+            await runTransaction(db, async txn => {
+                const searchDoc = await txn.get(docRef);
+                if (!searchDoc.exists()) {
+                    const searchData: ResourceSearchServerData = {
+                        resources: {
+                            [resourceRef.id]: resourceRef
+                        }
                     }
+                    txn.set(docRef, searchData);
+                } else {
+                    txn.update(docRef, path, resourceRef);
                 }
-                txn.set(docRef, searchData);
-            } else {
-                txn.update(docRef, path, resourceRef);
-            }
-        })
+            })
+        }
+    } catch (error) {
+        console.error('addSearchResources failed', error);
+        throw error;
     }
 }
 

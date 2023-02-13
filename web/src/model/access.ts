@@ -93,17 +93,23 @@ export async function enableGeneralViewer(resourceId: string) {
     const db = getFirestore(firebaseApp);
     const accessRef = doc(db, ACCESS, resourceId);
 
-    return runTransaction(db, async txn => {
-        const accessDoc = await txn.get(accessRef);
-        if (!accessDoc.exists()) {
-            throw new Error("access document not found for resource: " + resourceId);
-        }
+    try {
+        return runTransaction(db, async txn => {
+            const accessDoc = await txn.get(accessRef);
+            if (!accessDoc.exists()) {
+                throw new Error("access document not found for resource: " + resourceId);
+            }
+    
+            const accessData = accessDoc.data() as Access;
+            if (!accessData.general) {
+                updateDoc(accessRef, AccessField.general, VIEWER);
+            }
+        })
+    } catch (error) {
+        console.error("enableGeneralViewer failed", error);
+        throw error;
+    }
 
-        const accessData = accessDoc.data() as Access;
-        if (!accessData.general) {
-            updateDoc(accessRef, AccessField.general, VIEWER);
-        }
-    })
 }
 
 export async function updateGeneralRole(api: EntityApi, resourceId: string, generalRole?: Role) {

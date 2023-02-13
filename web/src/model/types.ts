@@ -290,54 +290,14 @@ export interface ResourceSearchRequest {
     /** The full search string typed by the user */
     searchString: string;
 
-    /**
+    /** 
      * The tags to be searched.
      * 
-     * This value is computed by splitting the `searchString` into an array of
-     * space-separated words and then filtering to exclude stop words.
+     * These tags are derived by splitting the `searchString` into an array of 
+     * space-separated words, filtering to exclude stop words and computing the 
+     * Porter stem of each remaining word.
      */
-    searchTags: string[]
-}
-
-/**
- * Encapsulates a ServerResourceSearch document for a given tag.
- */
-export interface ResourceSearchResponsePart {
-    /** A tag derived from the `searchString` */
-    tag: string;
-
-    /** ServerResourceSearch document for the given `tag` */
-    serverData: ResourceSearchServerData;
-}
-
-
-
-/**
- * A client-side object encapsulating `SearchRequest` and `SearchResponse` data plus
- * the status of the search.
- * 
- * The status changes according to the following rules.
- * - `pending`: The cache does not contain results from all tags in the search string
- * - `fulfilled`: The cache contains results from all tags in the search string
- * - `failed`: An error occurred while performing the search
- */
-export interface ResourceSearchClientData extends ResourceSearchRequest {
-    /**
-     * The status of the search process
-     */
-    status: LoadStatus;
-
-    /** 
-     * A cache of ServerSearch records retreived from Firestore.
-     * Each key in the Record is a tag and the value is the
-     * ServerSearch document for that tag.
-     */
-    cache: Record<string, ResourceSearchServerData>;
-
-    /**
-     * An array of Resource references sorted alphabetically.
-     */
-    resources: ResourceRef[];
+    searchTags: string[];
 }
 
 export interface ClientLibrary {
@@ -570,6 +530,22 @@ export const FAILED = 'failed';
 
 export type BooleanState = [boolean, (value: boolean) => void]
 
+/** Encapsulates the request and response for the current resource search */
+export interface ResourceSearch {
+
+    /** 
+     * The search string from the user, plus the set of tags derived
+     * from the search string.
+     */
+    request: ResourceSearchRequest;
+
+    /** 
+     * The resources matching the search request. This array is updated as
+     * partial search results are received from Firestore.
+     */
+    response: ResourceRef[];
+}
+
 export interface LerniApp {
 
     authUser?: SessionUser;
@@ -577,7 +553,10 @@ export interface LerniApp {
     /** Data used to display a transient Alert */
     alertData?: AlertData;
 
+    /** The request and reponse for the current search request */
+    resourceSearch?: ResourceSearch;
 }
+
 
 export interface LerniApp0 {
 
@@ -598,9 +577,7 @@ export interface LerniApp0 {
     deckLoadStatus?: LoadStatus,
 
     /** The current deck being edited or viewed */
-    deck?: Deck,
-
-    resourceSearch?: ResourceSearchClientData;
+    deck?: Deck
     
 
 }

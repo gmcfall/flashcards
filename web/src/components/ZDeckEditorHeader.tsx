@@ -201,7 +201,7 @@ function ZConfirmNameDialog(props: ConfirmNameDialogProps) {
 
     function handleCloseDialogAndPublish() {
         if (deck && cardList) {
-            if (invalidDeckName(deck.name)) {
+            if (invalidDeckName(name)) {
                 setNameError(true);
             } else {
                 setNameDialogOpen(false);
@@ -234,7 +234,7 @@ function ZConfirmNameDialog(props: ConfirmNameDialogProps) {
                     id="name"
                     fullWidth
                     variant="outlined"
-                    value={deck ? deck.name : ""}
+                    value={name}
                     helperText={nameError ? "The name is required" : undefined}
                     onChange={handleNameChange}
                 />

@@ -19,5 +19,5 @@ export function isEmpty(object: Object) {
 }
 
 export function last<T>(array: T[]) {
-    return array[array.length-1];
+    return array.length===0 ? undefined : array[array.length-1];
 }

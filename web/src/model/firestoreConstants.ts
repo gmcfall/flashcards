@@ -1,27 +1,29 @@
 
+export type FirestoreCollectionName = string;
+
 /** The "decks" collection in Firestore */
-export const DECKS = 'decks';
+export const DECKS: FirestoreCollectionName = 'decks';
 
 /** The "libraries" collection in Firestore */
-export const LIBRARIES = 'libraries';
+export const LIBRARIES: FirestoreCollectionName = 'libraries';
 
 /** The "access" collection in Firestore */
-export const ACCESS = "access";
+export const ACCESS: FirestoreCollectionName = "access";
 
 /** The "cards" collection in Firestore */
-export const CARDS = "cards";
+export const CARDS: FirestoreCollectionName = "cards";
 
 /** The "metadata" collection in Firestore */
-export const METADATA = "metadata";
+export const METADATA: FirestoreCollectionName = "metadata";
 
 /** The "tags" collection in Firestore */
-export const TAGS = "tags";
+export const TAGS: FirestoreCollectionName = "tags";
 
 /** The "search" collection in Firestore */
-export const SEARCH = "search";
+export const SEARCH: FirestoreCollectionName = "search";
 
 /** The "identities" collection in Firestore */
-export const IDENTITIES = "identities";
+export const IDENTITIES: FirestoreCollectionName = "identities";
 
 /** Field names used when updating documents in the 'libraries' collection */
 export const LibraryField = {
