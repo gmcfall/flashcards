@@ -3,14 +3,13 @@ import { doc, getDoc, getFirestore } from "firebase/firestore";
 import EntityApi from "../fbase/EntityApi";
 import { setAuthUser } from "../fbase/functions";
 import LeaseeApi from "../fbase/LeaseeApi";
-import { logError } from "../util/common";
 import { alertError, alertInfo, alertSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
 import { deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName as saveUserProfile, setAnonymousIdentity, watchCurrentUserIdentity } from "./identity";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK, UserProfile } from "./types";
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK, UserProfile } from "./types";
 
 export async function updateUserProfile(
     api: EntityApi,
@@ -71,11 +70,6 @@ export function getRequiresVerification(user: User) {
     )
 }
 
-export function createEmptySession() {
-    const result: Session = {};
-    return result;
-}
-
 export function createSessionUser(user: User, identity: Identity) {
     const requiresEmailVerification = getRequiresVerification(user);
 
@@ -91,26 +85,6 @@ export function createSessionUser(user: User, identity: Identity) {
     }
 
     return result;
-}
-
-export function createSession(
-    uid: string, 
-    providers: string[],
-    username: string,
-    displayName: string, 
-    requiresEmailVerification: boolean
-) : Session {
-
-    const user: SessionUser = {
-        uid,
-        username,
-        displayName,
-        providers
-    }
-    if (requiresEmailVerification) {
-        user.requiresEmailVerification = true;
-    }
-    return {user}
 }
 
 export function getProviders(user: User) {
@@ -166,34 +140,6 @@ export async function emailPasswordSignIn(api: EntityApi, email: string, passwor
     return SIGNIN_OK;
 }
 
-export async function emailPasswordSignIn0(email: string, password: string) {
-    
-    const auth = getAuth(firebaseApp);
-    let credential: UserCredential | null = null;
-    try {
-        credential = await signInWithEmailAndPassword(auth, email, password);
-    } catch (error) {
-        throw new Error(SIGNIN_FAILED, {cause: error})
-    }
-    const user = credential.user;
-
-    let identity: Identity | null = null;
-    try {
-        identity = await getIdentity(user.uid);
-    } catch (error) {
-        throw new Error(GET_IDENTITY_FAILED, {cause: error});
-    }
-    if (!identity) {
-        await deleteUser(user).catch(
-            error => console.error(error)
-        )
-        throw new Error(IDENTITY_NOT_FOUND);
-    }
-    const providers = getProviders(user);
-    const requiresVerification = getRequiresVerification(user);
-    return createSession(user.uid, providers, identity.username, identity.displayName, requiresVerification);
-}
-
 
 export async function providerSignIn(api: EntityApi, provider: AuthProvider) : Promise<SignInResult> {
     const firebaseApp = api.getClient().firebaseApp;
@@ -227,25 +173,6 @@ export async function providerSignIn(api: EntityApi, provider: AuthProvider) : P
     }
 
 
-}
-
-
-export async function handleAuthStateChanged(user: User) {
-
-        const identity = await getIdentity(user.uid);
-        if (identity) {
-            const providers = getProviders(user);
-            const requiresVerification = getRequiresVerification(user);
-            const uid = user.uid;
-            const displayName = identity.displayName;
-            const username = identity.username;
-            const session = createSession(uid, providers, username, displayName, requiresVerification);
-            return session;
-        } else {  
-            const auth = getAuth(firebaseApp);
-            signOut(auth).catch(error => logError(error));
-            throw new Error(`User identity not found: uid=${user.uid}, displayName=${user.displayName}`);
-        }
 }
 
 let verificationIntervalToken: ReturnType<typeof setInterval> | null = null;

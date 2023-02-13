@@ -65,13 +65,6 @@ export interface ClientFlashcard extends FlashcardBase {
     content: JSONContent;
 }
 
-
-
-export interface UserNames {
-    displayName: string;
-    username: string;
-}
-
 /**
  * The type of a Card. 
  * For now, there is only one type, namely, "flashcard".
@@ -106,11 +99,6 @@ export interface PartialMetadata extends ResourceRef {
 
     /** The uid of the User who owns this resource */
     owner?: string;
-}
-
-export interface MetadataEnvelope {
-    id: string,
-    metadata: Metadata
 }
 
 
@@ -309,11 +297,6 @@ export interface ClientLibrary {
     notifications: AccessNotification[];
 }
 
-export interface ErrorInfo {
-    message: string;
-    cause?: string
-}
-
 /**
  * A possible return value from the `providerSignIn` and `emailPasswordSignIn` functions.
  */
@@ -380,11 +363,6 @@ export const ProviderNames: Record<string, string> = {
     [TwitterAuthProvider.PROVIDER_ID]: "Twitter"
 }
 
-export interface Session {
-    /** The current user, or undefined if the user is not signed in */
-    user?: SessionUser
-}
-
 export interface UserProfile {
 
     /**
@@ -398,8 +376,6 @@ export interface UserProfile {
      */
     displayName: string;
 }
-
-export type PartialUserProfile = Partial<UserProfile>;
 
 /** 
  * A Firestore document that stores information about a person's identity 
@@ -490,16 +466,6 @@ export const LOCK_OPEN: SharingIconType = 'lockOpen';
 
 /** The `globe` element of the `SharingIcon` type */
 export const GLOBE: SharingIconType = 'globe';
-
-/** An error code that may occur when trying to access a resource */
-export type ResourceError = 'notFound' | 'accessDenied' | 'unknownError';
-
-/** The "notFound" member of the `ResourceError` type */
-export const NOT_FOUND = 'notFound';
-/** The "accessDenied" member of the `ResourceError` type */
-export const ACCESS_DENIED = 'accessDenied';
-/** The "unknownError" member of the `ResourceError` type */
-export const UNKNOWN_ERROR = 'unknownError';
 
 /** A Permission that can be granted to a user for access to some resource */
 export type Permission = 'edit' | 'view' | 'share';
