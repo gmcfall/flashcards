@@ -2,7 +2,6 @@ import { Box, Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useEntityApi } from "../fbase/hooks";
 import { useSessionUser } from "../hooks/customHooks";
-import { useAppDispatch } from "../hooks/hooks";
 import { authSignOut, resendEmailVerification, startEmailVerificationListener, stopEmailVerificationListener, userProfileIsIncomplete } from "../model/auth";
 import { HasUser } from "./lerniCommon";
 import LerniTheme from "./lerniTheme";
@@ -16,12 +15,12 @@ const PMARGIN = "0.75rem";
 function ZVerifyEmail(props: HasUser) {
     const {user} = props;
     
-    const dispatch = useAppDispatch();
+    const api = useEntityApi();
     const requiresVerification = user.requiresEmailVerification;
 
     useEffect(() => {
         if (requiresVerification) {
-            startEmailVerificationListener(dispatch);
+            startEmailVerificationListener(api);
         } else {
             stopEmailVerificationListener();
         }
@@ -29,7 +28,7 @@ function ZVerifyEmail(props: HasUser) {
         return () => {
             stopEmailVerificationListener();
         }
-    }, [requiresVerification, dispatch])
+    }, [requiresVerification, api])
 
     if (!requiresVerification) {
         return null;

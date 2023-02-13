@@ -1,12 +1,9 @@
 import { PayloadAction } from "@reduxjs/toolkit";
 import { AuthProvider, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, reauthenticateWithPopup, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
-import { Action } from "redux";
 import EntityApi from "../fbase/EntityApi";
 import { setAuthUser } from "../fbase/functions";
 import LeaseeApi from "../fbase/LeaseeApi";
-import authEmailVerified from "../store/actions/authEmailVerified";
-import { AppDispatch } from "../store/store";
 import { logError } from "../util/common";
 import { alertError, alertInfo, alertSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
@@ -14,19 +11,7 @@ import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
 import { deleteIdentity, getIdentity, replaceAnonymousUsernameAndDisplayName as saveUserProfile, setAnonymousIdentity, watchCurrentUserIdentity } from "./identity";
 import { createFirestoreLibrary, deleteLibrary, saveLibrary } from "./library";
-import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK, UserProfile } from "./types";
-
-export function doAuthEmailVerified(lerni: LerniApp0, action: PayloadAction) {
-    const user = lerni.session?.user;
-    if (user) {
-        delete user.requiresEmailVerification;
-    }
-}
-
-
-export function doAuthSessionEnd(lerni: LerniApp0, action: Action) {
-    delete lerni.session;
-}
+import { ANONYMOUS, GET_IDENTITY_FAILED, Identity, IDENTITY_NOT_FOUND, LerniApp, LerniApp0, Session, SessionUser, SignInResult, SIGNIN_FAILED, SIGNIN_OK, UserProfile } from "./types";
 
 export async function updateUserProfile(
     api: EntityApi,
@@ -271,7 +256,7 @@ export async function handleAuthStateChanged(user: User) {
 }
 
 let verificationIntervalToken: ReturnType<typeof setInterval> | null = null;
-export function startEmailVerificationListener(dispatch: AppDispatch) {
+export function startEmailVerificationListener(api: EntityApi) {
     if (!verificationIntervalToken) {
 
         const a = getAuth(firebaseApp);
@@ -288,7 +273,14 @@ export function startEmailVerificationListener(dispatch: AppDispatch) {
                                 const newUser = newAuth.currentUser;
                                 if (newUser?.emailVerified) {
                                     stopEmailVerificationListener();
-                                    dispatch(authEmailVerified());
+                                    api.mutate(
+                                        (lerni: LerniApp) => {
+                                            const user = lerni.authUser;
+                                            if (user) {
+                                                delete user.requiresEmailVerification;
+                                            }
+                                        }
+                                    )
                                 }
                             }
                         )
