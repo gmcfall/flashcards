@@ -1,8 +1,7 @@
 import { Box, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { disownAllLeases } from "../fbase/functions";
-import { useEntityApi } from "../fbase/hooks";
+import { disownAllLeases, useEntityApi } from "@gmcfall/react-firebase-state";
 import { useAccessControl, useSessionUser } from "../hooks/customHooks";
 import { checkPrivilege } from "../model/access";
 import { deckEditRoute, deckViewRoute } from "../model/routes";

@@ -1,6 +1,6 @@
 import { Alert } from "@mui/material";
 import { useEffect } from 'react';
-import { useData, useEntityApi } from "../fbase/hooks";
+import { useData, useEntityApi } from "@gmcfall/react-firebase-state";
 import { alertRemove, selectAlert } from "../model/alert";
 
 let timeoutId: ReturnType<typeof setTimeout> | null = null;

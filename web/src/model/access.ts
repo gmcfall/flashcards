@@ -1,6 +1,5 @@
 import { deleteField, doc, FieldPath, getFirestore, runTransaction, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
-import EntityApi from "../fbase/EntityApi";
-import LeaseeApi from "../fbase/LeaseeApi";
+import { EntityApi, LeaseeApi } from "@gmcfall/react-firebase-state";
 import { isEmpty } from "../util/common";
 import generateUid from "../util/uid";
 import { alertError } from "./alert";

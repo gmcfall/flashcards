@@ -5,9 +5,7 @@ import {
     setDoc, updateDoc, where, writeBatch
 } from "firebase/firestore";
 import { NavigateFunction } from "react-router-dom";
-import EntityApi from "../fbase/EntityApi";
-import { getEntity, watchEntity } from "../fbase/functions";
-import LeaseeApi from "../fbase/LeaseeApi";
+import { EntityApi, LeaseeApi, getEntity, watchEntity } from "@gmcfall/react-firebase-state";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";

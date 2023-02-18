@@ -1,8 +1,6 @@
 import { AuthProvider, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, reauthenticateWithPopup, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
-import EntityApi from "../fbase/EntityApi";
-import { setAuthUser } from "../fbase/functions";
-import LeaseeApi from "../fbase/LeaseeApi";
+import { EntityApi, LeaseeApi, setAuthUser } from "@gmcfall/react-firebase-state";
 import { alertError, alertInfo, alertSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";

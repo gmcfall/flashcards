@@ -1,5 +1,4 @@
-import { getEntity } from "../fbase/functions";
-import LeaseeApi from "../fbase/LeaseeApi";
+import { getEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
 import { METADATA } from "./firestoreConstants";
 import { libraryPath, sortResources } from "./library";
 import { ClientLibrary, Metadata, ResourceType } from "./types";

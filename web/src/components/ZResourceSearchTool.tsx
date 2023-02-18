@@ -2,7 +2,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import { Box, InputAdornment, List, ListItemButton, ListItemText, Popover, TextField } from "@mui/material";
 import { useRef } from "react";
 import { useNavigate } from 'react-router-dom';
-import { useData, useEntityApi } from '../fbase/hooks';
+import { useData, useEntityApi } from '@gmcfall/react-firebase-state';
 import { deckViewRoute } from '../model/routes';
 import { endResourceSearch, performResourceSearch, selectResourceSearch } from "../model/search";
 

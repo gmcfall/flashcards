@@ -3,7 +3,7 @@ import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import { useState } from "react";
-import { useEntityApi } from "../fbase/hooks";
+import { useEntityApi } from "@gmcfall/react-firebase-state";
 import { updateUserProfile } from "../model/auth";
 import { ANONYMOUS, SessionUser } from "../model/types";
 import ZDisplayNameField, { validateDisplayName } from "./ZDisplayNameField";

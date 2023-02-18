@@ -1,6 +1,5 @@
 import { deleteDoc, deleteField, doc, FieldPath, getDoc, getFirestore, setDoc, updateDoc } from "firebase/firestore";
-import { watchEntity } from "../fbase/functions";
-import LeaseeApi from "../fbase/LeaseeApi";
+import { watchEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
 import { compareTimestamps } from "../util/time";
 import { deleteDeck } from "./deck";
 import firebaseApp from "./firebaseApp";

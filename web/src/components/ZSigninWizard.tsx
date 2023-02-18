@@ -2,7 +2,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import { Alert, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import { AuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { useContext, useState } from "react";
-import { useEntityApi } from '../fbase/hooks';
+import { useEntityApi } from '@gmcfall/react-firebase-state';
 import { emailPasswordSignIn, providerSignIn } from '../model/auth';
 import { GET_IDENTITY_FAILED, IDENTITY_NOT_FOUND, ProviderNames, SignInResult, SIGNIN_FAILED, SIGNIN_OK } from '../model/types';
 import { dialogContentStyle } from './lerniConstants';

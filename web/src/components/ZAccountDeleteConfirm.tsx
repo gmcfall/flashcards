@@ -3,7 +3,7 @@ import EmailIcon from '@mui/icons-material/Email';
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from "@mui/material";
 import { EmailAuthProvider, FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { useState } from 'react';
-import { useEntityApi } from "../fbase/hooks";
+import { useEntityApi } from "@gmcfall/react-firebase-state";
 import { useSessionUser } from "../hooks/customHooks";
 import { deleteAccountViaEmailProvider, deleteAccountViaIdentityProvider } from "../model/auth";
 import { SessionUser } from "../model/types";

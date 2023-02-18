@@ -2,7 +2,7 @@
 import { JSONContent } from "@tiptap/core";
 import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { FieldValue } from "firebase/firestore";
-import { EntityTuple } from "../fbase/types";
+import { EntityTuple } from "@gmcfall/react-firebase-state";
 
 export type { JSONContent } from "@tiptap/core";
 

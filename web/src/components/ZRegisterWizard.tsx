@@ -6,9 +6,7 @@ import {
 } from '@mui/material';
 import { AuthProvider, createUserWithEmailAndPassword, FacebookAuthProvider, getAuth, GoogleAuthProvider, sendEmailVerification, TwitterAuthProvider, updateProfile } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import EntityApi from '../fbase/EntityApi';
-import { setAuthUser } from '../fbase/functions';
-import { useEntityApi } from '../fbase/hooks';
+import { EntityApi, setAuthUser,  useEntityApi} from '@gmcfall/react-firebase-state';
 import { useSessionUser } from '../hooks/customHooks';
 import { createSessionUser, providerRegister, updateUserProfile } from '../model/auth';
 import firebaseApp from '../model/firebaseApp';

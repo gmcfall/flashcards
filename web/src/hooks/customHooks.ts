@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { RegistrationContext } from "../components/ZRegistrationProvider";
 import { SigninContext } from "../components/ZSigninProvider";
-import { AuthOptions, useAuthListener, useDocListener, useEntity } from "../fbase/hooks";
+import { AuthOptions, useAuthListener, useDocListener, useEntity } from "@gmcfall/react-firebase-state";
 import { accessOptions, accessPath } from "../model/access";
 import { userProfileIsIncomplete, userTransform } from "../model/auth";
 import { cardPath } from "../model/flashcard";

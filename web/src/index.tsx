@@ -9,7 +9,7 @@ import ZHome from './components/ZHome';
 import ZLibrary from './components/ZLibrary';
 import ZRegistrationProvider from './components/ZRegistrationProvider';
 import ZSigninProvider from './components/ZSigninProvider';
-import { FirebaseProvider } from './fbase/FirebaseContext';
+import { FirebaseProvider } from '@gmcfall/react-firebase-state';
 import './index.css';
 import firebaseApp from './model/firebaseApp';
 import reportWebVitals from './reportWebVitals';

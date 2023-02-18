@@ -15,7 +15,7 @@ import {
 import { Editor } from '@tiptap/core';
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEntityApi } from '../fbase/hooks';
+import { useEntityApi } from '@gmcfall/react-firebase-state';
 import { useAccessControl, useSessionUser } from '../hooks/customHooks';
 import { checkPrivilege, getSharingIconType } from '../model/access';
 import { getCardList, publishDeck, updateDeckName } from '../model/deck';

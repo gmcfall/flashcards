@@ -10,8 +10,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useParams } from 'react-router-dom';
-import { disownAllLeases } from '../fbase/functions';
-import { useEntityApi } from '../fbase/hooks';
+import { disownAllLeases, useEntityApi } from '@gmcfall/react-firebase-state';
 import { useIdentity, useSessionUser } from '../hooks/customHooks';
 import { changeCollaboratorRole, createIdentityRole, injectCollaborators, removeAcess, updateGeneralRole } from '../model/access';
 import { alertError } from '../model/alert';

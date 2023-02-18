@@ -7,8 +7,7 @@ import {
 } from "@mui/material";
 import { useContext, useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { disownAllLeases } from '../fbase/functions';
-import { useDocListener, useEntity, useEntityApi } from '../fbase/hooks';
+import { disownAllLeases, useDocListener, useEntity, useEntityApi } from '@gmcfall/react-firebase-state';
 import { useAccountIsIncomplete, useSessionUser } from '../hooks/customHooks';
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
 import { alertError, alertSuccess } from '../model/alert';

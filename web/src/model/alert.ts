@@ -1,4 +1,4 @@
-import EntityApi from "../fbase/EntityApi";
+import { EntityApi } from "@gmcfall/react-firebase-state";
 import { ERROR, INFO, LerniApp, SUCCESS } from "./types";
 
 

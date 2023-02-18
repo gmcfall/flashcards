@@ -3,7 +3,7 @@ import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
 import { useState } from 'react';
-import { useEntityApi } from '../fbase/hooks';
+import { useEntityApi } from '@gmcfall/react-firebase-state';
 import { useSessionUser } from '../hooks/customHooks';
 import { authSignOut } from '../model/auth';
 import ZAccountDeleteConfirm from './ZAccountDeleteConfirm';

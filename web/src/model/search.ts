@@ -1,6 +1,4 @@
-import EntityApi from "../fbase/EntityApi";
-import { watchEntity } from "../fbase/functions";
-import LeaseeApi from "../fbase/LeaseeApi";
+import { EntityApi, watchEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
 import { last } from "../util/common";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";

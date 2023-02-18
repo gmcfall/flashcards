@@ -2,7 +2,7 @@ import { useTheme } from "@mui/material";
 import { generateHTML } from "@tiptap/html";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { useEntity } from "../fbase/hooks";
+import { useEntity } from "@gmcfall/react-firebase-state";
 import { cardPath } from "../model/flashcard";
 import { deckEditRoute } from "../model/routes";
 import { ClientFlashcard } from "../model/types";

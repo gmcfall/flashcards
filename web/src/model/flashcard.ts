@@ -1,9 +1,7 @@
 import { JSONContent } from "@tiptap/core";
 import { doc, getFirestore, runTransaction, updateDoc } from "firebase/firestore";
 import { NavigateFunction } from "react-router-dom";
-import EntityApi from "../fbase/EntityApi";
-import { getEntity } from "../fbase/functions";
-import LeaseeApi from "../fbase/LeaseeApi";
+import { EntityApi, getEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
 import generateUid from "../util/uid";
 import { alertError } from "./alert";
 import { deckPath } from "./deck";

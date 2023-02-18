@@ -1,6 +1,6 @@
 import { Box, Button, Typography } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useEntityApi } from "../fbase/hooks";
+import { useEntityApi } from "@gmcfall/react-firebase-state";
 import { useSessionUser } from "../hooks/customHooks";
 import { authSignOut, resendEmailVerification, startEmailVerificationListener, stopEmailVerificationListener, userProfileIsIncomplete } from "../model/auth";
 import { HasUser } from "./lerniCommon";

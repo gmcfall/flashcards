@@ -1,6 +1,6 @@
 import { TextField } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useEntityApi } from "../fbase/hooks";
+import { useEntityApi } from "@gmcfall/react-firebase-state";
 import { useSessionUser } from "../hooks/customHooks";
 import { updateDeckName } from "../model/deck";
 import { Deck } from "../model/types";
