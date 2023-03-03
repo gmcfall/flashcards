@@ -2,7 +2,7 @@ import { Box, Button, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import { useCallback, useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { disownAllLeases, useDocListener, useEntityApi } from "@gmcfall/react-firebase-state";
+import { useDocListener, useEntityApi, useReleaseAllClaims } from "@gmcfall/react-firebase-state";
 import { useAccessControl, useAccountIsIncomplete, useFlashcard, useSessionUser } from "../hooks/customHooks";
 import { checkPrivilege, resourceNotFound } from "../model/access";
 import { deckPath, DECK_LISTENER_OPTIONS } from "../model/deck";
@@ -237,7 +237,7 @@ function ZDeckEditorContent(props: DeckEditorContentProps) {
     const user = useSessionUser();
     const [registerActive] = useContext(RegistrationContext);
     const [signinActive] = useContext(SigninContext);
-    const [,card] = useFlashcard(cardId);
+    const [card] = useFlashcard(cardId);
 
     if (registerActive || signinActive || !user) {
         return null;
@@ -350,8 +350,8 @@ function ZDeckBody(props: DeckEditorBodyProps) {
     )
 }
 
-function parseCardIndex(deck: Deck | undefined, cardIndexParam: string | undefined) {
-    if (deck === undefined) {
+function parseCardIndex(deck: Deck | undefined | null, cardIndexParam: string | undefined) {
+    if (!deck) {
         return [NOT_READY, NO_REDIRECT];
     }
 
@@ -382,7 +382,7 @@ export default function ZDeckEditor() {
     const {deckId, cardIndex} = useParams();
     const accountIsIncomplete = useAccountIsIncomplete();
     const user = useSessionUser();
-    const [, deck, deckError] = useDocListener(DECK_EDITOR, deckPath(deckId), DECK_LISTENER_OPTIONS);
+    const [deck, deckError] = useDocListener(DECK_EDITOR, deckPath(deckId), DECK_LISTENER_OPTIONS);
     const accessTuple = useAccessControl(DECK_EDITOR, deckId);
     const [editor, setEditor] = useState<Editor | null>(null);
 
@@ -393,9 +393,7 @@ export default function ZDeckEditor() {
     
     const canEdit = deckError ? false : checkPrivilege(EDIT, accessTuple, deckId, userUid);
 
-    useEffect(
-        () => () => disownAllLeases(api, DECK_EDITOR), [api]
-    )
+    useReleaseAllClaims(DECK_EDITOR);
     
     useEffect(() => {
         if (deckId) {
@@ -449,9 +447,9 @@ export default function ZDeckEditor() {
         )
     }
 
-    const [, access] = accessTuple;
+    const [access] = accessTuple;
 
-    if (!deckId || !access|| !user || cardIndexNum===REDIRECTING) {
+    if (!deckId || !access|| !user || cardIndexNum===REDIRECTING || !deck) {
         return null;
     }
 

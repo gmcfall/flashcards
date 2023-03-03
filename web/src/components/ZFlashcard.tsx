@@ -20,7 +20,7 @@ export default function ZFlashcard(props: FlashcardProps) {
     const theme = useTheme();
     const buttonEl = useRef<HTMLButtonElement>(null);
     const path = cardPath(cardId);
-    const [, card, cardError] = useEntity<ClientFlashcard>(path);
+    const [card, cardError] = useEntity<ClientFlashcard>(path);
     const isActive = activeCardId === cardId;
     const content = card && card.content;
 

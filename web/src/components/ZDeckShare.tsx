@@ -1,7 +1,6 @@
 import { Box, Typography } from "@mui/material";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { disownAllLeases, useEntityApi } from "@gmcfall/react-firebase-state";
 import { useAccessControl, useSessionUser } from "../hooks/customHooks";
 import { checkPrivilege } from "../model/access";
 import { deckEditRoute, deckViewRoute } from "../model/routes";
@@ -11,15 +10,9 @@ const DECK_SHARE = "DeckShare";
 
 export default function ZDeckShare() {
     const {deckId} = useParams();
-    const api = useEntityApi();
     const navigate = useNavigate();
     const accessControl = useAccessControl(DECK_SHARE, deckId);
     const user = useSessionUser();
-
-    
-    useEffect(
-        () => () => disownAllLeases(api, DECK_SHARE), [api]
-    )
 
     useEffect(() => {
 

@@ -1,5 +1,5 @@
 import { deleteField, doc, FieldPath, getFirestore, runTransaction, serverTimestamp, updateDoc, writeBatch } from "firebase/firestore";
-import { EntityApi, LeaseeApi } from "@gmcfall/react-firebase-state";
+import { DocChangeEvent, EntityApi } from "@gmcfall/react-firebase-state";
 import { isEmpty } from "../util/common";
 import generateUid from "../util/uid";
 import { alertError } from "./alert";
@@ -31,7 +31,7 @@ export function checkPrivilege(
     userUid: string | undefined
 ) {
 
-    const [,access] = accessTuple;
+    const [access] = accessTuple;
     if (
         !access ||
         access.resourceId !== resourceId || 
@@ -76,7 +76,7 @@ export function getRole(access: ClientAccess | undefined, userUid: string | unde
 
 
 export function getSharingIconType(accessTuple: AccessTuple) {
-    const [, access] = accessTuple;
+    const [access] = accessTuple;
     if (access) {
         return (
            (access.general && GLOBE) ||
@@ -270,7 +270,9 @@ export function accessPath(resourceId?: string) {
     return [ACCESS, resourceId];
 }
 
-function accessTransform(api: LeaseeApi, access: Access, path: string[]) : ClientAccess {
+function accessTransform(event: DocChangeEvent<Access>) : ClientAccess {
+    const path = event.path;
+    const access = event.data;
     return {
         ...access,
         resourceId: path[1]
@@ -282,6 +284,6 @@ export const accessOptions = {
 }
 
 export function resourceNotFound(tuple: AccessTuple) {
-    const [,,error] = tuple;
+    const [,error] = tuple;
     return Boolean(error && error.message.includes("Missing or insufficient permissions"));
 }

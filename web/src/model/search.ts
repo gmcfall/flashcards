@@ -1,4 +1,4 @@
-import { EntityApi, watchEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
+import { DocChangeEvent, EntityApi, watchEntity } from "@gmcfall/react-firebase-state";
 import { last } from "../util/common";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
@@ -30,7 +30,10 @@ export function resourceSearchPath(tag: string) {
     return [SEARCH, tag];
 }
 
-function resourceSearchTransform(api: LeaseeApi, raw: ResourceSearchServerData, path: string[]) {
+function resourceSearchTransform(event: DocChangeEvent<ResourceSearchServerData>) {
+    const api = event.api;
+    const path = event.path;
+    const raw = event.data;
     api.mutate(
         (lerni: LerniApp) => {
             const search = lerni.resourceSearch;
@@ -84,12 +87,10 @@ export async function performResourceSearch(api: EntityApi, searchString: string
             const request = createResourceSearchRequest(searchString);
         
             const tags = request.searchTags;
-        
-            const client = api.getClient();
             const resourceMap = new Map<string, ResourceRef>();
             for (const tag of tags) {
                 const path = resourceSearchPath(tag);
-                const [,data] = watchEntity(client, SEARCH, path, RESOURCE_SEARCH_OPTIONS);
+                const [data] = watchEntity(api, SEARCH, path, RESOURCE_SEARCH_OPTIONS);
                 if (data) {
                     const resources = data.resources;
                     for (const key in resources) {

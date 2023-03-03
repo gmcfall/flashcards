@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { useEffect, useState } from "react";
 import { useParams } from 'react-router-dom';
-import { disownAllLeases, useEntityApi } from '@gmcfall/react-firebase-state';
+import { useEntityApi } from '@gmcfall/react-firebase-state';
 import { useIdentity, useSessionUser } from '../hooks/customHooks';
 import { changeCollaboratorRole, createIdentityRole, injectCollaborators, removeAcess, updateGeneralRole } from '../model/access';
 import { alertError } from '../model/alert';
@@ -868,15 +868,14 @@ interface SharingDialogProps {
     deck: Deck | undefined
 }
 
-const SHARING_DIALOG = "SharingDialog";
 
 export function ZSharingDialog(props: SharingDialogProps) {
     const {open, onClose, accessTuple, deck} = props;
     const api = useEntityApi();
     const [dialogStage, setDialogStage] = useState<SharingDialogStage>(SharingDialogStage.Begin);
     const [newCollaborators, setNewCollaborators] = useState<Identity[]>([]);
-    const [, access, accessError] = accessTuple;
-    const [, owner, ownerError] = useIdentity(SHARING_DIALOG, access?.owner);
+    const [access, accessError] = accessTuple;
+    const [owner, ownerError] = useIdentity("ZSharingDialog", access?.owner);
 
     const user = useSessionUser();
     
@@ -900,11 +899,6 @@ export function ZSharingDialog(props: SharingDialogProps) {
 
         
     }, [dialogStage, deck, access, user])
-
-    
-    useEffect(
-        () => () => disownAllLeases(api, SHARING_DIALOG), [api]
-    )
 
     useEffect(() => {
         if (accessError || ownerError) {
@@ -937,7 +931,7 @@ export function ZSharingDialog(props: SharingDialogProps) {
 
             case SharingDialogStage.ShareForm:
                 return <ZSharingDialogMain
-                    owner={owner}
+                    owner={owner!}
                     deck={deck}
                     access={access}
                     onClose={onClose}

@@ -1,5 +1,5 @@
 import { deleteDoc, deleteField, doc, FieldPath, getDoc, getFirestore, setDoc, updateDoc } from "firebase/firestore";
-import { watchEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
+import { watchEntity, DocChangeEvent } from "@gmcfall/react-firebase-state";
 import { compareTimestamps } from "../util/time";
 import { deleteDeck } from "./deck";
 import firebaseApp from "./firebaseApp";
@@ -18,10 +18,9 @@ export function libraryPath(user: string | SessionUser | null | undefined) {
     return [LIBRARIES, userUid];
 }
 
-export function libraryTransform(api: LeaseeApi, raw: FirestoreLibrary, path: string[]): ClientLibrary {
-
-    const userUid = path[1];
-    const resources = libResources(api, raw, userUid);
+export function libraryTransform(event: DocChangeEvent<FirestoreLibrary>): ClientLibrary {
+    const raw = event.data;
+    const resources = libResources(event);
     const notifications = libNotifications(raw);
 
     return {
@@ -37,12 +36,15 @@ function libNotifications(raw: FirestoreLibrary) {
     return result;
 }
 
-function libResources(api: LeaseeApi, raw: FirestoreLibrary, userUid: string) {
+function libResources(event: DocChangeEvent<FirestoreLibrary>) {
+    const raw = event.data;
+    const api = event.api;
+    const leasee = event.leasee;
+    const path = event.path;    
+    const userUid = path[1];
     const idList = Object.keys(raw.resources);
     const result: PartialMetadata[] = [];
     const missing: string[] = [];
-    const client = api.getClient();
-    const leasee = api.leasee;
 
     const options = {
         transform: createMetadataTransform(userUid),
@@ -51,7 +53,7 @@ function libResources(api: LeaseeApi, raw: FirestoreLibrary, userUid: string) {
 
     idList.forEach(id => {
         const path = metadataPath(id);
-        const [, value, error] = watchEntity(client, leasee, path, options);
+        const [value, error] = watchEntity(api, leasee, path, options);
         if (error) {
             const message = error.message.toLowerCase();
             if (message.includes("missing or insufficient permissions")) {

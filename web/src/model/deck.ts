@@ -5,7 +5,7 @@ import {
     setDoc, updateDoc, where, writeBatch
 } from "firebase/firestore";
 import { NavigateFunction } from "react-router-dom";
-import { EntityApi, LeaseeApi, getEntity, watchEntity } from "@gmcfall/react-firebase-state";
+import { DocChangeEvent, EntityApi, getEntity, watchEntity } from "@gmcfall/react-firebase-state";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
@@ -58,7 +58,7 @@ export function getCardList(api: EntityApi, deck: Deck) {
     const list: ClientFlashcard[] = [];
     for (const cardRef of deck.cards) {
         const path = cardPath(cardRef.id);
-        const [, card, error] = getEntity<ClientFlashcard>(api, path);
+        const [card, error] = getEntity<ClientFlashcard>(api, path);
         if (error) {
             return null;
         }
@@ -338,10 +338,11 @@ export function deckPath(deckId: string | undefined) {
     return [DECKS, deckId];
 }
 
-function deckTransform(api: LeaseeApi, deck: Deck, path: string[]) {
+function deckTransform(event: DocChangeEvent<Deck>) {
+    const api = event.api;
+    const deck = event.data;
     const cards = deck.cards;
-    const client = api.getClient();
-    const leasee = api.leasee;
+    const leasee = event.leasee;
 
     const options = {
         transform: createCardTransform(deck.id)
@@ -349,7 +350,7 @@ function deckTransform(api: LeaseeApi, deck: Deck, path: string[]) {
 
     cards.forEach(cardRef => {
         const path = cardPath(cardRef.id);
-        watchEntity(client, leasee, path, options);
+        watchEntity(api, leasee, path, options);
     })
 
     return deck;

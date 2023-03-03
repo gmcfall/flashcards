@@ -1,4 +1,4 @@
-import { getEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
+import { Cache, DocChangeEvent, DocRemovedEvent, getEntity } from "@gmcfall/react-firebase-state";
 import { METADATA } from "./firestoreConstants";
 import { libraryPath, sortResources } from "./library";
 import { ClientLibrary, Metadata, ResourceType } from "./types";
@@ -13,11 +13,13 @@ export function metadataPath(resourceId: string | undefined) {
 
 export function createMetadataTransform(userUid: string) {
 
-    return (api: LeaseeApi, raw: Metadata, path: string[]) => {
+    return (event: DocChangeEvent<Metadata>) => {
+        const raw = event.data;
+        const api = event.api;
         const libPath = libraryPath(userUid);
         const resourceId = raw.id;
         api.mutate((cache: Object) => {
-            const [, lib] = getEntity<ClientLibrary>(cache, libPath);
+            const [lib] = getEntity<ClientLibrary>(cache as Cache, libPath);
             if (lib) {
                 const resources = lib.resources;
                 for (let i=0; i<resources.length; i++) {
@@ -35,10 +37,12 @@ export function createMetadataTransform(userUid: string) {
 }
 
 export function createRemoveMetadataCallback(userUid: string) {
-    return (api: LeaseeApi, metadata: Metadata, path: string[]) => {
+    return (event: DocRemovedEvent<Metadata>) => {
+        const api = event.api;
+        const metadata = event.data;
         const resourceId = metadata.id;
         api.mutate((cache: Object) => {
-            const [, lib] = getEntity<ClientLibrary>(cache, libraryPath(userUid));
+            const [lib] = getEntity<ClientLibrary>(cache as Cache, libraryPath(userUid));
             if (lib) {
                 const resources = lib.resources;
                 for (let i=0; i<resources.length; i++) {

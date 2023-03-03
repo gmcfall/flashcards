@@ -20,7 +20,7 @@ const sessionUserOptions: AuthOptions<SessionUser> = {
 }
 
 export function useSessionUser() {
-    const [, user] = useAuthListener(sessionUserOptions);
+    const [user] = useAuthListener(sessionUserOptions);
     return user;
 }
 

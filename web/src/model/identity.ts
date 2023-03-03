@@ -1,6 +1,6 @@
 import { getAuth } from "firebase/auth";
 import { collection, deleteDoc, doc, getDoc, getDocs, getFirestore, limit, query, setDoc, updateDoc, where } from "firebase/firestore";
-import { LeaseeApi, setAuthUser, watchEntity, ListenerOptions } from "@gmcfall/react-firebase-state";
+import { setAuthUser, watchEntity, DocListenerOptions, DocChangeEvent, UserChangeEvent } from "@gmcfall/react-firebase-state";
 import { createSessionUser } from "./auth";
 import firebaseApp from "./firebaseApp";
 import { IDENTITIES } from "./firestoreConstants";
@@ -183,7 +183,10 @@ export function identityPath(userUid: string | undefined) {
     return [IDENTITIES, userUid];
 }
 
-function identityTransform(api: LeaseeApi, identity: Identity, path: string[]) {
+function identityTransform(event: DocChangeEvent<Identity>) {
+    const api = event.api;
+    const identity = event.data;
+
     const client = api.getClient();
 
     const auth = getAuth(client.firebaseApp);
@@ -192,21 +195,23 @@ function identityTransform(api: LeaseeApi, identity: Identity, path: string[]) {
         const uid = identity.uid;
         if (uid === user.uid) {
             const sessionUser = createSessionUser(user, identity);
-            setAuthUser(client, sessionUser);
+            setAuthUser(api, sessionUser);
         }
     }
     return identity;
 }
 
 
-export function watchCurrentUserIdentity(api: LeaseeApi, userUid: string) {
-    const options: ListenerOptions<Identity> = {
+export function watchCurrentUserIdentity(event: UserChangeEvent) {
+    const api = event.api;
+    const leasee = event.leasee;
+    const userUid = event.user.uid;
+    const options: DocListenerOptions<Identity> = {
         transform: identityTransform,
         leaseOptions: {
-            cacheTime: Number.POSITIVE_INFINITY
+            abandonTime: Number.POSITIVE_INFINITY
         }
     }
     const path = identityPath(userUid);
-    const client = api.getClient();
-    return watchEntity(client, api.leasee, path, options);
+    return watchEntity(api, leasee, path, options);
 }

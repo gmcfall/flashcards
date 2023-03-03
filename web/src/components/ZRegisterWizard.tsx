@@ -1,3 +1,4 @@
+import { EntityApi, setAuthUser, useEntityApi } from '@gmcfall/react-firebase-state';
 import CloseIcon from '@mui/icons-material/Close';
 import EmailIcon from '@mui/icons-material/Email';
 import {
@@ -6,7 +7,6 @@ import {
 } from '@mui/material';
 import { AuthProvider, createUserWithEmailAndPassword, FacebookAuthProvider, getAuth, GoogleAuthProvider, sendEmailVerification, TwitterAuthProvider, updateProfile } from 'firebase/auth';
 import { useEffect, useState } from 'react';
-import { EntityApi, setAuthUser,  useEntityApi} from '@gmcfall/react-firebase-state';
 import { useSessionUser } from '../hooks/customHooks';
 import { createSessionUser, providerRegister, updateUserProfile } from '../model/auth';
 import firebaseApp from '../model/firebaseApp';
@@ -675,7 +675,7 @@ async function submitEmailRegistrationForm(
     const usernameOk = await setNewIdentity(identity);
     const lib = createFirestoreLibrary();
     await saveLibrary(user.uid, lib);
-    setAuthUser(api.getClient(), sessionUser);
+    setAuthUser(api, sessionUser);
 
     return usernameOk ? "REGISTER_EMAIL_VERIFY" : "REGISTER_EMAIL_USERNAME_RETRY";
 }

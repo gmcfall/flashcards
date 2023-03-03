@@ -1,7 +1,7 @@
 import { JSONContent } from "@tiptap/core";
 import { doc, getFirestore, runTransaction, updateDoc } from "firebase/firestore";
 import { NavigateFunction } from "react-router-dom";
-import { EntityApi, getEntity, LeaseeApi } from "@gmcfall/react-firebase-state";
+import { DocChangeEvent, EntityApi, getEntity, Cache } from "@gmcfall/react-firebase-state";
 import generateUid from "../util/uid";
 import { alertError } from "./alert";
 import { deckPath } from "./deck";
@@ -12,8 +12,8 @@ import { CardRef, ClientFlashcard, Deck, FLASHCARD, ServerFlashcard } from "./ty
 
 export function updateFlashcardContent(api: EntityApi, cardId: string, content: JSONContent) {
     const path = cardPath(cardId);
-    api.mutate((cache: Object) => {
-        const [, card] = getEntity<ClientFlashcard>(cache, path);
+    api.mutate((cache: Cache) => {
+        const [card] = getEntity<ClientFlashcard>(cache, path);
         if (card) {
             card.content = content
         } else {
@@ -23,7 +23,7 @@ export function updateFlashcardContent(api: EntityApi, cardId: string, content: 
 }
 
 export function deleteFlashcardByIndex(api: EntityApi, deckId: string, cardIndex: number) {
-    const [, deck] = getEntity<Deck>(api, deckPath(deckId));
+    const [deck] = getEntity<Deck>(api, deckPath(deckId));
     if (deck) {
         const cards = deck.cards;
         if (cardIndex<cards.length) {
@@ -78,7 +78,7 @@ export async function saveFlashcardContent(api: EntityApi, cardId: string) {
 
     try {
         const path = cardPath(cardId);
-        const [, card] = getEntity<ClientFlashcard>(api, path);
+        const [card] = getEntity<ClientFlashcard>(api, path);
         if (card) {
             const content = JSON.stringify(card.content);
             
@@ -140,8 +140,8 @@ export async function addFlashcard(api: EntityApi, navigate: NavigateFunction, d
         // could fail if the new card is not included in the local instance of the
         // deck during the next render. To address this issue, we update the
         // deck instance in the local cache now
-        api.mutate((cache: Object) => {
-            const [,deck] = getEntity<Deck>(cache, deckPath(deckId));
+        api.mutate((cache: Cache) => {
+            const [deck] = getEntity<Deck>(cache, deckPath(deckId));
             if (deck) {
                 const cards = deck.cards;
                 if (cards.length === cardIndex) {
@@ -163,7 +163,9 @@ export function cardPath(cardId: string | undefined) {
 }
 
 export function createCardTransform(deckId: string) {
-    return (api: LeaseeApi, serverCard: ServerFlashcard, path: string[]) => {
+    return (event: DocChangeEvent<ServerFlashcard>) => {
+        const path = event.path;
+        const serverCard = event.data;
         const result: ClientFlashcard = {
             type: FLASHCARD,
             id: path[1],

@@ -1,3 +1,4 @@
+import { useDocListener, useEntity, useEntityApi } from '@gmcfall/react-firebase-state';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import LocalLibraryIcon from '@mui/icons-material/LocalLibrary';
@@ -5,9 +6,8 @@ import {
     Alert, Box, Button, CircularProgress, FormControl, IconButton, List, ListItem, ListItemButton,
     ListItemText, MenuItem, Paper, Select, SelectChangeEvent, Tooltip, Typography
 } from "@mui/material";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { disownAllLeases, useDocListener, useEntity, useEntityApi } from '@gmcfall/react-firebase-state';
 import { useAccountIsIncomplete, useSessionUser } from '../hooks/customHooks';
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
 import { alertError, alertSuccess } from '../model/alert';
@@ -26,8 +26,6 @@ import ZAlert from "./ZAlert";
 import ZAuthTools from './ZAuthTools';
 import { RegistrationContext } from './ZRegistrationProvider';
 import { SigninContext } from './ZSigninProvider';
-
-const LIBRARY = "library";
 
 function ZLibraryHeader() {
 
@@ -137,7 +135,7 @@ interface AccessNotificationProps {
 function ZAccessNotification(props: AccessNotificationProps) {
     const {userUid, notification} = props;
 
-    const [, meta] = useEntity<Metadata>(metadataPath(notification.resourceId));
+    const [meta] = useEntity<Metadata>(metadataPath(notification.resourceId));
 
 
     if (notification.hasOwnProperty("requester")) {
@@ -164,7 +162,7 @@ function ZAccessNotification(props: AccessNotificationProps) {
 interface AccessResponseProps {
     userUid: string;
     notification: AccessResponse;
-    metadata?: PartialMetadata;
+    metadata?: PartialMetadata | null;
 }
 
 function ZAccessResponse(props: AccessResponseProps) {
@@ -215,7 +213,7 @@ function ZAccessResponse(props: AccessResponseProps) {
 
 interface AccessRequestProps {
     notification: AccessRequest;
-    metadata?: Metadata;
+    metadata?: Metadata | null;
 }
 
 function ZAccessRequest(props: AccessRequestProps) {
@@ -316,7 +314,7 @@ function ZAccessRequest(props: AccessRequestProps) {
    
 }
 
-function resourceName(metadata?: PartialMetadata) {
+function resourceName(metadata?: PartialMetadata | null) {
     return metadata ? metadata.name : "Loading...";
 }
 
@@ -375,7 +373,7 @@ function ZLibraryContent() {
         transform: libraryTransform
     }
 
-    const [, lib, libError] = useDocListener(LIBRARY, path, options);
+    const [lib, libError] = useDocListener("ZLibraryContent", path, options);
 
     if (libError) {
         alertError(api, "An error occurred while loading your library", libError);
@@ -452,12 +450,6 @@ function ZLibraryContent() {
 
 
 export default function ZLibrary() {
-
-    const api = useEntityApi();
-
-    useEffect(
-        () => () => disownAllLeases(api, LIBRARY), [api]
-    )
 
     return (
         <Box sx={{display: "flex", flexDirection: "column"}}>

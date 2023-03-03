@@ -1,6 +1,6 @@
 import { AuthProvider, deleteUser, EmailAuthProvider, getAuth, reauthenticateWithCredential, reauthenticateWithPopup, sendEmailVerification, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile, User, UserCredential } from "firebase/auth";
 import { doc, getDoc, getFirestore } from "firebase/firestore";
-import { EntityApi, LeaseeApi, setAuthUser } from "@gmcfall/react-firebase-state";
+import { EntityApi, setAuthUser, UserChangeEvent } from "@gmcfall/react-firebase-state";
 import { alertError, alertInfo, alertSuccess } from "./alert";
 import { deleteOwnedDecks } from "./deck";
 import firebaseApp from "./firebaseApp";
@@ -106,7 +106,7 @@ export async function providerRegister(api: EntityApi, provider: AuthProvider) {
 
     const identity = resolved[1];
     const sessionUser = createSessionUser(user, identity);
-    setAuthUser(api.getClient(), sessionUser);
+    setAuthUser(api, sessionUser);
 }
 
 
@@ -133,7 +133,7 @@ export async function emailPasswordSignIn(api: EntityApi, email: string, passwor
         return IDENTITY_NOT_FOUND;
     }
     const sessionUser = createSessionUser(user, identity);
-    setAuthUser(api.getClient(), sessionUser);
+    setAuthUser(api, sessionUser);
     alertSuccess(api, "Welcome back!");
     return SIGNIN_OK;
 }
@@ -162,7 +162,7 @@ export async function providerSignIn(api: EntityApi, provider: AuthProvider) : P
         }
         const identity = idDoc.data() as Identity;
         const sessionUser = createSessionUser(user, identity);
-        setAuthUser(api.getClient(), sessionUser);
+        setAuthUser(api, sessionUser);
         alertSuccess(api, "Welcome back!");
         return SIGNIN_OK;
     } catch (error) {
@@ -218,8 +218,9 @@ export function stopEmailVerificationListener() {
     }
 }
 
-export function userTransform(api: LeaseeApi, user: User) {
-    const [, identity] = watchCurrentUserIdentity(api, user.uid);
+export function userTransform(event: UserChangeEvent) {
+    const user = event.user;
+    const [identity] = watchCurrentUserIdentity(event);
     if (identity) {
         const sessionUser = createSessionUser(user, identity);
         return sessionUser;
