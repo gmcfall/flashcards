@@ -3,6 +3,7 @@ import { JSONContent } from "@tiptap/core";
 import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { FieldValue } from "firebase/firestore";
 import { EntityTuple } from "@gmcfall/react-firebase-state";
+import { ParsedUrlQuery } from "querystring";
 
 export type { JSONContent } from "@tiptap/core";
 
@@ -508,5 +509,10 @@ export interface LerniApp {
 
     /** The request and reponse for the current search request */
     resourceSearch?: ResourceSearch;
+}
+
+export interface DeckQuery extends ParsedUrlQuery {
+    deckId: string;
+    cardIndexSlug: undefined | string[];
 }
 

@@ -1,32 +1,31 @@
 import { Box, Button, CircularProgress } from "@mui/material";
 import { Editor, EditorContent, useEditor } from '@tiptap/react';
 import { useCallback, useContext, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { useDocListener, useEntityApi, useReleaseAllClaims } from "@gmcfall/react-firebase-state";
-import { useAccessControl, useAccountIsIncomplete, useFlashcard, useSessionUser } from "../hooks/customHooks";
-import { checkPrivilege, resourceNotFound } from "../model/access";
-import { deckPath, DECK_LISTENER_OPTIONS } from "../model/deck";
-import { addFlashcard, deleteFlashcardByIndex, saveFlashcardContent, updateFlashcardContent } from "../model/flashcard";
-import { userToIdentity } from "../model/identity";
-import { deckEditRoute } from "../model/routes";
-import { ClientFlashcard, Deck, EDIT } from "../model/types";
-import { TIP_TAP_EXTENSIONS } from "./deckEditorConstants";
-import { CARD_CONTAINER, DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "./lerniConstants";
-import LerniTheme from "./lerniTheme";
-import ZAccountIncomplete from "./ZAccountIncomplete";
-import ZDeckEditorHeader from "./ZDeckEditorHeader";
-import ZFlashcard from "./ZFlashcard";
-import ZNeedAccess from "./ZNeedAccess";
-import ZNotFound from "./ZNotFound";
-import { RegistrationContext } from "./ZRegistrationProvider";
-import { SigninContext } from "./ZSigninProvider";
+import { useAccessControl, useAccountIsIncomplete, useFlashcard, useSessionUser } from "../../../../hooks/customHooks";
+import { checkPrivilege, resourceNotFound } from "../../../../model/access";
+import { deckPath, DECK_LISTENER_OPTIONS } from "../../../../model/deck";
+import { addFlashcard, deleteFlashcardByIndex, saveFlashcardContent, updateFlashcardContent } from "../../../../model/flashcard";
+import { userToIdentity } from "../../../../model/identity";
+import { deckEditRoute } from "../../../../model/routes";
+import { ClientFlashcard, Deck, DeckQuery, EDIT } from "../../../../model/types";
+import { DECK_EDITOR, TIP_TAP_EXTENSIONS } from "../../../../components/deckEditorConstants";
+import { CARD_CONTAINER, DECK_EDITOR_TIPTAP, DECK_NAME_INPUT } from "../../../../components/lerniConstants";
+import LerniTheme from "../../../../components/lerniTheme";
+import ZAccountIncomplete from "../../../../components/ZAccountIncomplete";
+import ZDeckEditorHeader from "../../../../components/ZDeckEditorHeader";
+import ZFlashcard from "../../../../components/ZFlashcard";
+import ZNeedAccess from "../../../../components/ZNeedAccess";
+import ZNotFound from "../../../../components/ZNotFound";
+import { RegistrationContext } from "../../../../components/ZRegistrationProvider";
+import { SigninContext } from "../../../../components/ZSigninProvider";
+import { useRouter } from "next/router";
 
 const HEIGHT_WIDTH_RATIO = 0.6;
 const MAX_FONT_SIZE = 200; // %
 const MAX_WIDTH = 1500;
 const MAX_HEIGHT = HEIGHT_WIDTH_RATIO*MAX_WIDTH;
 const MARGIN = 40;
-export const DECK_EDITOR = 'DeckEditor';
 
 const NO_CARDS = -1;
 const NOT_READY = -2;
@@ -232,7 +231,7 @@ interface DeckEditorContentProps {
 function ZDeckEditorContent(props: DeckEditorContentProps) {
 
     const {deck, cardId, setEditor} = props;
-    const navigate = useNavigate();
+    const router = useRouter();
     const api = useEntityApi();
     const user = useSessionUser();
     const [registerActive] = useContext(RegistrationContext);
@@ -252,7 +251,7 @@ function ZDeckEditorContent(props: DeckEditorContentProps) {
 
     function handleClick() {
         if (deck) {
-            addFlashcard(api, navigate, deck.id);
+            addFlashcard(api, router, deck.id);
         }
     }
     if (deck.cards.length===0) {
@@ -377,9 +376,10 @@ function parseCardIndex(deck: Deck | undefined | null, cardIndexParam: string | 
 }
 
 export default function ZDeckEditor() {
-    const navigate = useNavigate();
+    const router = useRouter();
     const api = useEntityApi();
-    const {deckId, cardIndex} = useParams();
+    const {deckId, cardIndexSlug} = router.query as DeckQuery;
+    const cardIndex = cardIndexSlug?.[0];
     const accountIsIncomplete = useAccountIsIncomplete();
     const user = useSessionUser();
     const [deck, deckError] = useDocListener(DECK_EDITOR, deckPath(deckId), DECK_LISTENER_OPTIONS);
@@ -398,13 +398,13 @@ export default function ZDeckEditor() {
     useEffect(() => {
         if (deckId) {
             if (cardRedirect === NO_CARDS) {
-                navigate(deckEditRoute(deckId))
+                router.push(deckEditRoute(deckId))
             } else if (cardRedirect>=0) {
-                navigate(deckEditRoute(deckId, cardRedirect))
+                router.push(deckEditRoute(deckId, cardRedirect))
             }
         }
 
-    }, [navigate, deckId, cardRedirect])
+    }, [router, deckId, cardRedirect])
 
     useEffect(() => {
         const handleKeyup = (!deckId || cardIndexNum<0) ? undefined : (

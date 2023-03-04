@@ -7,7 +7,6 @@ import {
     ListItemText, MenuItem, Paper, Select, SelectChangeEvent, Tooltip, Typography
 } from "@mui/material";
 import { useContext, useState } from "react";
-import { useNavigate } from 'react-router-dom';
 import { useAccountIsIncomplete, useSessionUser } from '../hooks/customHooks';
 import { createIdentityRole, injectCollaborators, persistAccessResponse } from '../model/access';
 import { alertError, alertSuccess } from '../model/alert';
@@ -18,24 +17,25 @@ import { deckEditRoute } from '../model/routes';
 import {
     AccessNotification, AccessRequest, AccessResponse, ClientLibrary, EDITOR, Metadata, PartialMetadata, Role, RoleName, VIEWER
 } from '../model/types';
-import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
-import ZAccessDeniedAlert from './ZAccessDeniedAlert';
-import { ZAccessDeniedMessage } from './ZAccessDeniedMessage';
-import ZAccountIncomplete from './ZAccountIncomplete';
-import ZAlert from "./ZAlert";
-import ZAuthTools from './ZAuthTools';
-import { RegistrationContext } from './ZRegistrationProvider';
-import { SigninContext } from './ZSigninProvider';
+import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from '../components/header';
+import ZAccessDeniedAlert from '../components/ZAccessDeniedAlert';
+import { ZAccessDeniedMessage } from '../components/ZAccessDeniedMessage';
+import ZAccountIncomplete from '../components/ZAccountIncomplete';
+import ZAlert from "../components/ZAlert";
+import ZAuthTools from '../components/ZAuthTools';
+import { RegistrationContext } from '../components/ZRegistrationProvider';
+import { SigninContext } from '../components/ZSigninProvider';
+import { useRouter } from 'next/router';
 
 function ZLibraryHeader() {
 
     const api = useEntityApi();
     const user = useSessionUser();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     function handleNewDeckButtonClick() {
         if (user) {
-            addDeck(api, navigate, user);
+            addDeck(api, router, user);
         } else {
             alertError(api, "You must be signed in to create a new Deck");
         }
@@ -70,7 +70,7 @@ interface LibResourceProps {
 function ZLibResource(props: LibResourceProps) {
     const {resource} = props;
     const api = useEntityApi();
-    const navigate = useNavigate();
+    const router = useRouter();
     const user = useSessionUser();
 
     if (!user) {
@@ -80,7 +80,7 @@ function ZLibResource(props: LibResourceProps) {
     const userUid = user.uid;
 
     function handleNavigate() {
-        navigate(deckEditRoute(resource.id));
+        router.push(deckEditRoute(resource.id));
     }
 
     function handleDelete() {
@@ -365,7 +365,7 @@ function ZLibraryContent() {
     const [registrationActive] = useContext(RegistrationContext);
     const [signinActive] = useContext(SigninContext);
     const accountIsIncomplete = useAccountIsIncomplete();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const path = libraryPath(user);
 
@@ -411,7 +411,7 @@ function ZLibraryContent() {
 
     function handleNewDeck() {
         if (user) {
-            addDeck(api, navigate, user);
+            addDeck(api, router, user);
         }
     }
     if (lib.resources.length===0) {

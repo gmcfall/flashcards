@@ -1,12 +1,12 @@
 import { useTheme } from "@mui/material";
 import { generateHTML } from "@tiptap/html";
 import { useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { useEntity } from "@gmcfall/react-firebase-state";
 import { cardPath } from "../model/flashcard";
 import { deckEditRoute } from "../model/routes";
 import { ClientFlashcard } from "../model/types";
 import { TIP_TAP_EXTENSIONS } from "./deckEditorConstants";
+import { useRouter } from "next/router";
 
 interface FlashcardProps {
     activeCardId: string | undefined;
@@ -16,7 +16,7 @@ interface FlashcardProps {
 }
 export default function ZFlashcard(props: FlashcardProps) {
     const {activeCardId, deckId, cardId, cardIndex} = props;
-    const navigate = useNavigate();
+    const router = useRouter();
     const theme = useTheme();
     const buttonEl = useRef<HTMLButtonElement>(null);
     const path = cardPath(cardId);
@@ -51,7 +51,7 @@ export default function ZFlashcard(props: FlashcardProps) {
             // if (content) {
             //     editor.commands.setContent(content);
             // }
-            navigate(deckEditRoute(deckId, cardIndex));
+            router.push(deckEditRoute(deckId, cardIndex));
         }
     }
 

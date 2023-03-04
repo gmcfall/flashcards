@@ -1,11 +1,11 @@
 // This file provides features that span multiple parts of the app
 
+import { DocChangeEvent, EntityApi, getEntity, watchEntity } from "@gmcfall/react-firebase-state";
 import {
     collection, deleteField, doc, FieldPath, Firestore, getDoc, getDocs, getFirestore, query, runTransaction,
     setDoc, updateDoc, where, writeBatch
 } from "firebase/firestore";
-import { NavigateFunction } from "react-router-dom";
-import { DocChangeEvent, EntityApi, getEntity, watchEntity } from "@gmcfall/react-firebase-state";
+import { NextRouter } from "next/router";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
@@ -28,7 +28,7 @@ export function createDeck() : Deck {
     }
 }
 
-export async function addDeck(api: EntityApi, navigate: NavigateFunction, user: SessionUser) {
+export async function addDeck(api: EntityApi, router: NextRouter, user: SessionUser) {
     try {
         const deck = createDeck();
         const card = createServerFlashCard(deck.id);
@@ -37,7 +37,7 @@ export async function addDeck(api: EntityApi, navigate: NavigateFunction, user: 
 
         await saveDeck(user.uid, deck, card);
 
-        navigate(deckEditRoute(deck.id));
+        router.push(deckEditRoute(deck.id));
     } catch (error) {
         alertError(api, "An error occurred while saving the new Deck", error);
     }

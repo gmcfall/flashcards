@@ -7,7 +7,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-html, body {
+html, body, #__next {
   height: 100%;
 }
 

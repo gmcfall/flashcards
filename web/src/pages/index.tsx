@@ -3,12 +3,12 @@ import { Box, Button, Link as Anchor, Typography } from "@mui/material";
 import Link from 'next/link';
 import { useAccountIsIncomplete, useSessionUser } from '../hooks/customHooks';
 import { libraryRoute } from '../model/routes';
-import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from './header';
-import LerniTheme from './lerniTheme';
-import ZAccountIncomplete from './ZAccountIncomplete';
-import ZAlert from './ZAlert';
-import ZAuthTools from './ZAuthTools';
-import ZResourceSearchTool from './ZResourceSearchTool';
+import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from '../components/header';
+import LerniTheme from '../components/lerniTheme';
+import ZAccountIncomplete from '../components/ZAccountIncomplete';
+import ZAlert from '../components/ZAlert';
+import ZAuthTools from '../components/ZAuthTools';
+import ZResourceSearchTool from '../components/ZResourceSearchTool';
 
 
 function ZHomeHeader() {
@@ -58,7 +58,9 @@ export default function ZHome() {
     return (
         <Box id="homepage" sx={{display: "flex", flexDirection: "column", alignItems: "center", height: "100%"}}>
             <ZHomeHeader/>
-            <Box id="homeContent" sx={{display: "flex", flexDirection: "column", marginTop: '2em', flexGrow: 1}}>
+            <Box id="homeContent" 
+                sx={{display: "flex", flexDirection: "column", marginTop: '2em'}}
+            >
                 <Typography variant="body1">
                     Use the search to find flashcard decks, or create a new deck. 
                 </Typography>
