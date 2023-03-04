@@ -9,17 +9,17 @@ import {
     FormHelperText, IconButton, InputBase, Menu, MenuItem, Select, SelectChangeEvent, TextField, Tooltip, Typography
 } from "@mui/material";
 import { useEffect, useState } from "react";
-import { useParams } from 'react-router-dom';
 import { useEntityApi } from '@gmcfall/react-firebase-state';
 import { useIdentity, useSessionUser } from '../hooks/customHooks';
 import { changeCollaboratorRole, createIdentityRole, injectCollaborators, removeAcess, updateGeneralRole } from '../model/access';
 import { alertError } from '../model/alert';
 import { updateDeckName } from '../model/deck';
 import { createIdentity, getIdentityByUsername } from '../model/identity';
-import { Access, AccessTuple, ANONYMOUS, Deck, EDITOR, Identity, IdentityRole, Role, RoleName, VIEWER } from "../model/types";
+import { Access, AccessTuple, ANONYMOUS, Deck, DeckQuery, EDITOR, Identity, IdentityRole, Role, RoleName, VIEWER } from "../model/types";
 import { toUsername } from './lerniCommon';
 import LerniTheme from './lerniTheme';
 import { invalidDeckName } from "./ZDeckEditorHeader";
+import { useRouter } from 'next/router';
 
 
 const SectionHeadingStyle = {
@@ -209,7 +209,8 @@ export function ZSharingDialogName(props: SharingDialogNameProps) {
     const {oldName, onNextState} = props;
     
     const api = useEntityApi();
-    const {deckId} = useParams();
+    const router = useRouter();
+    const {deckId} = router.query as DeckQuery;
     const [nameError, setNameError] = useState<boolean>(false);
     const [newName, setNewName] = useState<string>(oldName);
     const [wasSubmitted, setWasSubmitted] = useState<boolean>(false)

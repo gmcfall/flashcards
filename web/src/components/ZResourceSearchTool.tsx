@@ -1,8 +1,8 @@
+import { useData, useEntityApi } from '@gmcfall/react-firebase-state';
 import SearchIcon from '@mui/icons-material/Search';
 import { Box, InputAdornment, List, ListItemButton, ListItemText, Popover, TextField } from "@mui/material";
+import { useRouter } from 'next/router';
 import { useRef } from "react";
-import { useNavigate } from 'react-router-dom';
-import { useData, useEntityApi } from '@gmcfall/react-firebase-state';
 import { deckViewRoute } from '../model/routes';
 import { endResourceSearch, performResourceSearch, selectResourceSearch } from "../model/search";
 
@@ -12,9 +12,9 @@ const SearchResultResourceClassName = "SearchResultResource";
 export default function ZResourceSearchTool() {
 
     const api = useEntityApi();
-    const navigate = useNavigate();
     const search = useData(selectResourceSearch);
     const inputEl = useRef<HTMLInputElement>(null);
+    const router = useRouter();
     const searchText = search.request.searchString;
     const response = search.response;
 
@@ -27,7 +27,7 @@ export default function ZResourceSearchTool() {
 
     function handleResourceClick(resourceId: string) {
         endResourceSearch(api);
-        navigate(deckViewRoute(resourceId));
+        router.push(deckViewRoute(resourceId));
     }
 
     function handleBlur(e: React.FocusEvent) {

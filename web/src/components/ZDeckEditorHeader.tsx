@@ -9,35 +9,35 @@ import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import PublicIcon from '@mui/icons-material/Public';
 import PublishIcon from '@mui/icons-material/Publish';
+import { useRouter } from 'next/router';
 import {
     Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, TextField, Tooltip
 } from "@mui/material";
 import { Editor } from '@tiptap/core';
 import { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { useEntityApi } from '@gmcfall/react-firebase-state';
 import { useAccessControl, useSessionUser } from '../hooks/customHooks';
 import { checkPrivilege, getSharingIconType } from '../model/access';
 import { getCardList, publishDeck, updateDeckName } from '../model/deck';
 import { addFlashcard } from '../model/flashcard';
 import { libraryRoute } from "../model/routes";
-import { AccessTuple, ClientFlashcard, Deck, GLOBE, LOCK_OPEN, SHARE, SharingIconType, UNTITLED_DECK } from '../model/types';
+import { AccessTuple, ClientFlashcard, Deck, DeckQuery, GLOBE, LOCK_OPEN, SHARE, SharingIconType, UNTITLED_DECK } from '../model/types';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from "./header";
 import ZAlert from "./ZAlert";
 import ZAuthTools from "./ZAuthTools";
-import { DECK_EDITOR } from './ZDeckEditor';
+import { DECK_EDITOR } from './deckEditorConstants';
 import ZDeckNameInput from "./ZDeckNameInput";
 import { ZSharingDialog } from './ZSharingDialog';
 
 function ZAddCardButton() {
 
-    const {deckId} = useParams();
+    const router = useRouter();
+    const {deckId} = router.query as DeckQuery;
     const api = useEntityApi();
-    const navigate = useNavigate();
 
     function handleClick() {
         if (deckId) {
-            addFlashcard(api, navigate, deckId);
+            addFlashcard(api, router, deckId);
         }
     }
     return (
@@ -54,10 +54,10 @@ function ZAddCardButton() {
 }
 
 function ZLibraryButton() {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     function handleClick() {
-        navigate(libraryRoute())
+        router.push(libraryRoute())
     }
 
     return (
@@ -270,7 +270,8 @@ interface ShareButtonProps {
 
 function ZShareButton(props: ShareButtonProps) {
     const {accessTuple, deck} = props;
-    const {deckId} = useParams();
+    const router = useRouter();
+    const {deckId} = router.query as DeckQuery;
     const [open, setOpen] = useState<boolean>(false);
     const shareIconType = getSharingIconType(accessTuple);
     const accessControl = useAccessControl(DECK_EDITOR, deckId);

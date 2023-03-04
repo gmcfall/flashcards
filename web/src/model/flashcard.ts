@@ -1,7 +1,7 @@
+import { Cache, DocChangeEvent, EntityApi, getEntity } from "@gmcfall/react-firebase-state";
 import { JSONContent } from "@tiptap/core";
 import { doc, getFirestore, runTransaction, updateDoc } from "firebase/firestore";
-import { NavigateFunction } from "react-router-dom";
-import { DocChangeEvent, EntityApi, getEntity, Cache } from "@gmcfall/react-firebase-state";
+import { NextRouter } from "next/router";
 import generateUid from "../util/uid";
 import { alertError } from "./alert";
 import { deckPath } from "./deck";
@@ -130,7 +130,7 @@ async function saveFlashcard(card: ServerFlashcard) {
 
 }
 
-export async function addFlashcard(api: EntityApi, navigate: NavigateFunction, deckId: string) {
+export async function addFlashcard(api: EntityApi, router: NextRouter, deckId: string) {
 
     try {
         const card = createServerFlashCard(deckId);
@@ -152,7 +152,7 @@ export async function addFlashcard(api: EntityApi, navigate: NavigateFunction, d
         })
 
         const newRoute = deckEditRoute(deckId, cardIndex);
-        navigate(newRoute);
+        router.push(newRoute);
     } catch (error) {
         alertError(api, "An error occurred while saving the new Flashcard")
     }
