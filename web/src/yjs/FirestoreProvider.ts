@@ -17,21 +17,19 @@ interface DocUpdate {
  * 
  * Each update is stored in a Firestore document at:
  * ```
- * {collectionName}/{docId}/updates/{updateId}
+ * {...path}/updates/{updateId}
  * ```
  * The `updateId` has the form `{ydoc.clientID}-{clock}` where
  * `clock` is incremented with each new update that is received. The
- * `ydoc.clientID` and `clock` values are expressed as hex numbers.
- * 
+ * `ydoc.clientID` and `clock` values are expressed as hex numbers. 
  * ```
  */
 export default class FirestoreProvider extends Observable<any> {
     readonly doc: Y.Doc;
     private firebaseApp: FirebaseApp;
-    private collectionName: string;
-    private docId: string;
     private unsubscribe?: Unsubscribe;
     private clock = 0;
+    private path: string[];
 
     private cache?: Uint8Array;
     private maxUpdatePause = 600;
@@ -40,12 +38,11 @@ export default class FirestoreProvider extends Observable<any> {
     private timeoutId?: ReturnType<typeof setTimeout>;
     private updateHandler: (update: Uint8Array, origin: any) => void;
 
-    constructor(firebaseApp: FirebaseApp, ydoc: Y.Doc, collectionName: string, docId: string) {
+    constructor(firebaseApp: FirebaseApp, ydoc: Y.Doc, path: string[]) {
         super();
         this.firebaseApp = firebaseApp;
+        this.path = path;
         this.doc = ydoc;
-        this.collectionName = collectionName;
-        this.docId = docId;
 
         const db = getFirestore(firebaseApp);
         const self = this;
@@ -87,7 +84,10 @@ export default class FirestoreProvider extends Observable<any> {
 
 
         // Start a listener for document updates
-        const q = query(collection(db, collectionName));
+        const first = path[0];
+        const rest = [...path, UPDATES];
+        rest.splice(0, 1);
+        const q = query(collection(db, first, ...rest));
         this.unsubscribe = onSnapshot(q, (snapshot) => {
             snapshot.forEach( document => {
                 const data = document.data() as DocUpdate;
@@ -131,7 +131,11 @@ export default class FirestoreProvider extends Observable<any> {
             const updateId = this.doc.clientID.toString(16) + "-" + clock.toString(16);
 
             const db = getFirestore(this.firebaseApp);
-            const docRef = doc(db, this.collectionName, this.docId, UPDATES, updateId);
+            const path = this.path;
+            const first = path[0];
+            const rest = [...path, UPDATES, updateId];
+            rest.splice(0, 1);
+            const docRef = doc(db, first, ...rest);
             setDoc(docRef, data);
         }
     }
