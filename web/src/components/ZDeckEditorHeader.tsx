@@ -25,7 +25,7 @@ import { AccessTuple, ClientFlashcard, Deck, DeckQuery, GLOBE, LOCK_OPEN, SHARE,
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from "./header";
 import ZAlert from "./ZAlert";
 import ZAuthTools from "./ZAuthTools";
-import { DECK_EDITOR } from './deckEditorConstants';
+import { DECK_EDITOR } from './deckEditorShared';
 import ZDeckNameInput from "./ZDeckNameInput";
 import { ZSharingDialog } from './ZSharingDialog';
 

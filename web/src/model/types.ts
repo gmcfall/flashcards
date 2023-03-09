@@ -4,6 +4,8 @@ import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "f
 import { FieldValue } from "firebase/firestore";
 import { EntityTuple } from "@gmcfall/react-firebase-state";
 import { ParsedUrlQuery } from "querystring";
+import { Editor } from "@tiptap/react";
+import { WebrtcProvider } from "y-webrtc";
 
 export type { JSONContent } from "@tiptap/core";
 
@@ -52,7 +54,8 @@ export interface FlashcardBase {
     id: string,
 
     /** The id of the deck that owns this card */
-    access: string,
+    access: string
+
 }
 
 export interface ServerFlashcard extends FlashcardBase {
@@ -124,6 +127,13 @@ export interface Deck {
     cards: CardRef[];
 
     isPublished: boolean;
+
+    /**
+     * The `uid` of the user responsible for persisting changes to the Deck.
+     * This is a transient value that may be set when `ZDeckEditor` mounts
+     * and unset when `ZDeckEditor` unmounts.
+     */
+    writer?: string;
 }
 
 /**
@@ -515,4 +525,11 @@ export interface DeckQuery extends ParsedUrlQuery {
     deckId: string;
     cardIndexSlug: undefined | string[];
 }
+
+
+export interface EditorProvider {
+    editor: Editor;
+    provider: WebrtcProvider;
+}
+export type TiptapMap = Record<string, undefined | EditorProvider>;
 

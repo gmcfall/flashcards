@@ -1,12 +1,14 @@
-import { Cache, DocChangeEvent, EntityApi, getEntity } from "@gmcfall/react-firebase-state";
+import { Cache, DocChangeEvent, DocRemovedEvent, EntityApi, getEntity } from "@gmcfall/react-firebase-state";
 import { JSONContent } from "@tiptap/core";
-import { doc, getFirestore, runTransaction, updateDoc } from "firebase/firestore";
+import { doc, getFirestore, runTransaction } from "firebase/firestore";
 import { NextRouter } from "next/router";
+import { findUndefined, jsonClone } from "../util/common";
 import generateUid from "../util/uid";
 import { alertError } from "./alert";
+import { hasCardWriter, stopCardWriter } from "./CardWriter";
 import { deckPath } from "./deck";
 import firebaseApp from "./firebaseApp";
-import { CardField, CARDS, DeckField, DECKS } from "./firestoreConstants";
+import { CARDS, DeckField, DECKS } from "./firestoreConstants";
 import { deckEditRoute } from "./routes";
 import { CardRef, ClientFlashcard, Deck, FLASHCARD, ServerFlashcard } from "./types";
 
@@ -58,6 +60,10 @@ async function deleteFlashcard(deckId: string, cardId: string) {
 
 }
 
+export function flashcardRoomName(cardId: string) {
+    return "flashcard-" + cardId;
+}
+
 export function createServerFlashCard(access: string) : ServerFlashcard {
 
     return {
@@ -68,32 +74,6 @@ export function createServerFlashCard(access: string) : ServerFlashcard {
     }
 }
 
-let lastSavedId = '';
-let lastSavedContent = '';
-export async function saveFlashcardContent(api: EntityApi, cardId: string) {
-
-    if (lastSavedId && lastSavedId !== cardId) {
-        saveFlashcardContent(api, lastSavedId);
-    }
-
-    try {
-        const path = cardPath(cardId);
-        const [card] = getEntity<ClientFlashcard>(api, path);
-        if (card) {
-            const content = JSON.stringify(card.content);
-            
-            if (lastSavedId !== card.id || lastSavedContent !== content) {
-                lastSavedId = card.id;
-                lastSavedContent = content;
-                const db = getFirestore(firebaseApp);
-                const cardRef = doc(db, CARDS, card.id);
-                await updateDoc(cardRef, CardField.content, content);
-            }
-        }
-    } catch (error) {
-        alertError(api, "An error occurred while saving flashcard edits", error);
-    }
-}
 
 export function createFlashcardRef(cardId: string) : CardRef {
     return {
@@ -101,7 +81,6 @@ export function createFlashcardRef(cardId: string) : CardRef {
         id: cardId
     }
 }
-
 
 async function saveFlashcard(card: ServerFlashcard) {
 
@@ -166,6 +145,14 @@ export function createCardTransform(deckId: string) {
     return (event: DocChangeEvent<ServerFlashcard>) => {
         const path = event.path;
         const serverCard = event.data;
+        if (hasCardWriter(serverCard.id)) {
+            // The 
+            const api = event.api;
+            const clientCard = getEntity<ClientFlashcard>(api, path);
+            if (clientCard) {
+                return clientCard;
+            }
+        }
         const result: ClientFlashcard = {
             type: FLASHCARD,
             id: path[1],
@@ -174,4 +161,9 @@ export function createCardTransform(deckId: string) {
         }
         return result;
     };
+}
+
+export function handleCardRemoved(event: DocRemovedEvent<ServerFlashcard>) {
+    const card = event.data;
+    stopCardWriter(card.id);
 }

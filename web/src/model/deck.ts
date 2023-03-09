@@ -13,7 +13,7 @@ import { enableGeneralViewer } from "./access";
 import { alertError, alertInfo } from "./alert";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DeckField, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
-import { cardPath, createCardTransform, createFlashcardRef, createServerFlashCard } from "./flashcard";
+import { cardPath, createCardTransform, createFlashcardRef, createServerFlashCard, handleCardRemoved } from "./flashcard";
 import { createMetadata } from "./metadata";
 import { deckEditRoute } from "./routes";
 import { Access, ClientFlashcard, DECK, Deck, JSONContent, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SessionUser, Tags, UNTITLED_DECK } from "./types";
@@ -345,7 +345,8 @@ function deckTransform(event: DocChangeEvent<Deck>) {
     const leasee = event.leasee;
 
     const options = {
-        transform: createCardTransform(deck.id)
+        transform: createCardTransform(deck.id),
+        onRemoved: handleCardRemoved
     }
 
     cards.forEach(cardRef => {
@@ -378,7 +379,29 @@ export async function updateDeckName(api: EntityApi, deckId: string, name: strin
     } catch (error) {
         alertError(api, "An error occurred while saving the deck name", error);
     }
-    
+}
 
-  
+export async function setDeckWriter(api: EntityApi, deckId: string, writer: string) {
+    const db = getFirestore(api.firebaseApp);
+
+    const deckRef = doc(db, DECKS, deckId);
+    try {
+        await updateDoc(deckRef, {writer});
+    } catch (error) {
+        alertError(api, "An error occurred while loading the deck", new Error(
+            "Failed to set deck writer", {cause: error}
+        ));
+    }
+}
+
+export async function removeDeckWriter(api: EntityApi, deckId: string) {
+    const db = getFirestore(api.firebaseApp);
+    const deckRef = doc(db, DECKS, deckId);
+    try {
+        await updateDoc(deckRef, {writer: deleteField()});
+    } catch (error) {
+        alertError(api, "An error occurred while closing the deck", new Error(
+            "Failed to remove deck writer", {cause: error}
+        ));
+    }
 }

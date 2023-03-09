@@ -6,8 +6,8 @@ export function selectAlert(lerni: LerniApp) {
     return lerni.alertData;
 }
 
-export function alertError(api: EntityApi, message: string, error?: unknown) {
-    api.mutate((lerni: LerniApp) => setError(lerni, message, error))
+export function alertError(api: EntityApi, message: string, error?: unknown, context?: any) {
+    api.mutate((lerni: LerniApp) => setError(lerni, message, error, context))
 }
 
 export function alertInfo(api: EntityApi, message: string) {
@@ -27,9 +27,13 @@ export function alertSuccess(api: EntityApi, message: string) {
     )
 }
 
-export function setError(lerni: LerniApp, message: string, error: unknown) {
+export function setError(lerni: LerniApp, message: string, error?: unknown, context?: any) {
 
-    console.log(message);
+    if (context) {
+        console.log(message, context);
+    } else {
+        console.log(message);
+    }
     if (error instanceof Error) {
         console.log("cause:", error.message);
     }
