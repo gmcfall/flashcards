@@ -1,4 +1,5 @@
 
+import { useEntityApi } from '@gmcfall/react-firebase-state';
 import AddIcon from '@mui/icons-material/Add';
 import FormatBoldIcon from '@mui/icons-material/FormatBold';
 import FormatItalicIcon from '@mui/icons-material/FormatItalic';
@@ -9,23 +10,22 @@ import LockIcon from '@mui/icons-material/Lock';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import PublicIcon from '@mui/icons-material/Public';
 import PublishIcon from '@mui/icons-material/Publish';
-import { useRouter } from 'next/router';
 import {
     Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, IconButton, TextField, Tooltip
 } from "@mui/material";
 import { Editor } from '@tiptap/core';
+import { useRouter } from 'next/router';
 import { useState } from "react";
-import { useEntityApi } from '@gmcfall/react-firebase-state';
 import { useAccessControl, useSessionUser } from '../hooks/customHooks';
 import { checkPrivilege, getSharingIconType } from '../model/access';
 import { getCardList, publishDeck, updateDeckName } from '../model/deck';
 import { addFlashcard } from '../model/flashcard';
 import { libraryRoute } from "../model/routes";
-import { AccessTuple, ClientFlashcard, Deck, DeckQuery, GLOBE, LOCK_OPEN, SHARE, SharingIconType, UNTITLED_DECK } from '../model/types';
+import { AccessTuple, Deck, DeckQuery, GLOBE, LOCK_OPEN, SHARE, SharingIconType, TiptapMap, UNTITLED_DECK } from '../model/types';
+import { DECK_EDITOR } from './deckEditorShared';
 import { HEADER_STYLE, OUTLINED_TEXT_FIELD_HEIGHT } from "./header";
 import ZAlert from "./ZAlert";
 import ZAuthTools from "./ZAuthTools";
-import { DECK_EDITOR } from './deckEditorShared';
 import ZDeckNameInput from "./ZDeckNameInput";
 import { ZSharingDialog } from './ZSharingDialog';
 
@@ -77,10 +77,11 @@ function ZLibraryButton() {
 interface DeckEditorButtonsProps {
     editor: Editor | null;
     deck: Deck | undefined;
+    editorProviders: TiptapMap;
 }
 
 function ZDeckEditorButtons(props: DeckEditorButtonsProps) {
-    const {editor, deck} = props;
+    const {editor, deck, editorProviders} = props;
 
     function handleBoldClick() {
         if (editor) {
@@ -110,7 +111,7 @@ function ZDeckEditorButtons(props: DeckEditorButtonsProps) {
         <Box sx={HEADER_STYLE}>
             <ZAddCardButton/>
             {deck && (      
-                <ZPublishButton deck={deck}/>
+                <ZPublishButton deck={deck} editorProviders={editorProviders}/>
             )}  
             <IconButton onClick={handleBoldClick} sx={{marginLeft: "140px"}}>
                 <FormatBoldIcon/>
@@ -137,14 +138,15 @@ export function invalidDeckName(name: string) {
 }
 
 interface PublishButtonProps {
-    deck: Deck
+    deck: Deck;
+    editorProviders: TiptapMap;
 }
 function ZPublishButton(props: PublishButtonProps) {
 
-    const {deck} = props;
+    const {deck, editorProviders} = props;
     const api = useEntityApi();
     const [nameDialogOpen, setNameDialogOpen] = useState<boolean>(false);
-    const cardList = deck ? getCardList(api, deck) : null;
+    const cardList = deck ? getCardList(deck, editorProviders) : null;
 
     if (!deck || !cardList) {
         return null;
@@ -176,7 +178,7 @@ function ZPublishButton(props: PublishButtonProps) {
                 <ZConfirmNameDialog
                     setNameDialogOpen={setNameDialogOpen}
                     deck={deck}
-                    cardList={cardList}
+                    editorProviders={editorProviders}
                 />
             )}
         </>
@@ -186,11 +188,11 @@ function ZPublishButton(props: PublishButtonProps) {
 interface ConfirmNameDialogProps {
     setNameDialogOpen: (value: boolean) => void;
     deck: Deck;
-    cardList: ClientFlashcard[];
+    editorProviders: TiptapMap;
 }
 
 function ZConfirmNameDialog(props: ConfirmNameDialogProps) {
-    const {setNameDialogOpen, deck, cardList} = props;
+    const {setNameDialogOpen, deck, editorProviders} = props;
     const api = useEntityApi();
     const [name, setName] = useState(deck.name);
     const [nameError, setNameError] = useState<boolean>(false);
@@ -200,12 +202,12 @@ function ZConfirmNameDialog(props: ConfirmNameDialogProps) {
     }
 
     function handleCloseDialogAndPublish() {
-        if (deck && cardList) {
+        if (deck) {
             if (invalidDeckName(name)) {
                 setNameError(true);
             } else {
                 setNameDialogOpen(false);
-                
+                const cardList = getCardList(deck, editorProviders)
                 updateDeckName(api, deck.id, name);
                 publishDeck(api, deck.id, name, cardList);
             }
@@ -349,16 +351,16 @@ interface DeckEditorHeaderProps {
     editor: Editor | null;
     deck: Deck | undefined;
     accessTuple: AccessTuple;
+    editorProviders: TiptapMap;
 }
 
-
 export default function ZDeckEditorHeader(props: DeckEditorHeaderProps) {
-    const {editor, deck, accessTuple} = props
+    const {editor, deck, accessTuple, editorProviders} = props
 
     return (
         <Box sx={{display: 'flex', flexDirection: 'column'}}>
             <ZDeckEditorBanner accessTuple={accessTuple} deck={deck}/>
-            <ZDeckEditorButtons editor={editor} deck={deck}/>
+            <ZDeckEditorButtons editor={editor} deck={deck} editorProviders={editorProviders}/>
         </Box>
     )
 }

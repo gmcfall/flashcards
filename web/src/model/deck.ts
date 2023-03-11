@@ -1,22 +1,22 @@
 // This file provides features that span multiple parts of the app
 
-import { DocChangeEvent, EntityApi, getEntity, watchEntity } from "@gmcfall/react-firebase-state";
+import { EntityApi } from "@gmcfall/react-firebase-state";
 import {
-    collection, deleteField, doc, FieldPath, Firestore, getDoc, getDocs, getFirestore, query, runTransaction,
-    setDoc, updateDoc, where, writeBatch
+    collection, deleteField, doc, FieldPath, Firestore, getDoc, getDocs, getFirestore, query, runTransaction, updateDoc, where, writeBatch
 } from "firebase/firestore";
 import { NextRouter } from "next/router";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
+import { removeYdoc } from "../yjs/FirestoreProvider";
 import { enableGeneralViewer } from "./access";
 import { alertError, alertInfo } from "./alert";
 import firebaseApp from "./firebaseApp";
 import { ACCESS, CARDS, DeckField, DECKS, LIBRARIES, LibraryField, METADATA, SEARCH, SearchField, TAGS } from "./firestoreConstants";
-import { cardPath, createCardTransform, createFlashcardRef, createServerFlashCard, handleCardRemoved } from "./flashcard";
+import { createFlashcardRef } from "./flashcard";
 import { createMetadata } from "./metadata";
 import { deckEditRoute } from "./routes";
-import { Access, ClientFlashcard, DECK, Deck, JSONContent, Metadata, ResourceRef, ResourceSearchServerData, ServerFlashcard, SessionUser, Tags, UNTITLED_DECK } from "./types";
+import { Access, DECK, Deck, JSONContent, Metadata, ResourceRef, ResourceSearchServerData, SessionUser, Tags, TiptapMap, UNTITLED_DECK } from "./types";
 
 export function createDeck() : Deck {
 
@@ -31,11 +31,11 @@ export function createDeck() : Deck {
 export async function addDeck(api: EntityApi, router: NextRouter, user: SessionUser) {
     try {
         const deck = createDeck();
-        const card = createServerFlashCard(deck.id);
-        const cardRef = createFlashcardRef(card.id);
+        const cardId = generateUid();
+        const cardRef = createFlashcardRef(cardId);
         deck.cards.push(cardRef);
 
-        await saveDeck(user.uid, deck, card);
+        await saveDeck(user.uid, deck);
 
         router.push(deckEditRoute(deck.id));
     } catch (error) {
@@ -54,18 +54,14 @@ function createDeckAccess(owner: string) : Access {
     }
 }
 
-export function getCardList(api: EntityApi, deck: Deck) {
-    const list: ClientFlashcard[] = [];
+export function getCardList(deck: Deck, entityProviders: TiptapMap) {
+    const list: JSONContent[] = [];
     for (const cardRef of deck.cards) {
-        const path = cardPath(cardRef.id);
-        const [card, error] = getEntity<ClientFlashcard>(api, path);
-        if (error) {
-            return null;
+        const ep = entityProviders[cardRef.id];
+        if (ep) {
+            const json = ep.editor.getJSON();
+            list.push(json);
         }
-        if (!card) {
-            return null;
-        }
-        list.push(card);
     }
     return list;
 }
@@ -75,7 +71,7 @@ export async function publishDeck(
     api:EntityApi, 
     deckId: string, 
     deckName: string, 
-    cardList: ClientFlashcard[]
+    cardList: JSONContent[]
 ) {
 
     try {
@@ -200,12 +196,12 @@ async function addSearchResources(db: Firestore, resourceRef: ResourceRef, tags:
 }
 
 
-function getDeckTags(deckName: string, cards: ClientFlashcard[]) {
+function getDeckTags(deckName: string, cards: JSONContent[]) {
     const set = new Set<string>();
     addTextTags(set, deckName);
 
-    cards.forEach(card => {
-        addTicTapContentTags(set, card.content);
+    cards.forEach(content => {
+        addTicTapContentTags(set, content);
     })
 
     return Array.from(set);
@@ -240,7 +236,7 @@ function addTag(set: Set<string>, word: string) {
     }
 }
 
-export async function saveDeck(userUid: string, deck: Deck, card: ServerFlashcard) {
+export async function saveDeck(userUid: string, deck: Deck) {
 
     const db = getFirestore(firebaseApp);
     const deckRef = doc(db, DECKS, deck.id);
@@ -250,7 +246,6 @@ export async function saveDeck(userUid: string, deck: Deck, card: ServerFlashcar
 
     const deckAccess = createDeckAccess(userUid);
     const accessRef = doc(db, ACCESS, deck.id);
-    const cardRef = doc(db, CARDS, card.id);
     const libRef = doc(db, LIBRARIES, userUid);
     const path = new FieldPath(LibraryField.resources, deck.id);
 
@@ -261,11 +256,6 @@ export async function saveDeck(userUid: string, deck: Deck, card: ServerFlashcar
     batch.update(libRef, path, true);
 
     await batch.commit();
-
-    // We cannot save the `cardRef` in the batch because the security rules rely on
-    // the existence of the `deckAccess` record. Therefore, we do it now, outside the batch.
-
-    setDoc(cardRef, card);
 }
 
 export async function deleteOwnedDecks(userUid: string) {
@@ -318,47 +308,35 @@ export async function deleteDeck(deckId: string, userUid: string, updateLibrary:
         if (deckDoc.exists()) {
             const deckData = deckDoc.data() as Deck;
             
-            deckData.cards.forEach(card => {
-                const cardRef = doc(db, CARDS, card.id);
-                txn.delete(cardRef)
-            })
             txn.delete(deckRef);
             txn.delete(deckAccessRef);
             txn.delete(metadataRef);
             if (updateLibrary) {
                 txn.update(libRef, path, deleteField())
             }
+            return deckData.cards;
         }
-    })
+        return null;
+    }).then(
+        async (cardList) => {
+            const cardPromises = [];
+            if (cardList) {
+                for (const ref of cardList) {
+                    const cardId = ref.id;
+                    cardPromises.push(
+                        removeYdoc(firebaseApp, [DECKS, deckId, CARDS, cardId])
+                    );
+                }
+            }
+            await Promise.all(cardPromises);
+        }
+    )
     promiseList.push(lastPromise);
     return Promise.all(promiseList);
 }
 
 export function deckPath(deckId: string | undefined) {
     return [DECKS, deckId];
-}
-
-function deckTransform(event: DocChangeEvent<Deck>) {
-    const api = event.api;
-    const deck = event.data;
-    const cards = deck.cards;
-    const leasee = event.leasee;
-
-    const options = {
-        transform: createCardTransform(deck.id),
-        onRemoved: handleCardRemoved
-    }
-
-    cards.forEach(cardRef => {
-        const path = cardPath(cardRef.id);
-        watchEntity(api, leasee, path, options);
-    })
-
-    return deck;
-}
-
-export const DECK_LISTENER_OPTIONS = {
-    transform: deckTransform
 }
 
 export async function updateDeckName(api: EntityApi, deckId: string, name: string) {

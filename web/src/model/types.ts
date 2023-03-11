@@ -1,11 +1,10 @@
 
-import { JSONContent } from "@tiptap/core";
+import { EntityTuple } from "@gmcfall/react-firebase-state";
+import { Editor } from "@tiptap/react";
 import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { FieldValue } from "firebase/firestore";
-import { EntityTuple } from "@gmcfall/react-firebase-state";
 import { ParsedUrlQuery } from "querystring";
-import { Editor } from "@tiptap/react";
-import { WebrtcProvider } from "y-webrtc";
+import FirestoreProvider from "../yjs/FirestoreProvider";
 
 export type { JSONContent } from "@tiptap/core";
 
@@ -56,17 +55,6 @@ export interface FlashcardBase {
     /** The id of the deck that owns this card */
     access: string
 
-}
-
-export interface ServerFlashcard extends FlashcardBase {
-
-    /** The card content represented as an HTML string */
-    content: string,
-}
-
-export interface ClientFlashcard extends FlashcardBase {
-    /** The card content represented as a JSON object */
-    content: JSONContent;
 }
 
 /**
@@ -529,7 +517,7 @@ export interface DeckQuery extends ParsedUrlQuery {
 
 export interface EditorProvider {
     editor: Editor;
-    provider: WebrtcProvider;
+    provider: FirestoreProvider;
 }
 export type TiptapMap = Record<string, undefined | EditorProvider>;
 

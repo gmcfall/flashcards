@@ -14,14 +14,13 @@ import ZNeedAccess from "../../../../components/ZNeedAccess";
 import ZNotFound from "../../../../components/ZNotFound";
 import { RegistrationContext } from "../../../../components/ZRegistrationProvider";
 import { SigninContext } from "../../../../components/ZSigninProvider";
-import { useAccessControl, useAccountIsIncomplete, useFlashcard, useSessionUser } from "../../../../hooks/customHooks";
+import { useAccessControl, useAccountIsIncomplete, useSessionUser } from "../../../../hooks/customHooks";
 import { checkPrivilege, resourceNotFound } from "../../../../model/access";
-import { closeCardWriter } from "../../../../model/CardWriter";
-import { deckPath, DECK_LISTENER_OPTIONS, removeDeckWriter, setDeckWriter } from "../../../../model/deck";
-import { addFlashcard, deleteFlashcardByIndex, updateFlashcardContent } from "../../../../model/flashcard";
+import { deckPath, removeDeckWriter, setDeckWriter } from "../../../../model/deck";
+import { addFlashcard, deleteFlashcard } from "../../../../model/flashcard";
 import { userToIdentity } from "../../../../model/identity";
 import { deckEditRoute } from "../../../../model/routes";
-import { ClientFlashcard, Deck, DeckQuery, EDIT, EditorProvider, TiptapMap } from "../../../../model/types";
+import { Deck, DeckQuery, EDIT, EditorProvider, TiptapMap } from "../../../../model/types";
 
 const HEIGHT_WIDTH_RATIO = 0.6;
 const MAX_FONT_SIZE = 200; // %
@@ -106,13 +105,10 @@ function resizeEditorContent() {
 interface FlashcardEditorProps {
     editor: Editor;
     setEditor: (editor: Editor) => void;
-    card: ClientFlashcard;
 }
 
 function ZFlashcardEditor(props: FlashcardEditorProps) {
-    const {setEditor, card, editor} = props;
-
-    const api = useEntityApi();
+    const {setEditor, editor} = props;
 
     // The first effect sets the editor so that it is available to the header
     useEffect(() => {
@@ -177,7 +173,6 @@ function ZDeckEditorContent(props: DeckEditorContentProps) {
     const user = useSessionUser();
     const [registerActive] = useContext(RegistrationContext);
     const [signinActive] = useContext(SigninContext);
-    const [card] = useFlashcard(cardId);
 
     const editorProvider = cardId ? editorProviders[cardId] : undefined;
 
@@ -214,15 +209,10 @@ function ZDeckEditorContent(props: DeckEditorContentProps) {
         )
     }
 
-    if (!card) {
-        return null;
-    }
-
     return (
         <ZFlashcardEditor
-            key={card.id}
+            key={cardId}
             editor={editorProvider.editor}
-            card={card}
             setEditor={setEditor}
         />
     )
@@ -263,7 +253,6 @@ function ZCardList(props: CardListProps) {
                     editorProviders={editorProviders}
                     setEditorProvider={setEditorProvider}
                     deckId={deck.id}
-                    writer={writer}
                     activeCardId={activeCardId}
                     cardIndex={index}
                     cardId={ref.id}
@@ -344,11 +333,11 @@ export default function ZDeckEditor() {
     const cardIndex = cardIndexSlug?.[0];
     const accountIsIncomplete = useAccountIsIncomplete();
     const user = useSessionUser();
-    const [deck, deckError] = useDocListener(DECK_EDITOR, deckPath(deckId), DECK_LISTENER_OPTIONS);
+    const [deck, deckError] = useDocListener<Deck>(DECK_EDITOR, deckPath(deckId));
     const accessTuple = useAccessControl(DECK_EDITOR, deckId);
     const [editor, setEditor] = useState<Editor | null>(null);
 
-    const [sentinel, setSentinel] = useState<object>({});
+    const [, setSentinel] = useState<object>({});
     const [cardIndexNum, cardRedirect] = parseCardIndex(deck, cardIndex);
     const cardId = (cardIndexNum>=0 && deck) ? deck.cards[cardIndexNum].id : undefined;
 
@@ -378,15 +367,15 @@ export default function ZDeckEditor() {
 
     }, [api, deckExists, deckId, userUid, writer])
 
-    // When ZDeckEditor unmounts, destroy all WebRTC providers and stop card writers
+    // When ZDeckEditor unmounts, destroy all Yjs providers
     useEffect(() => () => {
         for (const cardId in editorProviders) {
             const data = editorProviders[cardId];
             if (data) {
                 data.provider.destroy();
+                delete editorProviders[cardId];
             }
         }
-        closeCardWriter();
     }, [])
 
     // When ZDeckEditor unmounts, remove the `writer` property of the Deck
@@ -414,7 +403,14 @@ export default function ZDeckEditor() {
                 switch (event.key) {
                     case 'Delete':
                         if (deckId && cardIndexNum >= 0) {
-                            deleteFlashcardByIndex(api, deckId, cardIndexNum);
+                            const [deck] = getEntity<Deck>(api, deckPath(deckId));
+                            if (deck) {
+                                const ref = deck.cards[cardIndexNum];
+                                if (ref) {
+                                    const ep = editorProviders[ref.id];
+                                    deleteFlashcard(deckId, ref.id, ep);
+                                }
+                            }
                         }
                         break;
                 }
@@ -431,7 +427,7 @@ export default function ZDeckEditor() {
             }
         }
 
-    }, [api, deckId, cardIndexNum]);
+    }, [api, deckId, cardIndexNum, editorProviders]);
   
 
     
@@ -468,7 +464,12 @@ export default function ZDeckEditor() {
                 requester={userToIdentity(user)}/>
         )) || (
             <Box id="deck-editor" sx={{display: "flex", flexDirection: "column", width: "100%", height: "100%"}}>
-                <ZDeckEditorHeader editor={editor} deck={deck} accessTuple={accessTuple}/>
+                <ZDeckEditorHeader 
+                    editor={editor} 
+                    deck={deck} 
+                    accessTuple={accessTuple}
+                    editorProviders={editorProviders}
+                />
                 <ZDeckBody
                     setEditor={setEditor}
                     editorProviders={editorProviders}
