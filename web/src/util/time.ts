@@ -16,3 +16,8 @@ export function toClientTimestamp(a: Timestamp) {
         nanoseconds: a.nanoseconds
     }
 }
+
+const NANO_PER_MILLI = 1000000;
+export function toUnixTime(timestamp: ClientTimestamp) {
+    return timestamp.seconds + Math.floor(timestamp.nanoseconds / NANO_PER_MILLI);
+}
