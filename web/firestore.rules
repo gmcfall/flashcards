@@ -57,13 +57,7 @@ service cloud.firestore {
       allow delete: if grantDeckDelete(deckId);
       allow create: if request.auth != null
     }
-    match /decks/{deckId}/cards/{cardId}/updates/{updateId} {
-      allow read, write: if true;
-    }
-    match /decks/{deckId}/cards/{cardId}/yjs/baseline {
-      allow read, write: if true;
-    }
-    match /decks/{deckId}/cards/{cardId}/yjs/time {
+    match /decks/{deckId}/cards/{cardId}/yjs/{document=**} {
       allow read, write: if true;
     }
     match /cards/{cardId} {

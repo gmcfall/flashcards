@@ -1,12 +1,13 @@
 import { FirebaseApp } from "@firebase/app";
+import * as awarenessProtocol from 'y-protocols/awareness'
 import { Bytes, collection, deleteDoc, doc, Firestore, getDoc, getDocs, getFirestore, onSnapshot, query, runTransaction, serverTimestamp, setDoc, Timestamp, Unsubscribe, writeBatch } from "@firebase/firestore";
 import { Observable } from "lib0/observable";
 import * as Y from 'yjs';
 import { currentTime, timeSinceEpoch } from "./time";
 
-const UPDATES = "updates";
 const SHUTDOWN = "shutdown";
-const YJS_BASELINE = "/yjs/baseline";
+const YJS_HISTORY_UPDATES = "/yjs/history/updates";
+const YJS_HISTORY = "/yjs/history";
 const YJS_TIME = "/yjs/time";
 
 interface DocUpdate {
@@ -28,7 +29,7 @@ async function getUpdates(db: Firestore, path: string) {
     return set;
 }
 
-export async function removeYdoc(firebaseApp: FirebaseApp, path: string[], updateSet?: Set<string>) {
+export async function deleteYjsData(firebaseApp: FirebaseApp, path: string[], updateSet?: Set<string>) {
 
     // Save a "shutdown" message for all running providers.
     // This is accomplished by adding an empty document whose `id` is "shutdown" to the
@@ -37,12 +38,12 @@ export async function removeYdoc(firebaseApp: FirebaseApp, path: string[], updat
     const db = getFirestore(firebaseApp);
 
     const basePath = path.join('/');
-    const collectionPath = basePath + '/' + UPDATES;
+    const collectionPath = basePath + YJS_HISTORY_UPDATES;
     const shutdownPath = collectionPath + '/' + SHUTDOWN;
     const shutdownRef = doc(db, shutdownPath);
     await setDoc(shutdownRef, {});
 
-    const baselineRef = doc(db, basePath + YJS_BASELINE);
+    const baselineRef = doc(db, basePath + YJS_HISTORY);
     
     // If the `updateSet` was not provided, get it via a query
 
@@ -71,30 +72,43 @@ interface UpdateWithTimestamp {
     update?: Uint8Array;
 }
 
+/**
+ * Optional configuration settings for FirestoreProvider
+ */
+export interface FirestoreProviderConfig {
+
+    /**
+     * The maximum number of update events allowed in a blob, set to 20 by default.
+     * You can decrease latency by setting this parameter to a lower value. Setting it to 1 will 
+     * cause the FirestoreProvider to emit every single update event immediately, at the penalty of
+     * increased cost due to more frequent writes.
+     */
+    maxUpdatesPerBlob?: number;
+
+    /**
+     * The maximum amount of time in milliseconds that the user may pause in making 
+     * changes before a blob is emitted, set to 600 ms by default.  Setting this parameter to a smaller 
+     * value will reduce latency, but again, at the penalty of increased cost due to more frequent writes.
+     * Setting it to a higher value will increase latency and reduce cost.
+     */
+    maxUpdatePause?: number;
+
+    /**
+     * The maximum amount of time in milliseconds that a blob of updates can live in Firestore
+     * before it is removed and merged into the consolidated history. By default, this parameter is set to
+     * 10000 (i.e. 10 seconds).  As a best practice, applications should stick with this default.
+     */
+    blobTimeToLive?: number;
+}
+
 
 /**
  * A Yjs Provider that stores document updates in a Firestore collection.
- * 
- * Each new update is stored in a Firestore document at:
- * ```
- * {path}/updates/{updateId}
- * ```
- * The `updateId` has the form `{ydoc.clientID}-{clock}-{time}` where
- * - `clock` is a number which is incremented with each new update that is received.
- * - `time` is the unix time when the update was created on the client
- * 
- * The values `ydoc.clientID`, `clock` and `time` are expressed as hex numbers.
- * 
- * Periodically, the provider will compress the individual updates into a
- * baseline state at  
- * ```
- * {path}/yjs/baseline
- * ```
- * 
  */
-export default class FirestoreProvider extends Observable<any> {
+export class FirestoreProvider extends Observable<any> {
     readonly doc: Y.Doc;
     error?: Error;
+    awareness: awarenessProtocol.Awareness;
     private firebaseApp: FirebaseApp;
     private unsubscribe?: Unsubscribe;
     private clock = 0;
@@ -102,12 +116,13 @@ export default class FirestoreProvider extends Observable<any> {
 
     private cache?: Uint8Array;
     private maxUpdatePause = 600;
-    private maxUpdateCount = 20;
+    private maxUpdatesPerBlob = 20;
+
     /**
      * The amount of time that an individual update is allowed to live in the 
      * "updates" collection until it is merged into "yjs/baseline"
      */
-    private timeToLive = 10000; // 10 seconds
+    private blobTimeToLive = 10000; // 10 seconds
     private updateCount = 0;
 
     /**
@@ -118,14 +133,22 @@ export default class FirestoreProvider extends Observable<any> {
 
     private updateHandler: (update: Uint8Array, origin: any) => void;
     private destroyHandler: () => void;
+    private awarenessUpdateHandler: (changes: any, origin?: any) => void;
     private updateMap = new Map<string, UpdateWithTimestamp>();
     private isStopped = false;
 
-    constructor(firebaseApp: FirebaseApp, ydoc: Y.Doc, path: string[]) {
+    private pageHideHandler: () => void;
+
+    constructor(firebaseApp: FirebaseApp, ydoc: Y.Doc, path: string[], config?: FirestoreProviderConfig) {
         super();
         this.firebaseApp = firebaseApp;
         this.basePath = path.join('/');
         this.doc = ydoc;
+        this.awareness = new awarenessProtocol.Awareness(ydoc);
+
+        this.maxUpdatePause =       config?.maxUpdatePause === undefined ? 600   : config.maxUpdatePause;
+        this.maxUpdatesPerBlob = config?.maxUpdatesPerBlob === undefined ? 20    : config.maxUpdatesPerBlob;
+        this.blobTimeToLive =       config?.blobTimeToLive === undefined ? 10000 : config.blobTimeToLive;
 
         const db = getFirestore(firebaseApp);
         const self = this;
@@ -133,7 +156,24 @@ export default class FirestoreProvider extends Observable<any> {
         const extra = Math.floor(2000 * Math.random());
         this.compressIntervalId = setInterval(() => {
             self.compress();
-        }, this.timeToLive + extra)
+        }, this.blobTimeToLive + extra)
+
+        this.pageHideHandler = () => {
+            console.log("visibilitychange fired")
+            const path = self.basePath + "/yjs/pagehide";
+            const ref = doc(db, path);
+            setDoc(ref, {pagehide: true});
+        }
+
+        if (document) {
+            console.log("added visibilitychange handler")
+            document.addEventListener("visibilitychange", this.pageHideHandler);
+        }
+
+        this.awarenessUpdateHandler = (changes: any, origin: any) => {
+            // console.log("awareness update", {changes, origin});
+        }
+        this.awareness.on("update", this.awarenessUpdateHandler);
 
         this.updateHandler = (update, origin) => {
 
@@ -157,7 +197,7 @@ export default class FirestoreProvider extends Observable<any> {
                 self.cache = self.cache ? Y.mergeUpdates([self.cache, update]) : update;
                 self.updateCount++;
 
-                if (self.updateCount < self.maxUpdateCount) {
+                if (self.updateCount < self.maxUpdatesPerBlob) {
                     if (self.saveTimeoutId) {
                         clearTimeout(self.saveTimeoutId);
                     }
@@ -179,10 +219,10 @@ export default class FirestoreProvider extends Observable<any> {
 
 
         // Start a listener for document updates
-        const collectionPath = path.join("/") + '/' + UPDATES;
+        const collectionPath = path.join("/") + YJS_HISTORY_UPDATES;
         const q = query(collection(db, collectionPath));
 
-        const baselinePath = this.basePath + YJS_BASELINE;
+        const baselinePath = this.basePath + YJS_HISTORY;
         const baseRef = doc(db, baselinePath);
         getDoc(baseRef).then(baseDoc => {
             if (baseDoc.exists()) {
@@ -248,11 +288,15 @@ export default class FirestoreProvider extends Observable<any> {
         super.destroy();
     }
 
-    async removeYDoc() {
+    /**
+     * Shutdown this provider, and permanently delete the 
+     * Yjs data 
+     */
+    async deleteYjsData() {
         this.shutdown();
         const set = new Set<string>(this.updateMap.keys());
         const path = this.basePath.split('/');
-        await removeYdoc(this.firebaseApp, path, set);
+        await deleteYjsData(this.firebaseApp, path, set);
     }
 
     private async compress() {
@@ -260,8 +304,8 @@ export default class FirestoreProvider extends Observable<any> {
         if (this.isStopped || map.size===0) {
             return;
         }
-        const baselinePath = this.basePath + YJS_BASELINE;
-        const updatesPath = this.basePath + '/' + UPDATES + '/';
+        const baselinePath = this.basePath + YJS_HISTORY;
+        const updatesPath = this.basePath + YJS_HISTORY_UPDATES;
         const timePath = this.basePath + YJS_TIME;
         
         const now = await currentTime(this.firebaseApp, timePath);
@@ -274,7 +318,7 @@ export default class FirestoreProvider extends Observable<any> {
                     // Shutting down;
                     return;
                 }
-                if (now - value.time > this.timeToLive) {
+                if (now - value.time > this.blobTimeToLive) {
                    zombies.add(key);
                    newUpdates = newUpdates ? Y.mergeUpdates([newUpdates, update]) : update;
                 }
@@ -316,10 +360,15 @@ export default class FirestoreProvider extends Observable<any> {
     }
 
     private shutdown() {
+        console.log('shutdown invoked');
         if (!this.isStopped) {
             this.isStopped = true;
             this.doc.off("update", this.updateHandler);
             this.doc.off("destroy", this.destroyHandler);
+
+            if (document) {
+                document.removeEventListener("visibilitychange", this.pageHideHandler);
+            }
             
             if (this.compressIntervalId) {
                 clearInterval(this.compressIntervalId);
@@ -363,8 +412,8 @@ export default class FirestoreProvider extends Observable<any> {
                 "-" + clock.toString(16) + '-' + time.toString(16);
 
             const db = getFirestore(this.firebaseApp);
-            const path = this.basePath + "/" + UPDATES + "/" + updateId;
-            const docRef = doc(db, path);
+            const path = this.basePath + YJS_HISTORY_UPDATES;
+            const docRef = doc(db, path, updateId);
             await setDoc(docRef, data);
         }
     }

@@ -8,7 +8,7 @@ import { NextRouter } from "next/router";
 import porterStem from "../util/stemmer";
 import { STOP_WORDS } from "../util/stopWords";
 import generateUid from "../util/uid";
-import { removeYdoc } from "../yjs/FirestoreProvider";
+import { deleteYjsData } from "../yjs/FirestoreProvider";
 import { enableGeneralViewer } from "./access";
 import { alertError, alertInfo } from "./alert";
 import firebaseApp from "./firebaseApp";
@@ -324,7 +324,7 @@ export async function deleteDeck(deckId: string, userUid: string, updateLibrary:
                 for (const ref of cardList) {
                     const cardId = ref.id;
                     cardPromises.push(
-                        removeYdoc(firebaseApp, [DECKS, deckId, CARDS, cardId])
+                        deleteYjsData(firebaseApp, [DECKS, deckId, CARDS, cardId])
                     );
                 }
             }

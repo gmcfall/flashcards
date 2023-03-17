@@ -1,6 +1,7 @@
 import { EntityApi, useEntityApi } from "@gmcfall/react-firebase-state";
 import { useTheme } from "@mui/material";
 import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import { Editor, EditorOptions } from "@tiptap/react";
 import { useRouter } from "next/router";
 import { useEffect, useRef, useState } from "react";
@@ -8,9 +9,10 @@ import * as Y from 'yjs';
 import { CARDS, DECKS } from "../model/firestoreConstants";
 import { deckEditRoute } from "../model/routes";
 import { EditorProvider, TiptapMap } from "../model/types";
-import FirestoreProvider from "../yjs/FirestoreProvider";
+import { FirestoreProvider } from "../yjs/FirestoreProvider";
 import { TIP_TAP_EXTENSIONS, updateCardFontSize } from "./deckEditorShared";
 import { DECK_EDITOR_TIPTAP } from "./lerniConstants";
+import { getColor } from "../yjs";
 
 
 
@@ -23,7 +25,14 @@ function createTipTapEditor(provider: FirestoreProvider, setSentinel: (value: ob
         },
         extensions: [
             ...TIP_TAP_EXTENSIONS,
-            Collaboration.configure({document: provider.doc})
+            Collaboration.configure({document: provider.doc}),
+            CollaborationCursor.configure({
+                provider: provider,
+                user: {
+                    name: "@dummy",
+                    color: getColor("@dummy")
+                }
+            })
         ],
         onUpdate({editor}) {
             // For now, update the font size of the active card whenever any

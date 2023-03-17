@@ -4,6 +4,7 @@ export function jsonClone(object: any) {
 
 export function isEmpty(object: Object) {
 
+    // @ts-ignore
     for (const key in object) {
         return false;
     }

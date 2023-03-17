@@ -2,7 +2,7 @@ import { Cache, EntityApi, getEntity } from "@gmcfall/react-firebase-state";
 import { doc, getFirestore, runTransaction } from "firebase/firestore";
 import { NextRouter } from "next/router";
 import generateUid from "../util/uid";
-import { removeYdoc } from "../yjs/FirestoreProvider";
+import { deleteYjsData } from "../yjs/FirestoreProvider";
 import { alertError } from "./alert";
 import { deckPath } from "./deck";
 import firebaseApp from "./firebaseApp";
@@ -33,9 +33,9 @@ export async function deleteFlashcard(deckId: string, cardId: string, ep?: Edito
     })
 
     if (ep) {
-        await ep.provider.removeYDoc();
+        await ep.provider.deleteYjsData();
     } else {
-        await removeYdoc(firebaseApp, [DECKS, deckId, CARDS, cardId])
+        await deleteYjsData(firebaseApp, [DECKS, deckId, CARDS, cardId])
     }
 
 }

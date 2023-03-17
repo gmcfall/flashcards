@@ -427,7 +427,7 @@ export default function ZDeckEditor() {
             }
         }
 
-    }, [api, deckId, cardIndexNum, editorProviders]);
+    }, [api, deckId, cardIndexNum]);
   
 
     

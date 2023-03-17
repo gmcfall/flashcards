@@ -4,7 +4,7 @@ import { Editor } from "@tiptap/react";
 import { FacebookAuthProvider, GoogleAuthProvider, TwitterAuthProvider } from "firebase/auth";
 import { FieldValue } from "firebase/firestore";
 import { ParsedUrlQuery } from "querystring";
-import FirestoreProvider from "../yjs/FirestoreProvider";
+import {FirestoreProvider} from "../yjs/FirestoreProvider";
 
 export type { JSONContent } from "@tiptap/core";
 
